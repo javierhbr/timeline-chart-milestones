@@ -271,7 +271,7 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
           left: isInOverlay ? `${leftPixels}px` : `${position.left}%`, 
           width: isInOverlay ? `${Math.max(widthPixels, 120)}px` : `${position.width}%`,
           minWidth: '120px',
-          top: isInOverlay ? `${topOffset + 28}px` : '30px'
+          top: isInOverlay ? `${topOffset + 38}px` : '30px'
         }}>
           <div className="text-xs space-y-1 bg-white/80 backdrop-blur-sm rounded p-1">
             {/* Show task name with arrow icon if it doesn't fit inside the bar */}
@@ -389,7 +389,7 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
                       <div className="absolute right-0 top-0 w-1 h-full bg-white/40 rounded-r-lg"></div>
                     </div>
 
-                    <div className="absolute top-16 z-20 pointer-events-none" style={{ left: `${milestonePosition.left}%`, width: `${milestonePosition.width}%`, minWidth: '120px' }}>
+                    <div className="absolute top-16 z-20 pointer-events-none" style={{ left: `${milestonePosition.left + 2}%`, width: `${milestonePosition.width}%`, minWidth: '120px', top: '75px' }}>
                       <div className="text-xs space-y-1">
                         <div className="flex items-center gap-1 text-blue-500"><Calendar className="w-3 h-3 flex-shrink-0" /><span className="text-xs">{format(milestoneDates.startDate, 'dd/MM', { locale: es })} - {format(milestoneDates.endDate, 'dd/MM', { locale: es })}</span></div>
                       </div>
