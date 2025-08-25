@@ -266,19 +266,19 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
           </Tooltip>
         </TooltipProvider>
 
-        {/* Info section below the task bar - always visible */}
+        {/* Info section to the right of the task bar - always visible */}
         <div className="absolute z-20 pointer-events-none" style={{ 
-          left: isInOverlay ? `${leftPixels}px` : `${position.left}%`, 
-          width: isInOverlay ? `${Math.max(widthPixels, 120)}px` : `${position.width}%`,
+          left: isInOverlay ? `${leftPixels + widthPixels + 8}px` : `calc(${position.left + position.width}% + 8px)`, 
+          width: 'auto',
           minWidth: '120px',
-          top: isInOverlay ? `${topOffset + 38}px` : '30px'
+          top: isInOverlay ? `${topOffset + 10}px` : '0px'
         }}>
           <div className="text-xs space-y-1 bg-white/80 backdrop-blur-sm rounded p-1">
             {/* Show task name with arrow icon if it doesn't fit inside the bar */}
             {!showNameInside && (
               <div className="flex items-center gap-1 text-gray-700 whitespace-nowrap">
                 <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M8 1l3 3h-2v8h-2V4H5l3-3z"/>
+                  <path d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
                 </svg>
                 <span className="text-xs font-medium">{task.name}</span>
               </div>
@@ -398,25 +398,25 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
                 </div>
 
                 {expandedMilestones.has(milestone.milestoneId) && milestone.tasks.map((task) => (
-                  <div key={task.taskId} className="flex border-b transition-colors min-h-[60px] relative z-10" style={{ backgroundColor: 'transparent' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = milestoneColor.gentleHover; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }} data-task-id={task.taskId}>
+                  <div key={task.taskId} className="flex border-b transition-colors min-h-[50px] relative z-10" style={{ backgroundColor: 'transparent' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = milestoneColor.gentleHover; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }} data-task-id={task.taskId}>
                     <div className="w-80 p-4 border-r bg-background">
                       <div className="pl-8">
                         <div className="flex items-start gap-3">
                           <div className="flex-1">
-                            <div className="font-medium text-sm">{task.name}</div>
-                            <div className="text-xs text-muted-foreground mt-1">{task.description}</div>
-                            <div className="flex items-center gap-2 mt-2">
+                            <div className="flex items-center gap-2">
+                              <div className="font-medium text-sm">{task.name}</div>
                               <Badge variant="outline" style={{ borderColor: teamColors[task.team] || teamColors.Default, color: teamColors[task.team] || teamColors.Default }} className="text-xs">
                                 {task.team}
                               </Badge>
                               <span className="text-xs text-muted-foreground">{task.durationDays} días</span>
                             </div>
+                            <div className="text-xs text-muted-foreground mt-1">{task.description}</div>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex-1 relative p-2 flex items-center" style={{ minHeight: '60px', backgroundColor: 'transparent' }}>
+                    <div className="flex-1 relative p-2 flex items-center" style={{ minHeight: '50px', backgroundColor: 'transparent' }}>
                       {/* Task bar is now rendered in the global overlay above */}
                     </div>
                   </div>
