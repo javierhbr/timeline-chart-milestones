@@ -133,8 +133,9 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
       const timelineRect = timelineRef.current.getBoundingClientRect();
       const newPositions: Record<string, number> = {};
       
-      // Store timeline offset for horizontal positioning
+      // Store timeline offset and width for horizontal positioning
       const timelineOffset = timelineRect.left - containerRect.left;
+      const timelineWidth = timelineRect.width;
       
       // Find all task rows and measure their vertical positions
       const taskRows = ganttContainerRef.current.querySelectorAll('[data-task-id]');
@@ -147,13 +148,21 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
         }
       });
       
-      setTaskRowPositions({ ...newPositions, _timelineOffset: timelineOffset });
+      setTaskRowPositions({ 
+        ...newPositions, 
+        _timelineOffset: timelineOffset,
+        _timelineWidth: timelineWidth
+      });
     };
 
-    measureTaskPositions();
+    // Use a small delay to ensure DOM has updated
+    const timeoutId = setTimeout(measureTaskPositions, 50);
     window.addEventListener('resize', measureTaskPositions);
-    return () => window.removeEventListener('resize', measureTaskPositions);
-  }, [expandedMilestones]); // Re-measure when milestones expand/collapse
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', measureTaskPositions);
+    };
+  }, [expandedMilestones, milestones]); // Re-measure when milestones expand/collapse OR when milestone data changes
 
   const allDates = milestones.flatMap(m => m.tasks.map(t => [parseISO(t.startDate!), parseISO(t.endDate!)] )).flat();
   if (allDates.length === 0) {
@@ -197,8 +206,14 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
 
     // If topOffset is provided, this is rendered in the global overlay
     const isInOverlay = topOffset !== undefined;
-    // Get timeline offset for proper horizontal alignment
+    // Get timeline offset and width for proper horizontal alignment
     const timelineOffset = taskRowPositions._timelineOffset || 0;
+    const timelineWidth = taskRowPositions._timelineWidth || (timelineRef.current?.offsetWidth || 0);
+    
+    // Calculate actual pixel positions for precise alignment
+    const leftPixels = timelineOffset + (position.left * timelineWidth / 100);
+    const widthPixels = position.width * timelineWidth / 100;
+    const showNameInside = widthPixels > 120; // Show name inside if width is greater than 120px
 
     return (
       <div className="relative">
@@ -208,9 +223,9 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
               <div
                 className="absolute h-8 rounded-lg cursor-move flex items-center justify-between shadow-sm border border-white/20 group"
                 style={{
-                  left: isInOverlay ? `${timelineOffset + (position.left * (timelineRef.current?.offsetWidth || 0) / 100)}px` : `${position.left}%`,
-                  width: isInOverlay ? `${(position.width * (timelineRef.current?.offsetWidth || 0) / 100)}px` : `${position.width}%`,
-                  top: isInOverlay ? `${topOffset + 46}px` : undefined, // Center in the task row
+                  left: isInOverlay ? `${leftPixels}px` : `${position.left}%`,
+                  width: isInOverlay ? `${widthPixels}px` : `${position.width}%`,
+                  top: isInOverlay ? `${topOffset + 10}px` : undefined, // Move higher in the task row
                   background: `linear-gradient(135deg, ${teamColor} 0%, ${teamColor}dd 100%)`,
                   minWidth: '30px'
                 }}
@@ -219,12 +234,15 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
                 <div className="w-3 h-full bg-white/30 cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity rounded-l-lg flex items-center justify-center" onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, task.taskId, 'resize-start', taskStart, taskEnd); }}>
                   <div className="w-1 h-4 bg-white/60 rounded-full"></div>
                 </div>
-                <div className="flex-1 px-3 text-white text-sm font-medium truncate flex items-center gap-2">
-                  {dependencyInfo.hasDependencies && (
-                    <svg className="w-3 h-3 flex-shrink-0 opacity-90" fill="currentColor" viewBox="0 0 16 16"><path d="M8 1l3 3h-2v8h-2V4H5l3-3z"/></svg>
-                  )}
-                  <span className="truncate">{task.name}</span>
-                </div>
+                {showNameInside && (
+                  <div className="flex-1 px-3 text-white text-sm font-medium truncate flex items-center gap-2">
+                    {dependencyInfo.hasDependencies && (
+                      <svg className="w-3 h-3 flex-shrink-0 opacity-90" fill="currentColor" viewBox="0 0 16 16"><path d="M8 1l3 3h-2v8h-2V4H5l3-3z"/></svg>
+                    )}
+                    <span className="truncate">{task.name}</span>
+                  </div>
+                )}
+                {!showNameInside && <div className="flex-1"></div>}
                 <button onClick={handleEditClick} className="w-6 h-6 bg-white/30 hover:bg-white/50 rounded cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center mr-1" title="Editar tarea">
                   <Edit className="w-3 h-3 text-white" />
                 </button>
@@ -248,14 +266,28 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
           </Tooltip>
         </TooltipProvider>
 
-        <div className="absolute top-10 z-20 pointer-events-none" style={{ 
-          left: isInOverlay ? `${timelineOffset + (position.left * (timelineRef.current?.offsetWidth || 0) / 100)}px` : `${position.left}%`, 
-          width: isInOverlay ? `${(position.width * (timelineRef.current?.offsetWidth || 0) / 100)}px` : `${position.width}%`,
+        {/* Info section below the task bar - always visible */}
+        <div className="absolute z-20 pointer-events-none" style={{ 
+          left: isInOverlay ? `${leftPixels}px` : `${position.left}%`, 
+          width: isInOverlay ? `${Math.max(widthPixels, 120)}px` : `${position.width}%`,
           minWidth: '120px',
-          top: isInOverlay ? `${topOffset + 56}px` : '40px'
+          top: isInOverlay ? `${topOffset + 28}px` : '30px'
         }}>
-          <div className="text-xs space-y-1">
-            <div className="flex items-center gap-1 text-blue-500"><Calendar className="w-3 h-3 flex-shrink-0" /><span className="text-xs">{format(taskStart, 'dd/MM', { locale: es })} - {format(taskEnd, 'dd/MM', { locale: es })}</span></div>
+          <div className="text-xs space-y-1 bg-white/80 backdrop-blur-sm rounded p-1">
+            {/* Show task name with arrow icon if it doesn't fit inside the bar */}
+            {!showNameInside && (
+              <div className="flex items-center gap-1 text-gray-700 whitespace-nowrap">
+                <svg className="w-3 h-3 flex-shrink-0" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M8 1l3 3h-2v8h-2V4H5l3-3z"/>
+                </svg>
+                <span className="text-xs font-medium">{task.name}</span>
+              </div>
+            )}
+            {/* Always show calendar dates */}
+            <div className="flex items-center gap-1 text-blue-500">
+              <Calendar className="w-3 h-3 flex-shrink-0" />
+              <span className="text-xs">{format(taskStart, 'dd/MM', { locale: es })} - {format(taskEnd, 'dd/MM', { locale: es })}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -333,7 +365,7 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
 
             return (
               <div key={milestone.milestoneId} className="transition-colors duration-200 relative" style={{ borderLeft: `4px solid ${milestoneColor.main}` }}>
-                <div className="flex border-b min-h-[80px] relative z-10" style={{ backgroundColor: milestoneColor.gentle }}>
+                <div className="flex border-b min-h-[60px] relative z-10" style={{ backgroundColor: milestoneColor.gentle }}>
                   <div className="w-80 p-4 border-r bg-background">
                     <button onClick={() => toggleMilestone(milestone.milestoneId)} className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded-lg p-3 transition-colors">
                       {expandedMilestones.has(milestone.milestoneId) ? <ChevronDown className="w-5 h-5 text-primary" /> : <ChevronRight className="w-5 h-5 text-primary" />}
@@ -366,7 +398,7 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
                 </div>
 
                 {expandedMilestones.has(milestone.milestoneId) && milestone.tasks.map((task) => (
-                  <div key={task.taskId} className="flex border-b transition-colors min-h-[100px] relative z-10" style={{ backgroundColor: 'transparent' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = milestoneColor.gentleHover; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }} data-task-id={task.taskId}>
+                  <div key={task.taskId} className="flex border-b transition-colors min-h-[60px] relative z-10" style={{ backgroundColor: 'transparent' }} onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = milestoneColor.gentleHover; }} onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }} data-task-id={task.taskId}>
                     <div className="w-80 p-4 border-r bg-background">
                       <div className="pl-8">
                         <div className="flex items-start gap-3">
@@ -384,7 +416,7 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
                       </div>
                     </div>
 
-                    <div className="flex-1 relative p-2 flex items-center" style={{ minHeight: '100px', backgroundColor: 'transparent' }}>
+                    <div className="flex-1 relative p-2 flex items-center" style={{ minHeight: '60px', backgroundColor: 'transparent' }}>
                       {/* Task bar is now rendered in the global overlay above */}
                     </div>
                   </div>
