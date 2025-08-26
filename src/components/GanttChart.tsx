@@ -73,27 +73,41 @@ export function GanttChart() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <BarChart3 className="w-8 h-8 text-primary" />
-        <div>
-          <h1>Gantt Chart Interactivo</h1>
-          <p className="text-muted-foreground">
-            Gestiona milestones, tareas y dependencias con timeline visual
-          </p>
-        </div>
+      <div 
+        style={{ 
+          position: 'absolute',
+          left: '1%',
+          top: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          width: 'auto',
+          maxWidth: '150px',
+          marginBottom: '24px',
+          zIndex: 10
+        }}
+      >
+        <BarChart3 className="w-6 h-6 text-primary" />
+        <h1 className="text-lg font-semibold whitespace-nowrap">Gantt</h1>
       </div>
+      
+      {/* Spacer para compensar el header absolute */}
+      <div className="h-16"></div>
 
       {/* Importar/Exportar */}
-      <JsonImportExport
+      <div className="w-full">
+        <JsonImportExport
         milestones={milestones}
         onImport={handleImport}
         projectStartDate={projectStartDate}
         onStartDateChange={handleStartDateChange}
-      />
+        />
+      </div>
 
       {/* Project statistics */}
       {milestones.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="w-full">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card className="p-4">
             <div className="flex items-center gap-3">
               <BarChart3 className="w-5 h-5 text-primary" />
@@ -133,12 +147,14 @@ export function GanttChart() {
               </div>
             </div>
           </Card>
+          </div>
         </div>
       )}
 
       {/* Team legend */}
       {milestones.length > 0 && (
-        <Card className="p-4">
+        <div className="w-full">
+          <Card className="p-4">
           <div className="flex items-center justify-between mb-3">
             <h3>Project Teams</h3>
             
@@ -209,7 +225,8 @@ export function GanttChart() {
               </Badge>
             ))}
           </div>
-        </Card>
+          </Card>
+        </div>
       )}
 
       {/* Timeline principal */}

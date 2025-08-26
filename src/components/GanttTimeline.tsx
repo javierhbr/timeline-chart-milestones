@@ -93,8 +93,8 @@ export function GanttTimeline({
     return columns;
   }, [timelineData]);
 
-  // Calculate grid template columns: fixed sidebar + dynamic day columns
-  const gridTemplateColumns = timelineData ? `320px repeat(${timelineData.totalDays}, 1fr)` : '320px 1fr';
+  // Calculate grid template columns: 10% fixed sidebar + 90% dynamic timeline
+  const gridTemplateColumns = '10vw 90vw';
   // Palette for milestone colors
   const milestoneColors = [
     { main: '#fb923c', secondary: '#ea580c', gentle: 'rgba(251,146,60,0.08)', gentleHover: 'rgba(251,146,60,0.12)' },
@@ -311,7 +311,7 @@ export function GanttTimeline({
 
   return (
     <>
-      <div className="w-[95vw] mx-0">
+      <div className="w-[90vw]">
         <Card className="overflow-hidden">
           <div className="border-b bg-yellow-50 p-2 text-xs">
             <div className="flex gap-4">
@@ -330,54 +330,60 @@ export function GanttTimeline({
               <thead>
                 <tr>
                   {/* Fixed Header Column */}
-                  <th className="w-80 bg-muted/50 border-r sticky left-0 z-20">
+                  <th className="bg-muted/50 border-r sticky left-0 z-20" style={{width: '10vw'}}>
                     <div className="p-4 text-left">
                       <h3 className="text-lg font-semibold">Milestones and Tasks</h3>
                       <p className="text-sm text-muted-foreground mt-1">Project hierarchical organization</p>
                     </div>
                   </th>
                   
-                  {/* Day Headers - one column per day */}
-                  {dayColumns.map((day, index) => (
-                    <th 
-                      key={`day-${index}`}
-                      className={`bg-muted/50 px-1 py-2 text-center relative w-8 min-w-[32px] text-xs ${day.isWeekStart ? 'border-l-2 border-l-blue-500' : ''}`}
-                    >
-                      {/* Show week label only on first day of week */}
-                      {day.isWeekStart && (
-                        <div className="text-[10px] font-medium">
-                          Sem {day.weekNumber + 1}
-                        </div>
-                      )}
-                      <div className="text-[8px] text-muted-foreground">
-                        {format(day.date, 'dd', { locale: es })}
-                      </div>
-                      
-                      {/* Deliverable markers for this specific day */}
-                      {deliverableMarkers
-                        .filter(marker => {
-                          const markerDay = differenceInDays(marker.date, timelineStart);
-                          return markerDay === index;
-                        })
-                        .map((marker, markerIndex) => (
+                  {/* Timeline Header - single column with scrollable content */}
+                  <th className="bg-muted/50 relative" style={{width: '90vw'}}>
+                    <div className="overflow-x-auto">
+                      <div className="flex" style={{width: `${dayColumns.length * 32}px`}}>
+                        {dayColumns.map((day, index) => (
                           <div 
-                            key={`deliverable-${index}-${markerIndex}`} 
-                            className="absolute top-0 left-1/2 transform -translate-x-1/2 flex flex-col items-center z-30 pointer-events-none" 
+                            key={`day-${index}`}
+                            className={`px-1 py-2 text-center relative w-8 min-w-[32px] text-xs flex-shrink-0 ${day.isWeekStart ? 'border-l-2 border-l-blue-500' : ''}`}
                           >
-                            <div className="flex flex-col items-center">
-                              <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[8px] border-t-red-600 drop-shadow-sm"></div>
-                              <div className="w-0.5 h-12 bg-red-600"></div>
+                            {/* Show week label only on first day of week */}
+                            {day.isWeekStart && (
+                              <div className="text-[10px] font-medium">
+                                Sem {day.weekNumber + 1}
+                              </div>
+                            )}
+                            <div className="text-[8px] text-muted-foreground">
+                              {format(day.date, 'dd', { locale: es })}
                             </div>
-                            <div className="absolute top-6 bg-white border border-gray-300 rounded-md px-1 py-0.5 text-[10px] whitespace-nowrap shadow-lg opacity-0 hover:opacity-100 transition-opacity pointer-events-auto z-40">
-                              <div className="font-medium text-gray-900">Deliverable</div>
-                              <div className="text-gray-600 text-[8px]">{marker.name}</div>
-                              <div className="text-gray-500 text-[8px]">{format(marker.date, 'd MMM yyyy', { locale: es })}</div>
-                            </div>
+                            
+                            {/* Deliverable markers for this specific day */}
+                            {deliverableMarkers
+                              .filter(marker => {
+                                const markerDay = differenceInDays(marker.date, timelineStart);
+                                return markerDay === index;
+                              })
+                              .map((marker, markerIndex) => (
+                                <div 
+                                  key={`deliverable-${index}-${markerIndex}`} 
+                                  className="absolute top-0 left-1/2 transform -translate-x-1/2 flex flex-col items-center z-30 pointer-events-none" 
+                                >
+                                  <div className="flex flex-col items-center">
+                                    <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[8px] border-t-red-600 drop-shadow-sm"></div>
+                                    <div className="w-0.5 h-12 bg-red-600"></div>
+                                  </div>
+                                  <div className="absolute top-6 bg-white border border-gray-300 rounded-md px-1 py-0.5 text-[10px] whitespace-nowrap shadow-lg opacity-0 hover:opacity-100 transition-opacity pointer-events-auto z-40">
+                                    <div className="font-medium text-gray-900">Deliverable</div>
+                                    <div className="text-gray-600 text-[8px]">{marker.name}</div>
+                                    <div className="text-gray-500 text-[8px]">{format(marker.date, 'd MMM yyyy', { locale: es })}</div>
+                                  </div>
+                                </div>
+                              ))
+                            }
                           </div>
-                        ))
-                      }
-                    </th>
-                  ))}
+                        ))}
+                      </div>
+                    </div>
+                  </th>
                 </tr>
               </thead>
 
@@ -400,7 +406,7 @@ export function GanttTimeline({
                         }}
                       >
                         {/* Milestone Info Cell */}
-                        <td className="w-80 border-r bg-background sticky left-0 z-10">
+                        <td className="border-r bg-background sticky left-0 z-10" style={{width: '10vw'}}>
                           <div className="p-4">
                             <button 
                               onClick={() => toggleMilestone(milestone.milestoneId)} 
@@ -423,37 +429,30 @@ export function GanttTimeline({
                           </div>
                         </td>
 
-                        {/* Milestone Timeline Cells */}
-                        {dayColumns.map((day, dayIndex) => {
-                          const isFirstDay = dayIndex === milestoneStartDay;
-                          
-                          return (
-                            <td 
-                              key={`milestone-${milestone.milestoneId}-day-${dayIndex}`}
-                              className="p-0 h-[60px] relative w-8 min-w-[32px]"
-                            >
-                              {isFirstDay && (
-                                <div 
-                                  className="absolute inset-y-1 rounded-lg shadow-lg border-2 border-white/40 overflow-hidden z-10 flex items-center px-2" 
-                                  style={{ 
-                                    left: '2px',
-                                    width: `${milestoneDurationDays * 32 - 4}px`,
-                                    background: `linear-gradient(135deg, ${milestoneColor.main} 0%, ${milestoneColor.secondary} 100%)`,
-                                    minWidth: '60px',
-                                    maxWidth: `${milestoneDurationDays * 32 - 4}px`
-                                  }}
-                                >
-                                  <div className="flex items-center gap-2 text-white">
-                                    <span className="text-sm font-bold truncate">{milestone.milestoneName}</span>
-                                  </div>
-                                  <div className="absolute inset-0 bg-gradient-to-r from-white/15 to-transparent rounded-lg"></div>
-                                  <div className="absolute left-0 top-0 w-1 h-full bg-white/40 rounded-l-lg"></div>
-                                  <div className="absolute right-0 top-0 w-1 h-full bg-white/40 rounded-r-lg"></div>
+                        {/* Milestone Timeline Cell */}
+                        <td className="p-0 h-[60px] relative" style={{width: '90vw'}}>
+                          <div className="overflow-x-auto h-full relative">
+                            <div className="h-full relative" style={{width: `${dayColumns.length * 32}px`, minHeight: '60px'}}>
+                              <div 
+                                className="absolute inset-y-1 rounded-lg shadow-lg border-2 border-white/40 overflow-hidden z-10 flex items-center px-2" 
+                                style={{ 
+                                  left: `${milestoneStartDay * 32 + 2}px`,
+                                  width: `${milestoneDurationDays * 32 - 4}px`,
+                                  background: `linear-gradient(135deg, ${milestoneColor.main} 0%, ${milestoneColor.secondary} 100%)`,
+                                  minWidth: '60px',
+                                  height: '56px'
+                                }}
+                              >
+                                <div className="flex items-center gap-2 text-white">
+                                  <span className="text-sm font-bold truncate">{milestone.milestoneName}</span>
                                 </div>
-                              )}
-                            </td>
-                          );
-                        })}
+                                <div className="absolute inset-0 bg-gradient-to-r from-white/15 to-transparent rounded-lg"></div>
+                                <div className="absolute left-0 top-0 w-1 h-full bg-white/40 rounded-l-lg"></div>
+                                <div className="absolute right-0 top-0 w-1 h-full bg-white/40 rounded-r-lg"></div>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
                       </tr>
 
                       {/* Task Rows */}
@@ -472,7 +471,7 @@ export function GanttTimeline({
                             data-task-id={task.taskId}
                           >
                             {/* Task Info Cell */}
-                            <td className="w-80 border-r bg-background sticky left-0 z-10">
+                            <td className="border-r bg-background sticky left-0 z-10" style={{width: '10vw'}}>
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -527,49 +526,38 @@ export function GanttTimeline({
                               </TooltipProvider>
                             </td>
 
-                            {/* Task Timeline Cells */}
-                            {dayColumns.map((day, dayIndex) => {
-                              const isFirstDay = dayIndex === taskStartDay;
-                              const isTaskBarDay = dayIndex >= taskStartDay && dayIndex < taskStartDay + taskDurationDays;
-                              
-                              return (
-                                <td 
-                                  key={`task-${task.taskId}-day-${dayIndex}`}
-                                  className="p-0 h-[32px] relative w-8 min-w-[32px]"
-                                  style={{ backgroundColor: milestoneColor.gentle }}
-                                >
-                                  {isFirstDay && (
-                                    <>
-                                      {/* Draggable Task Bar */}
-                                      <div 
-                                        className="absolute inset-y-1 z-10 flex items-center transition-all duration-300" 
-                                        style={{ 
-                                          left: '2px',
-                                          width: `${Math.min(taskDurationDays * 32 - 4, (dayColumns.length - dayIndex) * 32 - 4)}px`,
-                                          minWidth: `${Math.min(30, (dayColumns.length - dayIndex) * 32 - 4)}px`
-                                        }}
-                                      >
-                                        <TaskBar task={task} />
-                                      </div>
-                                      
-                                      {/* Task name and dates to the right */}
-                                      <div 
-                                        className="absolute top-1/2 -translate-y-1/2 z-5 flex items-center gap-2 text-xs whitespace-nowrap pointer-events-none"
-                                        style={{ 
-                                          left: `${Math.min(taskDurationDays * 32, (dayColumns.length - dayIndex) * 32) + 8}px`
-                                        }}
-                                      >
-                                        <span className="font-medium text-gray-700">{task.name}</span>
-                                        <span className="text-blue-600 text-xs">
-                                          {format(taskStart, 'dd/MM', { locale: es })} - {format(taskEnd, 'dd/MM', { locale: es })}
-                                        </span>
-                                      </div>
-                                      
-                                    </>
-                                  )}
-                                </td>
-                              );
-                            })}
+                            {/* Task Timeline Cell */}
+                            <td className="p-0 h-[32px] relative" style={{width: '90vw', backgroundColor: milestoneColor.gentle}}>
+                              <div className="overflow-x-auto h-full relative">
+                                <div className="h-full relative" style={{width: `${dayColumns.length * 32}px`, minHeight: '32px'}}>
+                                  {/* Draggable Task Bar */}
+                                  <div 
+                                    className="absolute inset-y-1 z-10 flex items-center transition-all duration-300" 
+                                    style={{ 
+                                      left: `${taskStartDay * 32 + 2}px`,
+                                      width: `${taskDurationDays * 32 - 4}px`,
+                                      minWidth: '30px',
+                                      height: '28px'
+                                    }}
+                                  >
+                                    <TaskBar task={task} />
+                                  </div>
+                                  
+                                  {/* Task name and dates to the right */}
+                                  <div 
+                                    className="absolute top-1/2 -translate-y-1/2 z-5 flex items-center gap-2 text-xs whitespace-nowrap pointer-events-none"
+                                    style={{ 
+                                      left: `${taskStartDay * 32 + taskDurationDays * 32 + 8}px`
+                                    }}
+                                  >
+                                    <span className="font-medium text-gray-700">{task.name}</span>
+                                    <span className="text-blue-600 text-xs">
+                                      {format(taskStart, 'dd/MM', { locale: es })} - {format(taskEnd, 'dd/MM', { locale: es })}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
                           </tr>
                         );
                       })}
