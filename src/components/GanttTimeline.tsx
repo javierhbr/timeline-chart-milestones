@@ -137,6 +137,7 @@ export function GanttTimeline({
   const milestoneColors = [
     { main: '#fb923c', secondary: '#ea580c', gentle: 'rgba(251,146,60,0.08)', gentleHover: 'rgba(251,146,60,0.12)' },
     { main: '#22d3ee', secondary: '#0891b2', gentle: 'rgba(34,211,238,0.08)', gentleHover: 'rgba(34,211,238,0.12)' },
+    
     { main: '#8b5cf6', secondary: '#7c3aed', gentle: 'rgba(139,92,246,0.08)', gentleHover: 'rgba(139,92,246,0.12)' },
     { main: '#10b981', secondary: '#059669', gentle: 'rgba(16,185,129,0.08)', gentleHover: 'rgba(16,185,129,0.12)' },
     { main: '#f59e0b', secondary: '#d97706', gentle: 'rgba(245,158,11,0.08)', gentleHover: 'rgba(245,158,11,0.12)' },
@@ -426,14 +427,14 @@ export function GanttTimeline({
 
           {/* Unified Table with Fixed First Column */}
           <div className="relative overflow-x-auto" ref={ganttContainerRef} style={{ position: 'relative' }}>
-            <table className="border-collapse w-full" style={{ minWidth: `calc(${gridNameColumns} + ${dayColumns.length * zoomLevel}px)` }}>
+            <table className="border-collapse" style={{ width: `calc(${gridNameColumns} + ${dayColumns.length * zoomLevel}px)` }}>
               {/* Table Header */}
               <thead>
                 <tr>
                   {/* Fixed Header Column */}
                   <th 
                     className="bg-muted/50 border-r sticky left-0 z-30 shadow-lg" 
-                    style={{width: gridNameColumns, position: 'sticky', left: 0}}
+                    style={{width: gridNameColumns, minWidth: gridNameColumns, maxWidth: gridNameColumns, position: 'sticky', left: 0}}
                   >
                     <div className="p-4 text-left bg-muted/50">
                       <h3 className="text-lg font-semibold">Milestones and Tasks</h3>
@@ -573,7 +574,7 @@ export function GanttTimeline({
                         {/* Milestone Info Cell */}
                         <td 
                           className="border-r bg-background sticky left-0 z-20 shadow-lg" 
-                          style={{width: gridNameColumns, position: 'sticky', left: 0}}
+                          style={{width: gridNameColumns, minWidth: gridNameColumns, maxWidth: gridNameColumns, position: 'sticky', left: 0}}
                         >
                           <div className="p-2">
                             <button 
@@ -639,7 +640,7 @@ export function GanttTimeline({
                             {/* Task Info Cell */}
                             <td 
                               className="border-r bg-background sticky left-0 z-20 shadow-lg" 
-                              style={{width: gridNameColumns, position: 'sticky', left: 0}}
+                              style={{width: gridNameColumns, minWidth: gridNameColumns, maxWidth: gridNameColumns, position: 'sticky', left: 0}}
                             >
                               <TooltipProvider>
                                 <Tooltip>
