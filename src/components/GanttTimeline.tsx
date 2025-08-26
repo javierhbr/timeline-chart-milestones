@@ -124,8 +124,11 @@ export function GanttTimeline({
     return columns;
   }, [timelineData]);
 
-  // Calculate grid template columns: 10% fixed sidebar + 90% dynamic timeline
-  const gridTemplateColumns = '10vw 90vw';
+  // Column width variables
+  const gridNameColumns = '10vw';
+  const gridTimeBoxColumns = '90vw';
+  const gridTemplateColumns = `${gridNameColumns} ${gridTimeBoxColumns}`;
+  
   // Palette for milestone colors
   const milestoneColors = [
     { main: '#fb923c', secondary: '#ea580c', gentle: 'rgba(251,146,60,0.08)', gentleHover: 'rgba(251,146,60,0.12)' },
@@ -342,7 +345,7 @@ export function GanttTimeline({
 
   return (
     <>
-      <div className="w-[90vw]">
+      <div className="w-full">
         {/* Zoom Controls */}
         <div className="flex items-center gap-2 mb-4 p-2 bg-muted/30 rounded-lg">
           <span className="text-sm font-medium mr-2">Zoom:</span>
@@ -393,12 +396,12 @@ export function GanttTimeline({
 
           {/* Unified Table with Fixed First Column */}
           <div className="overflow-x-auto" ref={ganttContainerRef}>
-            <table className="w-full border-collapse">
+            <table className="border-collapse" style={{ width: `calc(${gridNameColumns} + ${dayColumns.length * zoomLevel}px)`, minWidth: '100%' }}>
               {/* Table Header */}
               <thead>
                 <tr>
                   {/* Fixed Header Column */}
-                  <th className="bg-muted/50 border-r sticky left-0 z-20" style={{width: '10vw'}}>
+                  <th className="bg-muted/50 border-r sticky left-0 z-20" style={{width: gridNameColumns}}>
                     <div className="p-4 text-left">
                       <h3 className="text-lg font-semibold">Milestones and Tasks</h3>
                       <p className="text-sm text-muted-foreground mt-1">Project hierarchical organization</p>
@@ -406,7 +409,7 @@ export function GanttTimeline({
                   </th>
                   
                   {/* Timeline Header - monthly and weekly view */}
-                  <th className="bg-muted/50 relative" style={{width: '90vw'}}>
+                  <th className="bg-muted/50 relative" style={{width: `${dayColumns.length * zoomLevel}px`}}>
                     <div className="overflow-x-auto">
                       <div className="flex flex-col" style={{width: `${dayColumns.length * zoomLevel}px`}}>
                         {/* Month Header Row */}
@@ -537,11 +540,11 @@ export function GanttTimeline({
                         }}
                       >
                         {/* Milestone Info Cell */}
-                        <td className="border-r bg-background sticky left-0 z-10" style={{width: '10vw'}}>
+                        <td className="border-r bg-background sticky left-0 z-10" style={{width: gridNameColumns}}>
                           <div className="p-2">
                             <button 
                               onClick={() => toggleMilestone(milestone.milestoneId)} 
-                              className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded-lg p-2 transition-colors"
+                              className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded-lg p-3 transition-colors h-[44px]"
                             >
                               {expandedMilestones.has(milestone.milestoneId) ? 
                                 <ChevronDown className="w-5 h-5 text-primary" /> : 
@@ -550,10 +553,7 @@ export function GanttTimeline({
                               <div>
                                 <div className="font-semibold text-base">{milestone.milestoneName}</div>
                                 <div className="text-sm text-muted-foreground mt-1">
-                                  {format(milestoneDates.startDate, 'dd/MM', { locale: es })} - {format(milestoneDates.endDate, 'dd/MM', { locale: es })}
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                  {milestone.tasks.length} task{milestone.tasks.length !== 1 ? 's' : ''}
+                                  {format(milestoneDates.startDate, 'dd/MM', { locale: es })} - {format(milestoneDates.endDate, 'dd/MM', { locale: es })} • {milestone.tasks.length} task{milestone.tasks.length !== 1 ? 's' : ''}
                                 </div>
                               </div>
                             </button>
@@ -561,7 +561,7 @@ export function GanttTimeline({
                         </td>
 
                         {/* Milestone Timeline Cell */}
-                        <td className="p-0 h-[40px] relative" style={{width: '90vw'}}>
+                        <td className="p-0 h-[40px] relative" style={{width: `${dayColumns.length * zoomLevel}px`}}>
                           <div className="overflow-x-auto h-full relative">
                             <div className="h-full relative" style={{width: `${dayColumns.length * zoomLevel}px`, minHeight: '40px'}}>
                               <div 
@@ -601,7 +601,7 @@ export function GanttTimeline({
                             data-task-id={task.taskId}
                           >
                             {/* Task Info Cell */}
-                            <td className="border-r bg-background sticky left-0 z-10" style={{width: '10vw'}}>
+                            <td className="border-r bg-background sticky left-0 z-10" style={{width: gridNameColumns}}>
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
@@ -657,7 +657,7 @@ export function GanttTimeline({
                             </td>
 
                             {/* Task Timeline Cell */}
-                            <td className="p-0 h-[32px] relative" style={{width: '90vw', backgroundColor: milestoneColor.gentle}}>
+                            <td className="p-0 h-[32px] relative" style={{width: `${dayColumns.length * zoomLevel}px`, backgroundColor: milestoneColor.gentle}}>
                               <div className="overflow-x-auto h-full relative">
                                 <div className="h-full relative" style={{width: `${dayColumns.length * zoomLevel}px`, minHeight: '32px'}}>
                                   {/* Draggable Task Bar */}
