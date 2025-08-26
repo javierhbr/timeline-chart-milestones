@@ -13,7 +13,7 @@ A modern, interactive Gantt chart application for project timeline visualization
 - **Interactive Gantt Chart**: Drag-and-drop timeline visualization
 - **Hierarchical Tasks**: Organize tasks in parent-child relationships
 - **Milestone Tracking**: Visual milestone markers with team assignments
-- **Multiple View Modes**: Switch between daily, weekly, and monthly views
+- **Interactive Timeline**: Drag-and-drop interface with zoom controls
 - **Team Management**: Color-coded team assignments and filtering
 
 ### Data Management
@@ -69,9 +69,7 @@ A modern, interactive Gantt chart application for project timeline visualization
 ```
 src/
 ├── components/
-│   ├── GanttChart.tsx          # Main chart container
 │   ├── GanttTimeline.tsx       # Interactive timeline component
-│   ├── MonthlyGanttTimeline.tsx # Monthly view timeline
 │   ├── TaskEditModal.tsx       # Task editing interface
 │   ├── JsonImportExport.tsx    # Data import/export functionality
 │   └── ui/                     # Reusable UI components
@@ -79,7 +77,7 @@ src/
 │   └── dateUtils.ts           # Date manipulation utilities
 ├── styles/
 │   └── globals.css            # Global styles
-└── App.tsx                    # Main application component
+└── App.tsx                    # Main application component & chart container
 ```
 
 ## 🎯 Usage Guide
@@ -104,7 +102,7 @@ src/
 ### Timeline Interaction
 - **Drag Tasks**: Click and drag to move task dates
 - **Resize Tasks**: Drag task edges to adjust duration
-- **Zoom**: Use view mode buttons (Daily/Weekly/Monthly)
+- **Zoom**: Use zoom controls to adjust timeline granularity
 - **Filter**: Toggle team visibility in the legend
 
 ## 📊 Data Format

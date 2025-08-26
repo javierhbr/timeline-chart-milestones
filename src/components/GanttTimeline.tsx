@@ -442,7 +442,7 @@ export function GanttTimeline({
                     </div>
                   </th>
                   
-                  {/* Timeline Header - monthly and weekly view */}
+                  {/* Timeline Header */}
                   <th className="bg-muted/50 relative" style={{width: `${dayColumns.length * zoomLevel}px`}}>
                     <div className="flex flex-col">
                       {/* Month Header Row */}
