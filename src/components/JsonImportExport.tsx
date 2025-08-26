@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card } from './ui/card';
-import { Upload, Download, Calendar, Info } from 'lucide-react';
+import { Upload, Download, Calendar, Info, X } from 'lucide-react';
 import { Milestone } from '../utils/dateUtils';
 
 interface JsonImportExportProps {
@@ -291,16 +291,14 @@ export function JsonImportExport({
             Load Example
           </Button>
           
-          {milestones.length > 0 && (
-            <Button 
-              onClick={() => setShowInstructions(!showInstructions)}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <Info className="w-4 h-4" />
-              {showInstructions ? 'Hide' : 'Show'} File Format
-            </Button>
-          )}
+          <Button 
+            onClick={() => setShowInstructions(!showInstructions)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Info className="w-4 h-4" />
+            {showInstructions ? 'Hide' : 'Show'} File Format
+          </Button>
         </div>
       </div>
       
@@ -322,10 +320,20 @@ export function JsonImportExport({
         </div>
       )}
       
-      {showInstructions && milestones.length > 0 && (
+      {showInstructions && (
         <div className="mt-4">
           <div className="p-4 bg-muted rounded-lg">
-            <h3 className="font-semibold mb-4">📋 File Format Guide & Attribute Relationships</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">📋 File Format Guide & Attribute Relationships</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowInstructions(false)}
+                className="h-8 w-8 p-0 hover:bg-muted-foreground/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
             
             <div className="space-y-6">
               {/* Overview Section */}
