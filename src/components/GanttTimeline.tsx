@@ -168,7 +168,7 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
   if (allDates.length === 0) {
     return (
       <Card className="p-8 text-center">
-        <p className="text-muted-foreground">No hay tareas para mostrar en el timeline</p>
+        <p className="text-muted-foreground">No tasks to display in the timeline</p>
       </Card>
     );
   }
@@ -243,7 +243,7 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
                   </div>
                 )}
                 {!showNameInside && <div className="flex-1"></div>}
-                <button onClick={handleEditClick} className="w-6 h-6 bg-white/30 hover:bg-white/50 rounded cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center mr-1" title="Editar tarea">
+                <button onClick={handleEditClick} className="w-6 h-6 bg-white/30 hover:bg-white/50 rounded cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center mr-1" title="Edit task">
                   <Edit className="w-3 h-3 text-white" />
                 </button>
                 <div className="w-3 h-full bg-white/30 cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity rounded-r-lg flex items-center justify-center" onMouseDown={(e) => { e.stopPropagation(); handleMouseDown(e, task.taskId, 'resize-end', taskStart, taskEnd); }}>
@@ -257,7 +257,7 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
                 <div className="text-sm text-muted-foreground">{task.description}</div>
                 <div className="flex items-center gap-4 text-sm">
                   <div className="flex items-center gap-1"><Users className="w-3 h-3" /><Badge variant="outline" style={{ borderColor: teamColor, color: teamColor }}>{task.team}</Badge></div>
-                  <div className="flex items-center gap-1"><Clock className="w-3 h-3" /><span className="text-xs">{task.durationDays} días</span></div>
+                  <div className="flex items-center gap-1"><Clock className="w-3 h-3" /><span className="text-xs">{task.durationDays} days</span></div>
                 </div>
                 {task.sprint && <div className="flex items-center gap-1 text-sm"><Zap className="w-3 h-3" /><Badge variant="secondary">{task.sprint}</Badge></div>}
                 <div className="flex items-center gap-1 text-sm"><Calendar className="w-3 h-3" />{format(taskStart, 'dd/MM/yyyy', { locale: es })} - {format(taskEnd, 'dd/MM/yyyy', { locale: es })}</div>
@@ -309,14 +309,14 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
           <div className="flex">
             <div className="w-80 border-r bg-background">
               <div className="p-6 border-b">
-                <h3 className="text-lg font-semibold">Milestones y Tareas</h3>
-                <p className="text-sm text-muted-foreground mt-1">Organización jerárquica del proyecto</p>
+                <h3 className="text-lg font-semibold">Milestones and Tasks</h3>
+                <p className="text-sm text-muted-foreground mt-1">Project hierarchical organization</p>
               </div>
             </div>
             <div className="flex-1 p-6">
               <div className="mb-2">
-                <h3 className="text-lg font-semibold">Timeline del Proyecto</h3>
-                <p className="text-sm text-muted-foreground">Distribución temporal por semanas</p>
+                <h3 className="text-lg font-semibold">Project Timeline</h3>
+                <p className="text-sm text-muted-foreground">Weekly time distribution</p>
               </div>
               <div className="flex bg-background/50 rounded-lg p-2 relative" ref={timelineRef}>
                 {weeks.map((week, index) => (
@@ -372,7 +372,7 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
                       <div>
                         <div className="font-semibold text-base">{milestone.milestoneName}</div>
                         <div className="text-sm text-muted-foreground mt-1">{format(milestoneDates.startDate, 'dd/MM', { locale: es })} - {format(milestoneDates.endDate, 'dd/MM', { locale: es })}</div>
-                        <div className="text-xs text-muted-foreground">{milestone.tasks.length} tarea{milestone.tasks.length !== 1 ? 's' : ''}</div>
+                        <div className="text-xs text-muted-foreground">{milestone.tasks.length} task{milestone.tasks.length !== 1 ? 's' : ''}</div>
                       </div>
                     </button>
                   </div>
@@ -408,7 +408,7 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
                               <Badge variant="outline" style={{ borderColor: teamColors[task.team] || teamColors.Default, color: teamColors[task.team] || teamColors.Default }} className="text-xs">
                                 {task.team}
                               </Badge>
-                              <span className="text-xs text-muted-foreground">{task.durationDays} días</span>
+                              <span className="text-xs text-muted-foreground">{task.durationDays} days</span>
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">{task.description}</div>
                           </div>
@@ -426,7 +426,7 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
           })}
         </div>
 
-        {milestones.length === 0 && <div className="p-8 text-center text-muted-foreground">Importa un proyecto para ver el timeline</div>}
+        {milestones.length === 0 && <div className="p-8 text-center text-muted-foreground">Import a project to view the timeline</div>}
       </Card>
 
       <TaskEditModal task={editingTask} isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} onSave={onUpdateTask} />

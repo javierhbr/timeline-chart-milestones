@@ -38,7 +38,7 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Actualizar formulario cuando cambie la tarea
+  // Update form when task changes
   useEffect(() => {
     if (task) {
       setFormData({
@@ -56,19 +56,19 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = 'El nombre es requerido';
+      newErrors.name = 'Name is required';
     }
 
     if (!formData.team) {
-      newErrors.team = 'El equipo es requerido';
+      newErrors.team = 'Team is required';
     }
 
     if (formData.durationDays < 1) {
-      newErrors.durationDays = 'La duración debe ser al menos 1 día';
+      newErrors.durationDays = 'Duration must be at least 1 day';
     }
 
     if (formData.durationDays > 365) {
-      newErrors.durationDays = 'La duración no puede exceder 365 días';
+      newErrors.durationDays = 'Duration cannot exceed 365 days';
     }
 
     setErrors(newErrors);
@@ -93,7 +93,7 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
   const handleFieldChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     
-    // Limpiar error del campo cuando se modifica
+    // Clear field error when modified
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -120,21 +120,18 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div 
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: teamColor }}
-            />
-            Editar Tarea
+            <Calendar className="w-5 h-5" />
+            Edit Task
           </DialogTitle>
         </DialogHeader>
-
+        
         <div className="space-y-4">
-          {/* Información de fechas (solo lectura) */}
+          {/* Date information (read-only) */}
           {task.startDate && task.endDate && (
             <div className="p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <Calendar className="w-4 h-4" />
-                Fechas del proyecto
+                Project dates
               </div>
               <div className="text-sm">
                 {format(parseISO(task.startDate), 'dd/MM/yyyy', { locale: es })} - {format(parseISO(task.endDate), 'dd/MM/yyyy', { locale: es })}
@@ -142,14 +139,14 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
             </div>
           )}
 
-          {/* Nombre de la tarea */}
+          {/* Task name */}
           <div className="space-y-2">
-            <Label htmlFor="taskName">Nombre de la tarea *</Label>
+            <Label htmlFor="taskName">Task name *</Label>
             <Input
               id="taskName"
               value={formData.name}
               onChange={(e) => handleFieldChange('name', e.target.value)}
-              placeholder="Ej: Crear wireframes iniciales"
+              placeholder="E.g.: Create initial wireframes"
               className={errors.name ? 'border-destructive' : ''}
             />
             {errors.name && (
@@ -157,48 +154,32 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
             )}
           </div>
 
-          {/* Descripción */}
+          {/* Description */}
           <div className="space-y-2">
-            <Label htmlFor="taskDescription">Descripción</Label>
+            <Label htmlFor="taskDescription">Description</Label>
             <Textarea
               id="taskDescription"
               value={formData.description}
-              onChange={(e) => handleFieldChange('description', e.target.value)}
-              placeholder="Descripción detallada de la tarea..."
-              rows={3}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Detailed task description..."
+              className="min-h-[100px]"
             />
           </div>
 
-          {/* Equipo */}
+          {/* Team */}
           <div className="space-y-2">
-            <Label>Equipo asignado *</Label>
+            <Label>Assigned team *</Label>
             <Select
               value={formData.team}
-              onValueChange={(value) => handleFieldChange('team', value)}
+              onValueChange={(value) => setFormData({ ...formData, team: value })}
             >
-              <SelectTrigger className={errors.team ? 'border-destructive' : ''}>
-                <SelectValue placeholder="Seleccionar equipo">
-                  {formData.team && (
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: teamColors[formData.team] || teamColors.Default }}
-                      />
-                      {formData.team}
-                    </div>
-                  )}
-                </SelectValue>
+              <SelectTrigger className={errors.team ? 'border-red-500' : ''}>
+                <SelectValue placeholder="Select team" />
               </SelectTrigger>
               <SelectContent>
                 {availableTeams.map((team) => (
                   <SelectItem key={team} value={team}>
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className="w-2 h-2 rounded-full"
-                        style={{ backgroundColor: teamColors[team] || teamColors.Default }}
-                      />
-                      {team}
-                    </div>
+                    {team}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -212,19 +193,17 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
           <div className="space-y-2">
             <Label className="flex items-center gap-2">
               <Zap className="w-4 h-4" />
-              Sprint asignado
+              Assigned sprint
             </Label>
             <Select
               value={formData.sprint}
               onValueChange={(value) => handleFieldChange('sprint', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Seleccionar sprint (opcional)">
-                  {formData.sprint && formData.sprint}
-                </SelectValue>
+                <SelectValue placeholder="Select sprint (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sin sprint asignado</SelectItem>
+                <SelectItem value="">No sprint assigned</SelectItem>
                 {availableSprints.map((sprint) => (
                   <SelectItem key={sprint} value={sprint}>
                     {sprint}
@@ -234,11 +213,11 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
             </Select>
           </div>
 
-          {/* Duración */}
+          {/* Duration */}
           <div className="space-y-2">
             <Label htmlFor="duration" className="flex items-center gap-2">
               <Clock className="w-4 h-4" />
-              Duración en días laborables *
+              Duration in working days *
             </Label>
             <div className="flex items-center gap-2">
               <Input
@@ -250,17 +229,17 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
                 onChange={handleDurationChange}
                 className={`w-24 ${errors.durationDays ? 'border-destructive' : ''}`}
               />
-              <span className="text-sm text-muted-foreground">días</span>
+              <span className="text-sm text-muted-foreground">days</span>
             </div>
             {errors.durationDays && (
               <p className="text-sm text-destructive">{errors.durationDays}</p>
             )}
             <p className="text-xs text-muted-foreground">
-              No incluye fines de semana en el cálculo
+              Excludes weekends from calculation
             </p>
           </div>
 
-          {/* Badges del equipo y sprint actuales */}
+          {/* Team and sprint badges */}
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1">
               <Users className="w-4 h-4 text-muted-foreground" />
@@ -271,7 +250,7 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
                   color: teamColors[formData.team] || teamColors.Default 
                 }}
               >
-                {formData.team || 'Sin equipo'}
+                {formData.team || 'No team'}
               </Badge>
             </div>
             {formData.sprint && (
@@ -285,14 +264,14 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
           </div>
         </div>
 
-        {/* Botones de acción */}
+        {/* Action buttons */}
         <div className="flex gap-2 pt-4">
           <Button 
             onClick={handleSave}
             className="flex-1 flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
-            Guardar cambios
+            Save changes
           </Button>
           <Button 
             variant="outline" 
@@ -300,7 +279,7 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
             className="flex items-center gap-2"
           >
             <X className="w-4 h-4" />
-            Cancelar
+            Cancel
           </Button>
         </div>
       </DialogContent>

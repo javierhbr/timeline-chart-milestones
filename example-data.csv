@@ -1,0 +1,9 @@
+milestoneId,milestoneName,taskId,taskName,taskDescription,team,sprint,durationDays,dependsOn
+M1,UI Design,T1,Wireframes,Create initial wireframes,UX,Sprint 1,4,
+M1,UI Design,T2,Mockups,Mockups in Figma,UI,Sprint 1,5,T1
+M1,UI Design,T3,Client Review,Client feedback,PM,Sprint 2,3,T1
+M2,Frontend Development,T4,Project Setup,Initial React configuration,Frontend,Sprint 2,2,T2
+M2,Frontend Development,T5,UI Components,Component development,Frontend,Sprint 3,8,T4
+M2,Frontend Development,T6,API Integration,Connect with backend,Frontend,Sprint 4,5,T5
+M3,Testing,T7,Unit Tests,Automated tests,QA,Sprint 4,4,T6
+M3,Testing,T8,Integration Tests,End-to-end testing,QA,Sprint 5,3,T7
