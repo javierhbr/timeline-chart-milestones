@@ -5,7 +5,7 @@ import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { Milestone, Task, calculateProjectDates, teamColors } from './utils/dateUtils';
-import { BarChart3, Calendar, Users, Clock } from 'lucide-react';
+import { BarChart3, Calendar, Users, Clock, BarChart } from 'lucide-react';
 
 export default function App() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -73,20 +73,20 @@ export default function App() {
               top: '20px',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '10px',
               width: 'auto',
-              maxWidth: '150px',
+              maxWidth: '300px',
               marginBottom: '24px',
               zIndex: 10
             }}
           >
-            <BarChart3 className="w-6 h-6 text-primary" />
-            <h1 className="text-lg font-semibold whitespace-nowrap">Gantt</h1>
+            <BarChart className="w-6 h-6 text-blue-600" style={{ minWidth: '24px', minHeight: '24px' }} />
+            <h1 className="text-lg font-semibold whitespace-nowrap"> Timeline Milestones Chart </h1>
           </div>
           
-          <div className="h-16"></div>
+          <div className="h-5"></div>
 
-          <div className="w-full">
+          <div className="w-full ">
             <JsonImportExport
             milestones={milestones}
             onImport={handleImport}
