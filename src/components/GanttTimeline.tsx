@@ -3,7 +3,7 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { ChevronDown, ChevronRight, ChevronUp, Calendar, Clock, Users, Edit, Zap, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp, Calendar, Clock, Users, Edit, Zap, ZoomIn, ZoomOut, RotateCcw, GripVertical } from 'lucide-react';
 import { Milestone, Task, teamColors, generateWeeks, getTaskPosition, calculateMilestoneDates, getTaskDependencyInfo, getTimelineRange } from '../utils/dateUtils';
 import { TaskEditModal } from './TaskEditModal';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
@@ -30,6 +30,7 @@ export function GanttTimeline({
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(32); // Píxeles por día, default 32px
+  const [nameColumnWidth, setNameColumnWidth] = useState<number>(200); // Width in pixels for name column
   
   // Use prop-controlled state if provided, otherwise use local state
   const expandedMilestones = propExpandedMilestones || localExpandedMilestones;
@@ -42,6 +43,11 @@ export function GanttTimeline({
     startX: number;
     originalStart: Date;
     originalEnd: Date;
+  } | null>(null);
+  const [resizeState, setResizeState] = useState<{
+    isResizing: boolean;
+    startX: number;
+    startWidth: number;
   } | null>(null);
 
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -58,6 +64,28 @@ export function GanttTimeline({
 
   const resetZoom = useCallback(() => {
     setZoomLevel(32); // Volver al default
+  }, []);
+
+  // Column resize handlers
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setResizeState({
+      isResizing: true,
+      startX: e.clientX,
+      startWidth: nameColumnWidth
+    });
+  }, [nameColumnWidth]);
+
+  const handleResizeMove = useCallback((e: MouseEvent) => {
+    if (!resizeState) return;
+    
+    const deltaX = e.clientX - resizeState.startX;
+    const newWidth = Math.max(150, Math.min(600, resizeState.startWidth + deltaX)); // Min 150px, Max 600px
+    setNameColumnWidth(newWidth);
+  }, [resizeState]);
+
+  const handleResizeEnd = useCallback(() => {
+    setResizeState(null);
   }, []);
 
   // Pre-sort milestones by calculated start dates early in the component
@@ -129,8 +157,8 @@ export function GanttTimeline({
   }, [timelineData]);
 
   // Column width variables
-  const gridNameColumns = '10vw';
-  const gridTimeBoxColumns = '90vw';
+  const gridNameColumns = `${nameColumnWidth}px`;
+  const gridTimeBoxColumns = `calc(100vw - ${nameColumnWidth}px)`;
   const gridTemplateColumns = `${gridNameColumns} ${gridTimeBoxColumns}`;
   
   // Palette for milestone colors
@@ -210,6 +238,16 @@ export function GanttTimeline({
       document.removeEventListener('mouseup', handleMouseUp);
     };
   }, [dragState, handleMouseMove, handleMouseUp]);
+
+  useEffect(() => {
+    if (!resizeState) return;
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', handleResizeEnd);
+    return () => {
+      document.removeEventListener('mousemove', handleResizeMove);
+      document.removeEventListener('mouseup', handleResizeEnd);
+    };
+  }, [resizeState, handleResizeMove, handleResizeEnd]);
 
   // Early return if no timeline data
   if (!timelineData) {
@@ -433,12 +471,20 @@ export function GanttTimeline({
                 <tr>
                   {/* Fixed Header Column */}
                   <th 
-                    className="bg-muted/50 border-r sticky left-0 z-30 shadow-lg" 
+                    className="bg-muted/50 border-r sticky left-0 z-30 shadow-lg relative" 
                     style={{width: gridNameColumns, minWidth: gridNameColumns, maxWidth: gridNameColumns, position: 'sticky', left: 0}}
                   >
                     <div className="p-4 text-left bg-muted/50">
                       <h3 className="text-lg font-semibold">Milestones and Tasks</h3>
                       <p className="text-sm text-muted-foreground mt-1">Project hierarchical organization</p>
+                    </div>
+                    {/* Drag Resize Handle with Icon */}
+                    <div 
+                      className="absolute top-0 right-0 w-4 h-full cursor-col-resize bg-gray-100 hover:bg-blue-100 border-l border-r border-gray-300 hover:border-blue-400 z-40 flex items-center justify-center transition-all duration-200 group"
+                      onMouseDown={handleResizeStart}
+                      title="⟷ Arrastra para redimensionar columna"
+                    >
+                      <GripVertical className="w-3 h-3 text-gray-500 group-hover:text-blue-600 transition-colors" />
                     </div>
                   </th>
                   
@@ -573,7 +619,7 @@ export function GanttTimeline({
                       >
                         {/* Milestone Info Cell */}
                         <td 
-                          className="border-r bg-background sticky left-0 z-20 shadow-lg" 
+                          className="border-r bg-background sticky left-0 z-20 shadow-lg relative" 
                           style={{width: gridNameColumns, minWidth: gridNameColumns, maxWidth: gridNameColumns, position: 'sticky', left: 0}}
                         >
                           <div className="p-2">
@@ -592,6 +638,14 @@ export function GanttTimeline({
                                 </div>
                               </div>
                             </button>
+                          </div>
+                          {/* Drag Resize Handle with Icon */}
+                          <div 
+                            className="absolute top-0 right-0 w-4 h-full cursor-col-resize bg-gray-50 hover:bg-blue-50 border-l border-r border-gray-200 hover:border-blue-300 z-30 flex items-center justify-center transition-all duration-200 group"
+                            onMouseDown={handleResizeStart}
+                            title="⟷ Arrastra para redimensionar columna"
+                          >
+                            <GripVertical className="w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
                           </div>
                         </td>
 
@@ -639,7 +693,7 @@ export function GanttTimeline({
                           >
                             {/* Task Info Cell */}
                             <td 
-                              className="border-r bg-background sticky left-0 z-20 shadow-lg" 
+                              className="border-r bg-background sticky left-0 z-20 shadow-lg relative" 
                               style={{width: gridNameColumns, minWidth: gridNameColumns, maxWidth: gridNameColumns, position: 'sticky', left: 0}}
                             >
                               <TooltipProvider>
@@ -694,6 +748,14 @@ export function GanttTimeline({
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
+                              {/* Drag Resize Handle with Icon */}
+                              <div 
+                                className="absolute top-0 right-0 w-4 h-full cursor-col-resize bg-gray-50 hover:bg-blue-50 border-l border-r border-gray-200 hover:border-blue-300 z-30 flex items-center justify-center transition-all duration-200 group"
+                                onMouseDown={handleResizeStart}
+                                title="⟷ Arrastra para redimensionar columna"
+                              >
+                                <GripVertical className="w-2.5 h-2.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                              </div>
                             </td>
 
                             {/* Task Timeline Cell */}
