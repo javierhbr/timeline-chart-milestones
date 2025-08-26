@@ -325,46 +325,188 @@ export function JsonImportExport({
       {showInstructions && milestones.length > 0 && (
         <div className="mt-4">
           <div className="p-4 bg-muted rounded-lg">
-            <h3 className="font-semibold mb-3">File Format Instructions</h3>
+            <h3 className="font-semibold mb-4">📋 File Format Guide & Attribute Relationships</h3>
             
-            <div className="space-y-4">
-              <div>
-                <h4 className="font-medium mb-2">CSV Format:</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Required columns in exact order:
+            <div className="space-y-6">
+              {/* Overview Section */}
+              <div className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
+                <h4 className="font-medium mb-2 text-blue-800">🎯 Project Structure Overview</h4>
+                <p className="text-sm text-blue-700">
+                  Your project is organized in a <strong>hierarchy</strong>: <strong>Milestones</strong> contain multiple <strong>Tasks</strong>. 
+                  Tasks can depend on other tasks to create workflow sequences.
                 </p>
-                <code className="text-xs bg-background p-2 rounded block">
-                  milestoneId,milestoneName,taskId,taskName,taskDescription,team,sprint,durationDays,dependsOn
-                </code>
-                <ul className="text-sm text-muted-foreground mt-2 space-y-1">
-                  <li>• <strong>dependsOn:</strong> Use "|" to separate multiple dependencies (e.g., "T1|T2")</li>
-                  <li>• <strong>durationDays:</strong> Number of working days for the task</li>
-                  <li>• <strong>team:</strong> Team responsible for the task</li>
-                </ul>
+              </div>
+
+              {/* CSV Format */}
+              <div>
+                <h4 className="font-medium mb-3 text-lg flex items-center gap-2">
+                  📊 CSV Format - Building Your File
+                </h4>
+                
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-medium mb-1">Required Header Row (must be exact):</h5>
+                    <code className="text-xs bg-background p-2 rounded block mb-2">
+                      milestoneId,milestoneName,taskId,taskName,taskDescription,team,sprint,durationDays,dependsOn
+                    </code>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <h5 className="font-medium mb-2">🏗️ Attribute Definitions:</h5>
+                      <ul className="text-sm space-y-2">
+                        <li><strong>milestoneId:</strong> Unique identifier (M1, M2, etc.)</li>
+                        <li><strong>milestoneName:</strong> Milestone title (e.g., "UI Design")</li>
+                        <li><strong>taskId:</strong> Unique task identifier (T1, T2, etc.)</li>
+                        <li><strong>taskName:</strong> Task title (e.g., "Create Wireframes")</li>
+                        <li><strong>taskDescription:</strong> Detailed task description</li>
+                        <li><strong>team:</strong> Responsible team (UI, Backend, QA, etc.)</li>
+                        <li><strong>sprint:</strong> Sprint assignment (Sprint 1, Sprint 2, etc.)</li>
+                        <li><strong>durationDays:</strong> Working days needed (number only)</li>
+                        <li><strong>dependsOn:</strong> Tasks that must finish first</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h5 className="font-medium mb-2">🔗 Relationship Rules:</h5>
+                      <ul className="text-sm space-y-2">
+                        <li><strong>Milestone Grouping:</strong> Tasks with same milestoneId are grouped together</li>
+                        <li><strong>Task Dependencies:</strong> Use taskId values separated by "|"</li>
+                        <li><strong>Sequential Flow:</strong> Tasks wait for dependencies to complete</li>
+                        <li><strong>No Dependencies:</strong> Leave dependsOn column empty</li>
+                        <li><strong>Team Colors:</strong> Each team gets automatic color coding</li>
+                        <li><strong>Duration Logic:</strong> Dates auto-calculated from dependencies</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h5 className="font-medium mb-2">📝 CSV Example with Relationships:</h5>
+                    <pre className="text-xs bg-background p-3 rounded overflow-x-auto">
+{`milestoneId,milestoneName,taskId,taskName,taskDescription,team,sprint,durationDays,dependsOn
+M1,Design Phase,T1,Research,User research and analysis,UX,Sprint 1,5,
+M1,Design Phase,T2,Wireframes,Create initial wireframes,UX,Sprint 1,3,T1
+M1,Design Phase,T3,Mockups,High-fidelity mockups,UI,Sprint 2,4,T2
+M2,Development,T4,Setup,Project configuration,Backend,Sprint 2,2,T3
+M2,Development,T5,API,Build REST API,Backend,Sprint 3,6,T4
+M2,Development,T6,Frontend,Build user interface,Frontend,Sprint 3,8,T3|T5
+M3,Testing,T7,Unit Tests,Component testing,QA,Sprint 4,3,T6
+M3,Testing,T8,Integration,End-to-end testing,QA,Sprint 4,4,T7`}
+                    </pre>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Notice: T6 depends on both T3 and T5 (T3|T5), creating parallel workflows that merge.
+                    </p>
+                  </div>
+                </div>
               </div>
               
+              {/* JSON Format */}
               <div>
-                <h4 className="font-medium mb-2">JSON Format:</h4>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Array of milestone objects with nested tasks:
-                </p>
-                <pre className="text-xs bg-background p-2 rounded overflow-x-auto">
-{`{
-  "milestoneId": "M1",
-  "milestoneName": "Design Phase",
-  "tasks": [
-    {
-      "taskId": "T1",
-      "name": "Wireframes",
-      "description": "Create wireframes",
-      "team": "Design",
-      "sprint": "Sprint 1",
-      "durationDays": 3,
-      "dependsOn": []
-    }
-  ]
-}`}
-                </pre>
+                <h4 className="font-medium mb-3 text-lg flex items-center gap-2">
+                  🗂️ JSON Format - Structured Approach
+                </h4>
+                
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-medium mb-2">🏗️ JSON Structure Rules:</h5>
+                    <ul className="text-sm space-y-1 mb-3">
+                      <li>• Root: Array of milestone objects</li>
+                      <li>• Each milestone contains a tasks array</li>
+                      <li>• dependsOn is an array of taskId strings</li>
+                      <li>• All dates are auto-calculated from project start date</li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h5 className="font-medium mb-2">📄 Complete JSON Example:</h5>
+                    <pre className="text-xs bg-background p-3 rounded overflow-x-auto">
+{`[
+  {
+    "milestoneId": "M1",
+    "milestoneName": "Design Phase",
+    "tasks": [
+      {
+        "taskId": "T1",
+        "name": "User Research",
+        "description": "Conduct user interviews and surveys",
+        "team": "UX",
+        "sprint": "Sprint 1",
+        "durationDays": 5,
+        "dependsOn": []
+      },
+      {
+        "taskId": "T2",
+        "name": "Wireframes",
+        "description": "Create low-fidelity wireframes",
+        "team": "UX",
+        "sprint": "Sprint 1",
+        "durationDays": 3,
+        "dependsOn": ["T1"]
+      },
+      {
+        "taskId": "T3",
+        "name": "UI Mockups",
+        "description": "Design high-fidelity mockups",
+        "team": "UI",
+        "sprint": "Sprint 2",
+        "durationDays": 4,
+        "dependsOn": ["T2"]
+      }
+    ]
+  },
+  {
+    "milestoneId": "M2",
+    "milestoneName": "Development",
+    "tasks": [
+      {
+        "taskId": "T4",
+        "name": "Backend API",
+        "description": "Develop REST API endpoints",
+        "team": "Backend",
+        "sprint": "Sprint 2",
+        "durationDays": 6,
+        "dependsOn": ["T2"]
+      },
+      {
+        "taskId": "T5",
+        "name": "Frontend Components",
+        "description": "Build React components",
+        "team": "Frontend",
+        "sprint": "Sprint 3",
+        "durationDays": 8,
+        "dependsOn": ["T3", "T4"]
+      }
+    ]
+  }
+]`}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+
+              {/* Best Practices */}
+              <div className="p-3 bg-green-50 rounded-lg border-l-4 border-green-400">
+                <h4 className="font-medium mb-2 text-green-800">✅ Best Practices for Building Your File</h4>
+                <ul className="text-sm text-green-700 space-y-1">
+                  <li>• <strong>Start Simple:</strong> Create milestones first, then add tasks</li>
+                  <li>• <strong>Logical Grouping:</strong> Group related tasks under meaningful milestones</li>
+                  <li>• <strong>Clear Dependencies:</strong> Only add dependencies when tasks truly block others</li>
+                  <li>• <strong>Realistic Durations:</strong> Use working days, not calendar days</li>
+                  <li>• <strong>Team Consistency:</strong> Use same team names throughout the project</li>
+                  <li>• <strong>Sequential IDs:</strong> Use T1, T2, T3... for easy reference</li>
+                </ul>
+              </div>
+
+              {/* Common Issues */}
+              <div className="p-3 bg-yellow-50 rounded-lg border-l-4 border-yellow-400">
+                <h4 className="font-medium mb-2 text-yellow-800">⚠️ Common Issues to Avoid</h4>
+                <ul className="text-sm text-yellow-700 space-y-1">
+                  <li>• <strong>Circular Dependencies:</strong> Task A depends on B, B depends on A</li>
+                  <li>• <strong>Missing Dependencies:</strong> Referencing non-existent taskIds</li>
+                  <li>• <strong>Empty Required Fields:</strong> All fields except dependsOn are required</li>
+                  <li>• <strong>Invalid Duration:</strong> Use positive numbers only</li>
+                  <li>• <strong>Wrong CSV Format:</strong> Missing commas or incorrect column order</li>
+                </ul>
               </div>
             </div>
           </div>

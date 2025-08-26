@@ -11,12 +11,25 @@ import { es } from 'date-fns/locale';
 interface GanttTimelineProps {
   milestones: Milestone[];
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
+  expandedMilestones?: Set<string>;
+  onToggleMilestone?: (milestoneId: string) => void;
 }
 
-export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) {
-  const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
+export function GanttTimeline({ 
+  milestones, 
+  onUpdateTask, 
+  expandedMilestones: propExpandedMilestones,
+  onToggleMilestone: propOnToggleMilestone
+}: GanttTimelineProps) {
+  const [localExpandedMilestones, setLocalExpandedMilestones] = useState<Set<string>>(new Set());
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  
+  // Use prop-controlled state if provided, otherwise use local state
+  const expandedMilestones = propExpandedMilestones || localExpandedMilestones;
+  const setExpandedMilestones = propOnToggleMilestone ? 
+    (milestoneId: string) => propOnToggleMilestone(milestoneId) :
+    (updateFn: (prev: Set<string>) => Set<string>) => setLocalExpandedMilestones(updateFn);
   const [dragState, setDragState] = useState<{
     taskId: string;
     mode: 'move' | 'resize-start' | 'resize-end';
@@ -189,10 +202,21 @@ export function GanttTimeline({ milestones, onUpdateTask }: GanttTimelineProps) 
     });
 
   const toggleMilestone = (milestoneId: string) => {
-    const newExpanded = new Set(expandedMilestones);
-    if (newExpanded.has(milestoneId)) newExpanded.delete(milestoneId);
-    else newExpanded.add(milestoneId);
-    setExpandedMilestones(newExpanded);
+    if (propOnToggleMilestone) {
+      // Use parent's toggle function if provided
+      propOnToggleMilestone(milestoneId);
+    } else {
+      // Use local state
+      setLocalExpandedMilestones(prev => {
+        const newExpanded = new Set(prev);
+        if (newExpanded.has(milestoneId)) {
+          newExpanded.delete(milestoneId);
+        } else {
+          newExpanded.add(milestoneId);
+        }
+        return newExpanded;
+      });
+    }
   };
 
   const TaskBar = ({ task, topOffset }: { task: Task; topOffset?: number }) => {

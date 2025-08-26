@@ -6,12 +6,13 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Milestone, Task, calculateProjectDates, teamColors } from '../utils/dateUtils';
-import { BarChart3, Calendar, Users, Clock, Grid3X3, List } from 'lucide-react';
+import { BarChart3, Calendar, Users, Clock, Grid3X3, List, ChevronDown, ChevronUp } from 'lucide-react';
 
 export function GanttChart() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [projectStartDate, setProjectStartDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<'interactive' | 'monthly'>('interactive');
+  const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
 
   const handleImport = useCallback((importedMilestones: Milestone[]) => {
     // Calculate dates automatically
@@ -58,6 +59,16 @@ export function GanttChart() {
   const totalDuration = milestones.reduce((acc, m) => 
     acc + Math.max(...m.tasks.map(t => t.durationDays), 0), 0
   );
+
+  // Expand/Collapse functions
+  const expandAllMilestones = useCallback(() => {
+    const allMilestoneIds = new Set(milestones.map(m => m.milestoneId));
+    setExpandedMilestones(allMilestoneIds);
+  }, [milestones]);
+
+  const collapseAllMilestones = useCallback(() => {
+    setExpandedMilestones(new Set());
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -131,8 +142,33 @@ export function GanttChart() {
           <div className="flex items-center justify-between mb-3">
             <h3>Project Teams</h3>
             
-            {/* View selector */}
+            {/* Control buttons */}
             <div className="flex gap-2">
+              {/* Expand/Collapse buttons for Interactive view */}
+              {viewMode === 'interactive' && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={expandAllMilestones}
+                    className="flex items-center gap-2"
+                  >
+                    <ChevronDown className="w-4 h-4" />
+                    Expand All
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={collapseAllMilestones}
+                    className="flex items-center gap-2"
+                  >
+                    <ChevronUp className="w-4 h-4" />
+                    Collapse All
+                  </Button>
+                </>
+              )}
+              
+              {/* View selector */}
               <Button
                 variant={viewMode === 'interactive' ? 'default' : 'outline'}
                 size="sm"
@@ -161,13 +197,13 @@ export function GanttChart() {
                 variant="outline"
                 className="flex items-center gap-2"
                 style={{ 
-                  borderColor: teamColors[team] || teamColors.Default,
-                  color: teamColors[team] || teamColors.Default 
+                  borderColor: teamColors[team as keyof typeof teamColors] || teamColors.Default,
+                  color: teamColors[team as keyof typeof teamColors] || teamColors.Default 
                 }}
               >
                 <div 
                   className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: teamColors[team] || teamColors.Default }}
+                  style={{ backgroundColor: teamColors[team as keyof typeof teamColors] || teamColors.Default }}
                 />
                 {team}
               </Badge>
@@ -181,6 +217,16 @@ export function GanttChart() {
         <GanttTimeline 
           milestones={milestones}
           onUpdateTask={handleUpdateTask}
+          expandedMilestones={expandedMilestones}
+          onToggleMilestone={(milestoneId: string) => {
+            const newExpanded = new Set(expandedMilestones);
+            if (newExpanded.has(milestoneId)) {
+              newExpanded.delete(milestoneId);
+            } else {
+              newExpanded.add(milestoneId);
+            }
+            setExpandedMilestones(newExpanded);
+          }}
         />
       ) : (
         <MonthlyGanttTimeline 
