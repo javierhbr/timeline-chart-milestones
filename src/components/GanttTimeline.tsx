@@ -478,13 +478,13 @@ export function GanttTimeline({
                       <h3 className="text-lg font-semibold">Milestones and Tasks</h3>
                       <p className="text-sm text-muted-foreground mt-1">Project hierarchical organization</p>
                     </div>
-                    {/* Drag Resize Handle with Icon */}
+                    {/* Drag Resize Handle with Icon - Highly Visible */}
                     <div 
-                      className="absolute top-0 right-0 w-4 h-full cursor-col-resize bg-gray-100 hover:bg-blue-100 border-l border-r border-gray-300 hover:border-blue-400 z-40 flex items-center justify-center transition-all duration-200 group"
+                      className="absolute top-0 right-0 w-8 h-full cursor-col-resize bg-blue-100 hover:bg-blue-200 border-l-4 border-r-4 border-blue-400 hover:border-blue-600 z-40 flex items-center justify-center transition-all duration-200 group shadow-md"
                       onMouseDown={handleResizeStart}
                       title="⟷ Arrastra para redimensionar columna"
                     >
-                      <GripVertical className="w-3 h-3 text-gray-500 group-hover:text-blue-600 transition-colors" />
+                      <GripVertical className="w-5 h-5 text-blue-700 group-hover:text-blue-900 transition-colors font-bold" />
                     </div>
                   </th>
                   
@@ -639,13 +639,13 @@ export function GanttTimeline({
                               </div>
                             </button>
                           </div>
-                          {/* Drag Resize Handle with Icon */}
+                          {/* Drag Resize Handle with Icon - Highly Visible */}
                           <div 
-                            className="absolute top-0 right-0 w-4 h-full cursor-col-resize bg-gray-50 hover:bg-blue-50 border-l border-r border-gray-200 hover:border-blue-300 z-30 flex items-center justify-center transition-all duration-200 group"
+                            className="absolute top-0 right-0 w-6 h-full cursor-col-resize bg-blue-50 hover:bg-blue-100 border-l-3 border-r-3 border-blue-300 hover:border-blue-500 z-30 flex items-center justify-center transition-all duration-200 group shadow-sm"
                             onMouseDown={handleResizeStart}
                             title="⟷ Arrastra para redimensionar columna"
                           >
-                            <GripVertical className="w-3 h-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                            <GripVertical className="w-4 h-4 text-blue-600 group-hover:text-blue-800 transition-colors font-semibold" />
                           </div>
                         </td>
 
@@ -748,13 +748,13 @@ export function GanttTimeline({
                                   </TooltipContent>
                                 </Tooltip>
                               </TooltipProvider>
-                              {/* Drag Resize Handle with Icon */}
+                              {/* Drag Resize Handle with Icon - Highly Visible */}
                               <div 
-                                className="absolute top-0 right-0 w-4 h-full cursor-col-resize bg-gray-50 hover:bg-blue-50 border-l border-r border-gray-200 hover:border-blue-300 z-30 flex items-center justify-center transition-all duration-200 group"
+                                className="absolute top-0 right-0 w-6 h-full cursor-col-resize bg-blue-50 hover:bg-blue-100 border-l-2 border-r-2 border-blue-300 hover:border-blue-500 z-30 flex items-center justify-center transition-all duration-200 group shadow-sm"
                                 onMouseDown={handleResizeStart}
                                 title="⟷ Arrastra para redimensionar columna"
                               >
-                                <GripVertical className="w-2.5 h-2.5 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                                <GripVertical className="w-3 h-3 text-blue-600 group-hover:text-blue-800 transition-colors font-semibold" />
                               </div>
                             </td>
 
