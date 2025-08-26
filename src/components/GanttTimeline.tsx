@@ -337,24 +337,26 @@ export function GanttTimeline({
                     </div>
                   </th>
                   
-                  {/* Timeline Header - single column with scrollable content */}
+                  {/* Timeline Header - weekly view */}
                   <th className="bg-muted/50 relative" style={{width: '90vw'}}>
                     <div className="overflow-x-auto">
                       <div className="flex" style={{width: `${dayColumns.length * 32}px`}}>
                         {dayColumns.map((day, index) => (
                           <div 
                             key={`day-${index}`}
-                            className={`px-1 py-2 text-center relative w-8 min-w-[32px] text-xs flex-shrink-0 ${day.isWeekStart ? 'border-l-2 border-l-blue-500' : ''}`}
+                            className={`relative w-8 min-w-[32px] text-xs flex-shrink-0 ${day.isWeekStart ? 'border-l-2 border-l-blue-500' : ''}`}
                           >
-                            {/* Show week label only on first day of week */}
+                            {/* Show date only on Mondays (week start) */}
                             {day.isWeekStart && (
-                              <div className="text-[10px] font-medium">
-                                Sem {day.weekNumber + 1}
+                              <div className="px-1 py-2 text-center">
+                                <div className="text-[9px] font-medium">
+                                  {format(day.date, 'dd/MM', { locale: es })}
+                                </div>
+                                <div className="text-[8px] text-muted-foreground">
+                                  Sem {day.weekNumber + 1}
+                                </div>
                               </div>
                             )}
-                            <div className="text-[8px] text-muted-foreground">
-                              {format(day.date, 'dd', { locale: es })}
-                            </div>
                             
                             {/* Deliverable markers for this specific day */}
                             {deliverableMarkers
