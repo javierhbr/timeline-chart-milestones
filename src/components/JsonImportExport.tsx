@@ -1,8 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card } from './ui/card';
-import { Upload, Download, Calendar } from 'lucide-react';
+import { Upload, Download, Calendar, Info } from 'lucide-react';
 import { Milestone } from '../utils/dateUtils';
 
 interface JsonImportExportProps {
@@ -19,6 +19,7 @@ export function JsonImportExport({
   onStartDateChange 
 }: JsonImportExportProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showInstructions, setShowInstructions] = useState(false);
 
   const parseCSV = (csvText: string): Milestone[] => {
     const lines = csvText.trim().split('\n');
@@ -289,6 +290,17 @@ export function JsonImportExport({
           >
             Load Example
           </Button>
+          
+          {milestones.length > 0 && (
+            <Button 
+              onClick={() => setShowInstructions(!showInstructions)}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Info className="w-4 h-4" />
+              {showInstructions ? 'Hide' : 'Show'} File Format
+            </Button>
+          )}
         </div>
       </div>
       
@@ -306,6 +318,55 @@ export function JsonImportExport({
             <p className="text-muted-foreground">
               Import a JSON or CSV file with milestones and tasks, or load the example to get started.
             </p>
+          </div>
+        </div>
+      )}
+      
+      {showInstructions && milestones.length > 0 && (
+        <div className="mt-4">
+          <div className="p-4 bg-muted rounded-lg">
+            <h3 className="font-semibold mb-3">File Format Instructions</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-medium mb-2">CSV Format:</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Required columns in exact order:
+                </p>
+                <code className="text-xs bg-background p-2 rounded block">
+                  milestoneId,milestoneName,taskId,taskName,taskDescription,team,sprint,durationDays,dependsOn
+                </code>
+                <ul className="text-sm text-muted-foreground mt-2 space-y-1">
+                  <li>• <strong>dependsOn:</strong> Use "|" to separate multiple dependencies (e.g., "T1|T2")</li>
+                  <li>• <strong>durationDays:</strong> Number of working days for the task</li>
+                  <li>• <strong>team:</strong> Team responsible for the task</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h4 className="font-medium mb-2">JSON Format:</h4>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Array of milestone objects with nested tasks:
+                </p>
+                <pre className="text-xs bg-background p-2 rounded overflow-x-auto">
+{`{
+  "milestoneId": "M1",
+  "milestoneName": "Design Phase",
+  "tasks": [
+    {
+      "taskId": "T1",
+      "name": "Wireframes",
+      "description": "Create wireframes",
+      "team": "Design",
+      "sprint": "Sprint 1",
+      "durationDays": 3,
+      "dependsOn": []
+    }
+  ]
+}`}
+                </pre>
+              </div>
+            </div>
           </div>
         </div>
       )}
