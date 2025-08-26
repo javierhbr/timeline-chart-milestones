@@ -1,8 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
+import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { ChevronDown, ChevronRight, Calendar, Clock, Users, Edit, Zap } from 'lucide-react';
+import { ChevronDown, ChevronRight, Calendar, Clock, Users, Edit, Zap, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { Milestone, Task, teamColors, generateWeeks, getTaskPosition, calculateMilestoneDates, getTaskDependencyInfo, getTimelineRange } from '../utils/dateUtils';
 import { TaskEditModal } from './TaskEditModal';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
@@ -24,6 +25,7 @@ export function GanttTimeline({
   const [localExpandedMilestones, setLocalExpandedMilestones] = useState<Set<string>>(new Set());
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(32); // Píxeles por día, default 32px
   
   // Use prop-controlled state if provided, otherwise use local state
   const expandedMilestones = propExpandedMilestones || localExpandedMilestones;
@@ -40,6 +42,19 @@ export function GanttTimeline({
 
   const timelineRef = useRef<HTMLDivElement>(null);
   const ganttContainerRef = useRef<HTMLDivElement>(null);
+
+  // Zoom functions
+  const zoomIn = useCallback(() => {
+    setZoomLevel(prev => Math.min(Math.round(prev * 1.5), 80)); // Max 80px por día
+  }, []);
+
+  const zoomOut = useCallback(() => {
+    setZoomLevel(prev => Math.max(Math.round(prev / 1.5), 16)); // Min 16px por día  
+  }, []);
+
+  const resetZoom = useCallback(() => {
+    setZoomLevel(32); // Volver al default
+  }, []);
 
   // Pre-sort milestones by calculated start dates early in the component
   const sortedMilestones = useMemo(() => {
@@ -121,19 +136,19 @@ export function GanttTimeline({
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!dragState || !timelineRef.current || !timelineData) return;
 
-    // Use fixed day width of 32px instead of calculating from container width
-    const pixelsPerDay = 32;
+    // Use current zoom level for pixel calculations
+    const pixelsPerDay = zoomLevel;
     const deltaX = e.clientX - dragState.startX;
     const daysDelta = Math.round(deltaX / pixelsPerDay);
 
     // visual-only; commit on mouseup
-  }, [dragState, timelineData]);
+  }, [dragState, timelineData, zoomLevel]);
 
   const handleMouseUp = useCallback((e: MouseEvent) => {
     if (!dragState || !timelineRef.current || !timelineData) return;
 
-    // Use fixed day width of 32px instead of calculating from container width
-    const pixelsPerDay = 32;
+    // Use current zoom level for pixel calculations
+    const pixelsPerDay = zoomLevel;
     const deltaX = e.clientX - dragState.startX;
     const daysDelta = Math.round(deltaX / pixelsPerDay);
 
@@ -160,7 +175,7 @@ export function GanttTimeline({
     });
 
     setDragState(null);
-  }, [dragState, timelineData, onUpdateTask]);
+  }, [dragState, timelineData, onUpdateTask, zoomLevel]);
 
   useEffect(() => {
     if (!dragState) return;
@@ -312,6 +327,43 @@ export function GanttTimeline({
   return (
     <>
       <div className="w-[90vw]">
+        {/* Zoom Controls */}
+        <div className="flex items-center gap-2 mb-4 p-2 bg-muted/30 rounded-lg">
+          <span className="text-sm font-medium mr-2">Zoom:</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={zoomOut}
+            disabled={zoomLevel <= 16}
+            className="flex items-center gap-1"
+          >
+            <ZoomOut className="w-4 h-4" />
+            Out
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={resetZoom}
+            className="flex items-center gap-1"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={zoomIn}
+            disabled={zoomLevel >= 80}
+            className="flex items-center gap-1"
+          >
+            <ZoomIn className="w-4 h-4" />
+            In
+          </Button>
+          <div className="ml-3 px-2 py-1 bg-muted rounded text-xs font-medium">
+            {Math.round(zoomLevel)}px/día
+          </div>
+        </div>
+        
         <Card className="overflow-hidden">
           <div className="border-b bg-yellow-50 p-2 text-xs">
             <div className="flex gap-4">
@@ -340,11 +392,12 @@ export function GanttTimeline({
                   {/* Timeline Header - weekly view */}
                   <th className="bg-muted/50 relative" style={{width: '90vw'}}>
                     <div className="overflow-x-auto">
-                      <div className="flex" style={{width: `${dayColumns.length * 32}px`}}>
+                      <div className="flex" style={{width: `${dayColumns.length * zoomLevel}px`}}>
                         {dayColumns.map((day, index) => (
                           <div 
                             key={`day-${index}`}
-                            className={`relative w-8 min-w-[32px] text-xs flex-shrink-0 ${day.isWeekStart ? 'border-l-2 border-l-blue-500' : ''}`}
+                            className={`relative text-xs flex-shrink-0 ${day.isWeekStart ? 'border-l-2 border-l-blue-500' : ''}`}
+                            style={{width: `${zoomLevel}px`, minWidth: `${zoomLevel}px`}}
                           >
                             {/* Show date only on Mondays (week start) */}
                             {day.isWeekStart && (
@@ -434,14 +487,14 @@ export function GanttTimeline({
                         {/* Milestone Timeline Cell */}
                         <td className="p-0 h-[60px] relative" style={{width: '90vw'}}>
                           <div className="overflow-x-auto h-full relative">
-                            <div className="h-full relative" style={{width: `${dayColumns.length * 32}px`, minHeight: '60px'}}>
+                            <div className="h-full relative" style={{width: `${dayColumns.length * zoomLevel}px`, minHeight: '60px'}}>
                               <div 
                                 className="absolute inset-y-1 rounded-lg shadow-lg border-2 border-white/40 overflow-hidden z-10 flex items-center px-2" 
                                 style={{ 
-                                  left: `${milestoneStartDay * 32 + 2}px`,
-                                  width: `${milestoneDurationDays * 32 - 4}px`,
+                                  left: `${milestoneStartDay * zoomLevel + 2}px`,
+                                  width: `${milestoneDurationDays * zoomLevel - 4}px`,
                                   background: `linear-gradient(135deg, ${milestoneColor.main} 0%, ${milestoneColor.secondary} 100%)`,
-                                  minWidth: '60px',
+                                  minWidth: Math.min(60, zoomLevel * 2) + 'px',
                                   height: '56px'
                                 }}
                               >
@@ -531,14 +584,14 @@ export function GanttTimeline({
                             {/* Task Timeline Cell */}
                             <td className="p-0 h-[32px] relative" style={{width: '90vw', backgroundColor: milestoneColor.gentle}}>
                               <div className="overflow-x-auto h-full relative">
-                                <div className="h-full relative" style={{width: `${dayColumns.length * 32}px`, minHeight: '32px'}}>
+                                <div className="h-full relative" style={{width: `${dayColumns.length * zoomLevel}px`, minHeight: '32px'}}>
                                   {/* Draggable Task Bar */}
                                   <div 
                                     className="absolute inset-y-1 z-10 flex items-center transition-all duration-300" 
                                     style={{ 
-                                      left: `${taskStartDay * 32 + 2}px`,
-                                      width: `${taskDurationDays * 32 - 4}px`,
-                                      minWidth: '30px',
+                                      left: `${taskStartDay * zoomLevel + 2}px`,
+                                      width: `${taskDurationDays * zoomLevel - 4}px`,
+                                      minWidth: Math.min(30, zoomLevel) + 'px',
                                       height: '28px'
                                     }}
                                   >
@@ -549,7 +602,7 @@ export function GanttTimeline({
                                   <div 
                                     className="absolute top-1/2 -translate-y-1/2 z-5 flex items-center gap-2 text-xs whitespace-nowrap pointer-events-none"
                                     style={{ 
-                                      left: `${taskStartDay * 32 + taskDurationDays * 32 + 8}px`
+                                      left: `${taskStartDay * zoomLevel + taskDurationDays * zoomLevel + 8}px`
                                     }}
                                   >
                                     <span className="font-medium text-gray-700">{task.name}</span>
