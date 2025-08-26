@@ -23,12 +23,16 @@ export function JsonImportExport({
 
   const parseCSV = (csvText: string): Milestone[] => {
     const lines = csvText.trim().split('\n');
-    const header = lines[0].split(',');
+    const header = lines[0].split(',').map(h => h.trim());
     
-    // Validate CSV header
+    // Validate CSV header (more flexible)
     const expectedHeader = ['milestoneId', 'milestoneName', 'taskId', 'taskName', 'taskDescription', 'team', 'sprint', 'durationDays', 'dependsOn'];
-    if (!expectedHeader.every((col, index) => header[index] === col)) {
-      throw new Error('CSV header does not match expected format');
+    const hasRequiredHeaders = ['milestoneId', 'milestoneName', 'taskId', 'taskName'].every(required => 
+      header.includes(required)
+    );
+    
+    if (!hasRequiredHeaders) {
+      throw new Error('CSV must contain at least: milestoneId, milestoneName, taskId, taskName');
     }
 
     const milestonesMap = new Map<string, Milestone>();
@@ -37,8 +41,11 @@ export function JsonImportExport({
       const line = lines[i].trim();
       if (!line) continue;
       
-      const values = line.split(',');
-      if (values.length !== 9) continue;
+      // Split and pad with empty strings to ensure we have 9 values
+      const values = line.split(',').map(v => v.trim());
+      while (values.length < 9) {
+        values.push('');
+      }
       
       const [milestoneId, milestoneName, taskId, taskName, taskDescription, team, sprint, durationDays, dependsOn] = values;
       
@@ -60,10 +67,10 @@ export function JsonImportExport({
       milestone.tasks.push({
         taskId,
         name: taskName,
-        description: taskDescription,
-        team,
-        sprint,
-        durationDays: parseInt(durationDays, 10),
+        description: taskDescription || '',
+        team: team || 'Default',
+        sprint: sprint || '',
+        durationDays: durationDays ? parseInt(durationDays, 10) : 1,
         dependsOn: dependencies
       });
     }
