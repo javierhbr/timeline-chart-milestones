@@ -425,14 +425,17 @@ export function GanttTimeline({
           </div>
 
           {/* Unified Table with Fixed First Column */}
-          <div className="overflow-x-auto" ref={ganttContainerRef}>
-            <table className="border-collapse" style={{ width: `calc(${gridNameColumns} + ${dayColumns.length * zoomLevel}px)`, minWidth: '100%' }}>
+          <div className="relative overflow-x-auto" ref={ganttContainerRef} style={{ position: 'relative' }}>
+            <table className="border-collapse w-full" style={{ minWidth: `calc(${gridNameColumns} + ${dayColumns.length * zoomLevel}px)` }}>
               {/* Table Header */}
               <thead>
                 <tr>
                   {/* Fixed Header Column */}
-                  <th className="bg-muted/50 border-r sticky left-0 z-20" style={{width: gridNameColumns}}>
-                    <div className="p-4 text-left">
+                  <th 
+                    className="bg-muted/50 border-r sticky left-0 z-30 shadow-lg" 
+                    style={{width: gridNameColumns, position: 'sticky', left: 0}}
+                  >
+                    <div className="p-4 text-left bg-muted/50">
                       <h3 className="text-lg font-semibold">Milestones and Tasks</h3>
                       <p className="text-sm text-muted-foreground mt-1">Project hierarchical organization</p>
                     </div>
@@ -440,10 +443,9 @@ export function GanttTimeline({
                   
                   {/* Timeline Header - monthly and weekly view */}
                   <th className="bg-muted/50 relative" style={{width: `${dayColumns.length * zoomLevel}px`}}>
-                    <div className="overflow-x-auto">
-                      <div className="flex flex-col" style={{width: `${dayColumns.length * zoomLevel}px`}}>
-                        {/* Month Header Row */}
-                        <div className="flex border-b border-muted-foreground/20 pb-1">
+                    <div className="flex flex-col">
+                      {/* Month Header Row */}
+                      <div className="flex border-b border-muted-foreground/20 pb-1">
                           {(() => {
                             const monthGroups: { month: string; year: number; startIndex: number; width: number }[] = [];
                             let currentMonth = '';
@@ -546,7 +548,6 @@ export function GanttTimeline({
                           ))}
                         </div>
                       </div>
-                    </div>
                   </th>
                 </tr>
               </thead>
@@ -570,7 +571,10 @@ export function GanttTimeline({
                         }}
                       >
                         {/* Milestone Info Cell */}
-                        <td className="border-r bg-background sticky left-0 z-10" style={{width: gridNameColumns}}>
+                        <td 
+                          className="border-r bg-background sticky left-0 z-20 shadow-lg" 
+                          style={{width: gridNameColumns, position: 'sticky', left: 0}}
+                        >
                           <div className="p-2">
                             <button 
                               onClick={() => toggleMilestone(milestone.milestoneId)} 
@@ -618,7 +622,7 @@ export function GanttTimeline({
                       </tr>
 
                       {/* Task Rows */}
-                      {expandedMilestones.has(milestone.milestoneId) && milestone.tasks.map((task) => {
+                      {expandedMilestones.has(milestone.milestoneId) && milestone.tasks.map((task: Task) => {
                         const taskStart = parseISO(task.startDate!);
                         const taskEnd = parseISO(task.endDate!);
                         const taskStartDay = differenceInDays(taskStart, timelineStart);
@@ -633,7 +637,10 @@ export function GanttTimeline({
                             data-task-id={task.taskId}
                           >
                             {/* Task Info Cell */}
-                            <td className="border-r bg-background sticky left-0 z-10" style={{width: gridNameColumns}}>
+                            <td 
+                              className="border-r bg-background sticky left-0 z-20 shadow-lg" 
+                              style={{width: gridNameColumns, position: 'sticky', left: 0}}
+                            >
                               <TooltipProvider>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
