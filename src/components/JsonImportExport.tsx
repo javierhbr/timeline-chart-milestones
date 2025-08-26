@@ -339,10 +339,10 @@ export function JsonImportExport({
 
               {/* CSV Format */}
               <div>
-                <h4 className="font-medium mb-3 text-lg flex items-center gap-2">
+                <h2 className="font-medium mb-3 text-lg flex items-center gap-2">
                   📊 CSV Format - Building Your File
-                </h4>
-                
+                </h2>
+
                 <div className="space-y-3">
                   <div>
                     <h5 className="font-medium mb-1">Required Header Row (must be exact):</h5>
@@ -402,9 +402,9 @@ M3,Testing,T8,Integration,End-to-end testing,QA,Sprint 4,4,T7`}
               
               {/* JSON Format */}
               <div>
-                <h4 className="font-medium mb-3 text-lg flex items-center gap-2">
+                <h2 className="font-medium mb-3 text-lg flex items-center gap-2">
                   🗂️ JSON Format - Structured Approach
-                </h4>
+                </h2>
                 
                 <div className="space-y-3">
                   <div>

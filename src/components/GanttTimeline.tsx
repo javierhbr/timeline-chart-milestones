@@ -3,7 +3,7 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { ChevronDown, ChevronRight, Calendar, Clock, Users, Edit, Zap, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
+import { ChevronDown, ChevronRight, ChevronUp, Calendar, Clock, Users, Edit, Zap, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react';
 import { Milestone, Task, teamColors, generateWeeks, getTaskPosition, calculateMilestoneDates, getTaskDependencyInfo, getTimelineRange } from '../utils/dateUtils';
 import { TaskEditModal } from './TaskEditModal';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
@@ -14,13 +14,17 @@ interface GanttTimelineProps {
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
   expandedMilestones?: Set<string>;
   onToggleMilestone?: (milestoneId: string) => void;
+  expandAllMilestones?: () => void;
+  collapseAllMilestones?: () => void;
 }
 
 export function GanttTimeline({ 
   milestones, 
   onUpdateTask, 
   expandedMilestones: propExpandedMilestones,
-  onToggleMilestone: propOnToggleMilestone
+  onToggleMilestone: propOnToggleMilestone,
+  expandAllMilestones,
+  collapseAllMilestones
 }: GanttTimelineProps) {
   const [localExpandedMilestones, setLocalExpandedMilestones] = useState<Set<string>>(new Set());
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -346,7 +350,7 @@ export function GanttTimeline({
   return (
     <>
       <div className="w-full">
-        {/* Zoom Controls */}
+        {/* Zoom Controls and Expand/Collapse */}
         <div className="flex items-center gap-2 mb-4 p-2 bg-muted/30 rounded-lg">
           <span className="text-sm font-medium mr-2">Zoom:</span>
           <Button
@@ -381,6 +385,32 @@ export function GanttTimeline({
           <div className="ml-3 px-2 py-1 bg-muted rounded text-xs font-medium">
             {Math.round(zoomLevel)}px/día
           </div>
+          
+          {/* Expand/Collapse Controls */}
+          {expandAllMilestones && collapseAllMilestones && (
+            <>
+              <div className="mx-2 h-4 w-px bg-muted-foreground/30"></div>
+              <span className="text-sm font-medium">Milestones:</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={expandAllMilestones}
+                className="flex items-center gap-1"
+              >
+                <ChevronDown className="w-4 h-4" />
+                Expand All
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={collapseAllMilestones}
+                className="flex items-center gap-1"
+              >
+                <ChevronUp className="w-4 h-4" />
+                Collapse All
+              </Button>
+            </>
+          )}
         </div>
         
         <Card className="overflow-hidden">

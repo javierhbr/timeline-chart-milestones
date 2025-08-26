@@ -6,7 +6,7 @@ import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Milestone, Task, calculateProjectDates, teamColors } from '../utils/dateUtils';
-import { BarChart3, Calendar, Users, Clock, Grid3X3, List, ChevronDown, ChevronUp } from 'lucide-react';
+import { BarChart3, Calendar, Users, Clock, Grid3X3, List } from 'lucide-react';
 
 export function GanttChart() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -160,30 +160,6 @@ export function GanttChart() {
             
             {/* Control buttons */}
             <div className="flex gap-2">
-              {/* Expand/Collapse buttons for Interactive view */}
-              {viewMode === 'interactive' && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={expandAllMilestones}
-                    className="flex items-center gap-2"
-                  >
-                    <ChevronDown className="w-4 h-4" />
-                    Expand All
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={collapseAllMilestones}
-                    className="flex items-center gap-2"
-                  >
-                    <ChevronUp className="w-4 h-4" />
-                    Collapse All
-                  </Button>
-                </>
-              )}
-              
               {/* View selector */}
               <Button
                 variant={viewMode === 'interactive' ? 'default' : 'outline'}
@@ -244,6 +220,8 @@ export function GanttChart() {
             }
             setExpandedMilestones(newExpanded);
           }}
+          expandAllMilestones={expandAllMilestones}
+          collapseAllMilestones={collapseAllMilestones}
         />
       ) : (
         <MonthlyGanttTimeline 
