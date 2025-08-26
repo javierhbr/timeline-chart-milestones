@@ -185,9 +185,10 @@ export function GanttTimeline({
 
   const deliverableMarkers = sortedMilestones
     .map(({ milestone }) => milestone)
-    .filter(m => m.endDate)
+    .filter(m => m.tasks && m.tasks.length > 0) // Solo milestones con tareas
     .map(m => {
-      const deliverableDate = parseISO(m.endDate!);
+      const milestoneDates = calculateMilestoneDates(m);
+      const deliverableDate = milestoneDates.endDate; // Usar fecha calculada
       const daysDiff = differenceInDays(deliverableDate, timelineStart);
       const position = (daysDiff / totalDays) * 100;
       return { name: m.milestoneName, date: deliverableDate, position: Math.max(0, Math.min(100, position)) };
@@ -424,16 +425,12 @@ export function GanttTimeline({
 
                         {/* Milestone Timeline Cells */}
                         {dayColumns.map((day, dayIndex) => {
-                          const isInMilestone = dayIndex >= milestoneStartDay && dayIndex < milestoneStartDay + milestoneDurationDays;
                           const isFirstDay = dayIndex === milestoneStartDay;
                           
                           return (
                             <td 
                               key={`milestone-${milestone.milestoneId}-day-${dayIndex}`}
                               className="p-0 h-[60px] relative w-8 min-w-[32px]"
-                              style={{ 
-                                backgroundColor: isInMilestone ? milestoneColor.gentle : 'transparent'
-                              }}
                             >
                               {isFirstDay && (
                                 <div 
@@ -471,33 +468,63 @@ export function GanttTimeline({
                           <tr 
                             key={task.taskId} 
                             className="border-b min-h-[32px] relative hover:bg-muted/25 transition-colors" 
+                            style={{ backgroundColor: milestoneColor.gentle }}
                             data-task-id={task.taskId}
                           >
                             {/* Task Info Cell */}
                             <td className="w-80 border-r bg-background sticky left-0 z-10">
-                              <div className="p-2">
-                                <div className="pl-8">
-                                  <div className="flex items-start gap-3">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2">
-                                        <div className="font-medium text-sm">{task.name}</div>
-                                        <Badge 
-                                          variant="outline" 
-                                          style={{ 
-                                            borderColor: teamColor, 
-                                            color: teamColor 
-                                          }} 
-                                          className="text-xs"
-                                        >
-                                          {task.team}
-                                        </Badge>
-                                        <span className="text-xs text-muted-foreground">{task.durationDays} days</span>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="p-2 cursor-help">
+                                      <div className="pl-8">
+                                        <div className="flex items-center gap-2">
+                                          <div className="font-medium text-sm truncate flex-1">{task.name}</div>
+                                          <Badge 
+                                            variant="outline" 
+                                            style={{ 
+                                              borderColor: teamColor, 
+                                              color: teamColor 
+                                            }} 
+                                            className="text-xs flex-shrink-0"
+                                          >
+                                            {task.team}
+                                          </Badge>
+                                          <span className="text-xs text-muted-foreground flex-shrink-0">{task.durationDays}d</span>
+                                        </div>
                                       </div>
-                                      <div className="text-xs text-muted-foreground mt-1">{task.description}</div>
                                     </div>
-                                  </div>
-                                </div>
-                              </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-sm">
+                                    <div className="space-y-2">
+                                      <div className="font-medium">{task.name}</div>
+                                      <div className="text-sm text-muted-foreground">{task.description}</div>
+                                      <div className="flex items-center gap-4 text-sm">
+                                        <div className="flex items-center gap-1">
+                                          <Users className="w-3 h-3" />
+                                          <Badge variant="outline" style={{ borderColor: teamColor, color: teamColor }}>
+                                            {task.team}
+                                          </Badge>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                          <Clock className="w-3 h-3" />
+                                          <span className="text-xs">{task.durationDays} days</span>
+                                        </div>
+                                      </div>
+                                      {task.sprint && (
+                                        <div className="flex items-center gap-1 text-sm">
+                                          <Zap className="w-3 h-3" />
+                                          <Badge variant="secondary">{task.sprint}</Badge>
+                                        </div>
+                                      )}
+                                      <div className="flex items-center gap-1 text-sm">
+                                        <Calendar className="w-3 h-3" />
+                                        {format(taskStart, 'dd/MM/yyyy', { locale: es })} - {format(taskEnd, 'dd/MM/yyyy', { locale: es })}
+                                      </div>
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </td>
 
                             {/* Task Timeline Cells */}
@@ -509,6 +536,7 @@ export function GanttTimeline({
                                 <td 
                                   key={`task-${task.taskId}-day-${dayIndex}`}
                                   className="p-0 h-[32px] relative w-8 min-w-[32px]"
+                                  style={{ backgroundColor: milestoneColor.gentle }}
                                 >
                                   {isFirstDay && (
                                     <>
