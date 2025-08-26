@@ -468,8 +468,15 @@ export function MonthlyGanttTimeline({ milestones }: MonthlyGanttTimelineProps) 
 
       {/* Contenido del timeline - con scroll horizontal */}
       <div className="relative bg-gray-100">
-        {milestones.map((milestone, milestoneIndex) => {
-          const milestoneColor = getMilestoneColor(milestoneIndex);
+        {milestones
+          .map((milestone, originalIndex) => ({ milestone, originalIndex }))
+          .sort((a, b) => {
+            const aStartDate = a.milestone.startDate ? parseISO(a.milestone.startDate) : new Date();
+            const bStartDate = b.milestone.startDate ? parseISO(b.milestone.startDate) : new Date();
+            return aStartDate.getTime() - bStartDate.getTime();
+          })
+          .map(({ milestone, originalIndex }) => {
+          const milestoneColor = getMilestoneColor(originalIndex); // Use original index for consistent colors
           
           return (
             <div 
@@ -484,7 +491,7 @@ export function MonthlyGanttTimeline({ milestones }: MonthlyGanttTimelineProps) 
               <div className="flex border-b border-gray-300">
                 <div 
                   className="w-32 text-white p-3 font-bold border-r border-gray-300 flex-shrink-0"
-                  style={{ backgroundColor: getMilestoneColor(milestoneIndex).main }}
+                  style={{ backgroundColor: milestoneColor.main }}
                 >
                   {milestone.milestoneName}
                 </div>
@@ -507,7 +514,7 @@ export function MonthlyGanttTimeline({ milestones }: MonthlyGanttTimelineProps) 
                       <div
                         className="absolute top-2 h-8 rounded flex items-center justify-between px-2 shadow-sm"
                         style={{
-                          backgroundColor: getMilestoneColor(milestoneIndex).main,
+                          backgroundColor: milestoneColor.main,
                           ...getTaskBarStyle({
                             taskId: milestone.milestoneId,
                             name: milestone.milestoneName,

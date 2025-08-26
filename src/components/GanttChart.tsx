@@ -10,7 +10,7 @@ import { BarChart3, Calendar, Users, Clock, Grid3X3, List, ChevronDown, ChevronU
 
 export function GanttChart() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [projectStartDate, setProjectStartDate] = useState<Date>(new Date());
+  const [projectStartDate, setProjectStartDate] = useState<Date>(new Date('2024-08-26')); // Set to a specific date
   const [viewMode, setViewMode] = useState<'interactive' | 'monthly'>('interactive');
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(new Set());
 
