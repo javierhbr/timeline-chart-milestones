@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react'
 import { Card } from './ui/card';
 import { Badge } from './ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
-import { ChevronDown, ChevronRight, Calendar, Clock, Users, Edit, Zap, Link } from 'lucide-react';
+import { ChevronDown, ChevronRight, Calendar, Clock, Users, Edit, Zap } from 'lucide-react';
 import { Milestone, Task, teamColors, generateWeeks, getTaskPosition, calculateMilestoneDates, getTaskDependencyInfo, getTimelineRange } from '../utils/dateUtils';
 import { TaskEditModal } from './TaskEditModal';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
@@ -211,6 +211,7 @@ export function GanttTimeline({
     }
   };
 
+
   const TaskBar = ({ task }: { task: Task }) => {
     const taskStart = parseISO(task.startDate!);
     const taskEnd = parseISO(task.endDate!);
@@ -229,7 +230,7 @@ export function GanttTimeline({
         <Tooltip>
           <TooltipTrigger asChild>
             <div
-              className="w-full h-8 rounded-lg cursor-move flex items-center justify-between shadow-sm border border-white/20 group"
+              className="w-full h-6 rounded-lg cursor-move flex items-center justify-between shadow-sm border border-white/20 group"
               style={{
                 background: `linear-gradient(135deg, ${teamColor} 0%, ${teamColor}dd 100%)`,
                 minWidth: '30px'
@@ -469,12 +470,12 @@ export function GanttTimeline({
                         return (
                           <tr 
                             key={task.taskId} 
-                            className="border-b min-h-[50px] relative hover:bg-muted/25 transition-colors" 
+                            className="border-b min-h-[32px] relative hover:bg-muted/25 transition-colors" 
                             data-task-id={task.taskId}
                           >
                             {/* Task Info Cell */}
                             <td className="w-80 border-r bg-background sticky left-0 z-10">
-                              <div className="p-4">
+                              <div className="p-2">
                                 <div className="pl-8">
                                   <div className="flex items-start gap-3">
                                     <div className="flex-1">
@@ -507,39 +508,35 @@ export function GanttTimeline({
                               return (
                                 <td 
                                   key={`task-${task.taskId}-day-${dayIndex}`}
-                                  className="p-0 h-[50px] relative w-8 min-w-[32px]"
+                                  className="p-0 h-[32px] relative w-8 min-w-[32px]"
                                 >
                                   {isFirstDay && (
                                     <>
-                                      {/* Task Bar - shorter, more compact */}
+                                      {/* Draggable Task Bar */}
                                       <div 
-                                        className="absolute inset-y-3 z-10 rounded-md" 
+                                        className="absolute inset-y-1 z-10 flex items-center transition-all duration-300" 
                                         style={{ 
-                                          left: '4px',
-                                          width: `${Math.min(taskDurationDays * 20, 120)}px`, // Shorter bars, max 120px
-                                          background: teamColor,
-                                          minWidth: '60px'
+                                          left: '2px',
+                                          width: `${Math.min(taskDurationDays * 32 - 4, (dayColumns.length - dayIndex) * 32 - 4)}px`,
+                                          minWidth: `${Math.min(30, (dayColumns.length - dayIndex) * 32 - 4)}px`
                                         }}
                                       >
-                                        <div className="h-full rounded-md flex items-center justify-center px-2">
-                                          <span className="text-white text-xs font-medium truncate">
-                                            {task.team}
-                                          </span>
-                                        </div>
+                                        <TaskBar task={task} />
                                       </div>
                                       
                                       {/* Task name and dates to the right */}
                                       <div 
-                                        className="absolute top-1/2 -translate-y-1/2 z-10 flex items-center gap-2 text-xs whitespace-nowrap"
+                                        className="absolute top-1/2 -translate-y-1/2 z-5 flex items-center gap-2 text-xs whitespace-nowrap pointer-events-none"
                                         style={{ 
-                                          left: `${Math.min(taskDurationDays * 20, 120) + 12}px` // Position after the bar
+                                          left: `${Math.min(taskDurationDays * 32, (dayColumns.length - dayIndex) * 32) + 8}px`
                                         }}
                                       >
-                                        <span className="font-medium text-gray-700">← {task.name}</span>
+                                        <span className="font-medium text-gray-700">{task.name}</span>
                                         <span className="text-blue-600 text-xs">
-                                          📅 {format(taskStart, 'dd/MM', { locale: es })} - {format(taskEnd, 'dd/MM', { locale: es })}
+                                          {format(taskStart, 'dd/MM', { locale: es })} - {format(taskEnd, 'dd/MM', { locale: es })}
                                         </span>
                                       </div>
+                                      
                                     </>
                                   )}
                                 </td>
