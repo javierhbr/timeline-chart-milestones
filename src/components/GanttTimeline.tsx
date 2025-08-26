@@ -533,7 +533,7 @@ export function GanttTimeline({
                     <React.Fragment key={milestone.milestoneId}>
                       {/* Milestone Row */}
                       <tr 
-                        className="border-b min-h-[40px] relative" 
+                        className="border-b min-h-[72px] relative" 
                         style={{ 
                           backgroundColor: milestoneColor.gentle,
                           borderLeft: `4px solid ${milestoneColor.main}`
@@ -544,7 +544,7 @@ export function GanttTimeline({
                           <div className="p-2">
                             <button 
                               onClick={() => toggleMilestone(milestone.milestoneId)} 
-                              className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded-lg p-3 transition-colors h-[44px]"
+                              className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded-lg p-3 transition-colors min-h-[44px]"
                             >
                               {expandedMilestones.has(milestone.milestoneId) ? 
                                 <ChevronDown className="w-5 h-5 text-primary" /> : 
@@ -561,16 +561,18 @@ export function GanttTimeline({
                         </td>
 
                         {/* Milestone Timeline Cell */}
-                        <td className="p-0 h-[40px] relative" style={{width: `${dayColumns.length * zoomLevel}px`}}>
+                        <td className="p-0 h-[72px] relative" style={{width: `${dayColumns.length * zoomLevel}px`}}>
                           <div className="overflow-x-auto h-full relative">
-                            <div className="h-full relative" style={{width: `${dayColumns.length * zoomLevel}px`, minHeight: '40px'}}>
+                            <div className="h-full relative" style={{width: `${dayColumns.length * zoomLevel}px`, minHeight: '72px'}}>
                               <div 
-                                className="absolute top-2 bottom-2 rounded-lg shadow-lg border-2 border-white/40 overflow-hidden z-10 flex items-center px-3" 
+                                className="absolute rounded-lg shadow-lg border-2 border-white/40 overflow-hidden z-10 flex items-center px-3" 
                                 style={{ 
                                   left: `${milestoneStartDay * zoomLevel + 2}px`,
                                   width: `${milestoneDurationDays * zoomLevel - 4}px`,
                                   background: `linear-gradient(135deg, ${milestoneColor.main} 0%, ${milestoneColor.secondary} 100%)`,
-                                  minWidth: Math.min(80, zoomLevel * 2) + 'px'
+                                  minWidth: Math.min(80, zoomLevel * 2) + 'px',
+                                  height: '44px',
+                                  top: '14px'
                                 }}
                               >
                                 <div className="flex items-center gap-2 text-white">
