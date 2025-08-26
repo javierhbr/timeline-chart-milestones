@@ -94,15 +94,31 @@ export function GanttTimeline({
       dayOfWeek: number;
       isWeekStart: boolean;
       weekNumber: number;
+      isNewMonth: boolean;
+      monthName: string;
+      year: number;
     }> = [];
+    
+    let lastMonth = -1;
     
     for (let i = 0; i < timelineData.totalDays; i++) {
       const currentDate = addDays(timelineData.timelineStart, i);
+      const currentMonth = currentDate.getMonth();
+      const isNewMonth = currentMonth !== lastMonth;
+      
+      if (isNewMonth) {
+        lastMonth = currentMonth;
+      }
+      
       columns.push({
         date: currentDate,
         dayOfWeek: currentDate.getDay(),
         isWeekStart: currentDate.getDay() === 1, // Monday
-        weekNumber: Math.floor(i / 7)
+        weekNumber: Math.floor(i / 7),
+        isNewMonth: isNewMonth,
+        monthName: ['January', 'February', 'March', 'April', 'May', 'June', 
+                   'July', 'August', 'September', 'October', 'November', 'December'][currentMonth],
+        year: currentDate.getFullYear()
       });
     }
     return columns;
@@ -389,65 +405,113 @@ export function GanttTimeline({
                     </div>
                   </th>
                   
-                  {/* Timeline Header - weekly view */}
+                  {/* Timeline Header - monthly and weekly view */}
                   <th className="bg-muted/50 relative" style={{width: '90vw'}}>
                     <div className="overflow-x-auto">
-                      <div className="flex" style={{width: `${dayColumns.length * zoomLevel}px`}}>
-                        {dayColumns.map((day, index) => (
-                          <div 
-                            key={`day-${index}`}
-                            className={`relative text-xs flex-shrink-0 ${day.isWeekStart ? 'border-l-2 border-l-blue-500' : ''}`}
-                            style={{width: `${zoomLevel}px`, minWidth: `${zoomLevel}px`}}
-                          >
-                            {/* Show date only on Mondays (week start) - adaptive based on zoom */}
-                            {day.isWeekStart && (
-                              <div className="px-0.5 py-0.5 text-center">
-                                {zoomLevel >= 24 ? (
-                                  <>
-                                    <div className="text-[9px] font-medium">
-                                      {format(day.date, 'dd/MM', { locale: es })}
-                                    </div>
-                                    <div className="text-[7px] text-muted-foreground">
-                                      Sem {day.weekNumber + 1}
-                                    </div>
-                                  </>
-                                ) : zoomLevel >= 12 ? (
-                                  <div className="text-[7px] font-medium transform -rotate-90 origin-center whitespace-nowrap">
-                                    {format(day.date, 'dd/MM', { locale: es })}
+                      <div className="flex flex-col" style={{width: `${dayColumns.length * zoomLevel}px`}}>
+                        {/* Month Header Row */}
+                        <div className="flex border-b border-muted-foreground/20 pb-1">
+                          {(() => {
+                            const monthGroups: { month: string; year: number; startIndex: number; width: number }[] = [];
+                            let currentMonth = '';
+                            let currentYear = 0;
+                            let startIndex = 0;
+                            
+                            dayColumns.forEach((day, index) => {
+                              if (day.isNewMonth || index === 0) {
+                                if (currentMonth && monthGroups.length > 0) {
+                                  monthGroups[monthGroups.length - 1].width = (index - startIndex) * zoomLevel;
+                                }
+                                currentMonth = day.monthName;
+                                currentYear = day.year;
+                                startIndex = index;
+                                monthGroups.push({ month: currentMonth, year: currentYear, startIndex, width: 0 });
+                              }
+                              
+                              if (index === dayColumns.length - 1) {
+                                monthGroups[monthGroups.length - 1].width = (index - startIndex + 1) * zoomLevel;
+                              }
+                            });
+                            
+                            return monthGroups.map((group, idx) => (
+                              <div 
+                                key={`month-${idx}`}
+                                className="flex items-center justify-center text-sm font-semibold text-primary bg-primary/5 border-r border-muted-foreground/20"
+                                style={{ width: `${group.width}px`, minWidth: `${group.width}px` }}
+                              >
+                                {zoomLevel >= 32 ? (
+                                  <div className="text-center">
+                                    <div>{group.month}</div>
+                                    <div className="text-xs text-muted-foreground">{group.year}</div>
                                   </div>
+                                ) : zoomLevel >= 16 ? (
+                                  `${group.month} ${group.year}`
                                 ) : (
-                                  <div className="text-[6px] font-medium transform -rotate-90 origin-center whitespace-nowrap">
-                                    {format(day.date, 'dd/M', { locale: es })}
-                                  </div>
+                                  `${group.month.slice(0, 3)} ${group.year}`
                                 )}
                               </div>
-                            )}
-                            
-                            {/* Deliverable markers for this specific day */}
-                            {deliverableMarkers
-                              .filter(marker => {
-                                const markerDay = differenceInDays(marker.date, timelineStart);
-                                return markerDay === index;
-                              })
-                              .map((marker, markerIndex) => (
-                                <div 
-                                  key={`deliverable-${index}-${markerIndex}`} 
-                                  className="absolute top-0 left-1/2 transform -translate-x-1/2 flex flex-col items-center z-30 pointer-events-none" 
-                                >
-                                  <div className="flex flex-col items-center">
-                                    <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[8px] border-t-red-600 drop-shadow-sm"></div>
-                                    <div className="w-0.5 h-12 bg-red-600"></div>
-                                  </div>
-                                  <div className="absolute top-6 bg-white border border-gray-300 rounded-md px-1 py-0.5 text-[10px] whitespace-nowrap shadow-lg opacity-0 hover:opacity-100 transition-opacity pointer-events-auto z-40">
-                                    <div className="font-medium text-gray-900">Deliverable</div>
-                                    <div className="text-gray-600 text-[8px]">{marker.name}</div>
-                                    <div className="text-gray-500 text-[8px]">{format(marker.date, 'd MMM yyyy', { locale: es })}</div>
-                                  </div>
+                            ));
+                          })()}
+                        </div>
+                        
+                        {/* Week Header Row */}
+                        <div className="flex">
+                          {dayColumns.map((day, index) => (
+                            <div 
+                              key={`day-${index}`}
+                              className={`relative text-xs flex-shrink-0 ${day.isWeekStart ? 'border-l-2 border-l-blue-500' : ''}`}
+                              style={{width: `${zoomLevel}px`, minWidth: `${zoomLevel}px`}}
+                            >
+                              {/* Show date only on Mondays (week start) - adaptive based on zoom */}
+                              {day.isWeekStart && (
+                                <div className="px-0.5 py-0.5 text-center">
+                                  {zoomLevel >= 24 ? (
+                                    <>
+                                      <div className="text-[9px] font-medium">
+                                        {format(day.date, 'dd/MM', { locale: es })}
+                                      </div>
+                                      <div className="text-[7px] text-muted-foreground">
+                                        Sem {day.weekNumber + 1}
+                                      </div>
+                                    </>
+                                  ) : zoomLevel >= 12 ? (
+                                    <div className="text-[7px] font-medium transform -rotate-90 origin-center whitespace-nowrap">
+                                      {format(day.date, 'dd/MM', { locale: es })}
+                                    </div>
+                                  ) : (
+                                    <div className="text-[6px] font-medium transform -rotate-90 origin-center whitespace-nowrap">
+                                      {format(day.date, 'dd/M', { locale: es })}
+                                    </div>
+                                  )}
                                 </div>
-                              ))
-                            }
-                          </div>
-                        ))}
+                              )}
+                              
+                              {/* Deliverable markers for this specific day */}
+                              {deliverableMarkers
+                                .filter(marker => {
+                                  const markerDay = differenceInDays(marker.date, timelineStart);
+                                  return markerDay === index;
+                                })
+                                .map((marker, markerIndex) => (
+                                  <div 
+                                    key={`deliverable-${index}-${markerIndex}`} 
+                                    className="absolute top-0 left-1/2 transform -translate-x-1/2 flex flex-col items-center z-30 pointer-events-none" 
+                                  >
+                                    <div className="flex flex-col items-center">
+                                      <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[8px] border-t-red-600 drop-shadow-sm"></div>
+                                      <div className="w-0.5 h-12 bg-red-600"></div>
+                                    </div>
+                                    <div className="absolute top-6 bg-white border border-gray-300 rounded-md px-1 py-0.5 text-[10px] whitespace-nowrap shadow-lg opacity-0 hover:opacity-100 transition-opacity pointer-events-auto z-40">
+                                      <div className="font-medium text-gray-900">Deliverable</div>
+                                      <div className="text-gray-600 text-[8px]">{marker.name}</div>
+                                      <div className="text-gray-500 text-[8px]">{format(marker.date, 'd MMM yyyy', { locale: es })}</div>
+                                    </div>
+                                  </div>
+                                ))
+                              }
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </th>
@@ -466,7 +530,7 @@ export function GanttTimeline({
                     <React.Fragment key={milestone.milestoneId}>
                       {/* Milestone Row */}
                       <tr 
-                        className="border-b min-h-[60px] relative" 
+                        className="border-b min-h-[40px] relative" 
                         style={{ 
                           backgroundColor: milestoneColor.gentle,
                           borderLeft: `4px solid ${milestoneColor.main}`
@@ -474,10 +538,10 @@ export function GanttTimeline({
                       >
                         {/* Milestone Info Cell */}
                         <td className="border-r bg-background sticky left-0 z-10" style={{width: '10vw'}}>
-                          <div className="p-4">
+                          <div className="p-2">
                             <button 
                               onClick={() => toggleMilestone(milestone.milestoneId)} 
-                              className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded-lg p-3 transition-colors"
+                              className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded-lg p-2 transition-colors"
                             >
                               {expandedMilestones.has(milestone.milestoneId) ? 
                                 <ChevronDown className="w-5 h-5 text-primary" /> : 
@@ -497,17 +561,16 @@ export function GanttTimeline({
                         </td>
 
                         {/* Milestone Timeline Cell */}
-                        <td className="p-0 h-[60px] relative" style={{width: '90vw'}}>
+                        <td className="p-0 h-[40px] relative" style={{width: '90vw'}}>
                           <div className="overflow-x-auto h-full relative">
-                            <div className="h-full relative" style={{width: `${dayColumns.length * zoomLevel}px`, minHeight: '60px'}}>
+                            <div className="h-full relative" style={{width: `${dayColumns.length * zoomLevel}px`, minHeight: '40px'}}>
                               <div 
-                                className="absolute inset-y-1 rounded-lg shadow-lg border-2 border-white/40 overflow-hidden z-10 flex items-center px-2" 
+                                className="absolute top-2 bottom-2 rounded-lg shadow-lg border-2 border-white/40 overflow-hidden z-10 flex items-center px-3" 
                                 style={{ 
                                   left: `${milestoneStartDay * zoomLevel + 2}px`,
                                   width: `${milestoneDurationDays * zoomLevel - 4}px`,
                                   background: `linear-gradient(135deg, ${milestoneColor.main} 0%, ${milestoneColor.secondary} 100%)`,
-                                  minWidth: Math.min(60, zoomLevel * 2) + 'px',
-                                  height: '56px'
+                                  minWidth: Math.min(80, zoomLevel * 2) + 'px'
                                 }}
                               >
                                 <div className="flex items-center gap-2 text-white">
