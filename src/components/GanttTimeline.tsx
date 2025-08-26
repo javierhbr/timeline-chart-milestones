@@ -49,7 +49,7 @@ export function GanttTimeline({
   }, []);
 
   const zoomOut = useCallback(() => {
-    setZoomLevel(prev => Math.max(Math.round(prev / 1.5), 16)); // Min 16px por día  
+    setZoomLevel(prev => Math.max(Math.round(prev / 1.5), 8)); // Min 8px por día  
   }, []);
 
   const resetZoom = useCallback(() => {
@@ -334,7 +334,7 @@ export function GanttTimeline({
             variant="outline"
             size="sm"
             onClick={zoomOut}
-            disabled={zoomLevel <= 16}
+            disabled={zoomLevel <= 8}
             className="flex items-center gap-1"
           >
             <ZoomOut className="w-4 h-4" />
@@ -399,15 +399,27 @@ export function GanttTimeline({
                             className={`relative text-xs flex-shrink-0 ${day.isWeekStart ? 'border-l-2 border-l-blue-500' : ''}`}
                             style={{width: `${zoomLevel}px`, minWidth: `${zoomLevel}px`}}
                           >
-                            {/* Show date only on Mondays (week start) */}
+                            {/* Show date only on Mondays (week start) - adaptive based on zoom */}
                             {day.isWeekStart && (
-                              <div className="px-1 py-2 text-center">
-                                <div className="text-[9px] font-medium">
-                                  {format(day.date, 'dd/MM', { locale: es })}
-                                </div>
-                                <div className="text-[8px] text-muted-foreground">
-                                  Sem {day.weekNumber + 1}
-                                </div>
+                              <div className="px-0.5 py-0.5 text-center">
+                                {zoomLevel >= 24 ? (
+                                  <>
+                                    <div className="text-[9px] font-medium">
+                                      {format(day.date, 'dd/MM', { locale: es })}
+                                    </div>
+                                    <div className="text-[7px] text-muted-foreground">
+                                      Sem {day.weekNumber + 1}
+                                    </div>
+                                  </>
+                                ) : zoomLevel >= 12 ? (
+                                  <div className="text-[7px] font-medium transform -rotate-90 origin-center whitespace-nowrap">
+                                    {format(day.date, 'dd/MM', { locale: es })}
+                                  </div>
+                                ) : (
+                                  <div className="text-[6px] font-medium transform -rotate-90 origin-center whitespace-nowrap">
+                                    {format(day.date, 'dd/M', { locale: es })}
+                                  </div>
+                                )}
                               </div>
                             )}
                             
