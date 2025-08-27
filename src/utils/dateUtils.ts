@@ -91,11 +91,27 @@ export function calculateProjectDates(milestones: Milestone[], projectStartDate:
     }
   }
   
+  // Set to track tasks currently being calculated to detect circular dependencies
+  const calculatingTasks = new Set<string>();
+  
   // Función recursiva para calcular fechas de una tarea
   const calculateTaskDates = (task: Task, milestone: Milestone): { start: Date; end: Date } => {
     if (taskDateMap.has(task.taskId)) {
       return taskDateMap.get(task.taskId)!;
     }
+    
+    // Check for circular dependency
+    if (calculatingTasks.has(task.taskId)) {
+      console.warn(`Circular dependency detected for task: ${task.name} (${task.taskId})`);
+      // Return a default date to break the cycle
+      const defaultStart = projectStartDate;
+      const defaultEnd = addBusinessDays(defaultStart, task.durationDays - 1);
+      const dates = { start: defaultStart, end: defaultEnd };
+      taskDateMap.set(task.taskId, dates);
+      return dates;
+    }
+    
+    calculatingTasks.add(task.taskId);
     
     // Si preserveManualDates está activo y la tarea ya tiene fechas, usarlas
     if (preserveManualDates && task.startDate && task.endDate) {
@@ -104,6 +120,7 @@ export function calculateProjectDates(milestones: Milestone[], projectStartDate:
         end: parseISO(task.endDate)
       };
       taskDateMap.set(task.taskId, dates);
+      calculatingTasks.delete(task.taskId);
       return dates;
     }
     
@@ -146,6 +163,9 @@ export function calculateProjectDates(milestones: Milestone[], projectStartDate:
     
     const dates = { start: taskStartDate, end: taskEndDate };
     taskDateMap.set(task.taskId, dates);
+    
+    // Remove from calculating set
+    calculatingTasks.delete(task.taskId);
     
     return dates;
   };

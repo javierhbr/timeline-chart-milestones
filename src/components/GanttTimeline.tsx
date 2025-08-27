@@ -12,6 +12,7 @@ import { es } from 'date-fns/locale';
 interface GanttTimelineProps {
   milestones: Milestone[];
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
+  onRecalculateTimeline?: () => void;
   expandedMilestones?: Set<string>;
   onToggleMilestone?: (milestoneId: string) => void;
   expandAllMilestones?: () => void;
@@ -21,6 +22,7 @@ interface GanttTimelineProps {
 export function GanttTimeline({ 
   milestones, 
   onUpdateTask, 
+  onRecalculateTimeline,
   expandedMilestones: propExpandedMilestones,
   onToggleMilestone: propOnToggleMilestone,
   expandAllMilestones,
@@ -298,6 +300,7 @@ export function GanttTimeline({
     const dependencyInfo = getTaskDependencyInfo(task, allMilestonesForDeps);
 
     const handleEditClick = (e: React.MouseEvent) => { 
+      e.preventDefault();
       e.stopPropagation(); 
       setEditingTask(task); 
       setIsEditModalOpen(true); 
@@ -313,7 +316,14 @@ export function GanttTimeline({
                 background: `linear-gradient(135deg, ${teamColor} 0%, ${teamColor}dd 100%)`,
                 minWidth: '30px'
               }}
-              onMouseDown={(e) => handleMouseDown(e, task.taskId, 'move', taskStart, taskEnd)}
+              onMouseDown={(e) => {
+                // Don't start dragging if clicking on edit button
+                const target = e.target as HTMLElement;
+                if (target.closest('button[title="Edit task"]')) {
+                  return;
+                }
+                handleMouseDown(e, task.taskId, 'move', taskStart, taskEnd);
+              }}
             >
               <div 
                 className="w-3 h-full bg-white/30 cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity rounded-l-lg flex items-center justify-center" 
@@ -335,7 +345,7 @@ export function GanttTimeline({
               </div>
               
               <button 
-                onClick={handleEditClick} 
+                onClick={handleEditClick}
                 className="w-6 h-6 bg-white/30 hover:bg-white/50 rounded cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center mr-1" 
                 title="Edit task"
               >
@@ -812,8 +822,16 @@ export function GanttTimeline({
         task={editingTask} 
         isOpen={isEditModalOpen} 
         onClose={() => setIsEditModalOpen(false)} 
-        onSave={onUpdateTask} 
+        onSave={(taskId, updates) => {
+          onUpdateTask(taskId, updates);
+          // Trigger timeline recalculation when dependencies change
+          if (updates.dependsOn !== undefined && onRecalculateTimeline) {
+            onRecalculateTimeline();
+          }
+        }}
+        milestones={milestones}
       />
+      
     </>
   );
 }

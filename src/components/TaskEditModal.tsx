@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Badge } from './ui/badge';
-import { Calendar, Clock, Users, Save, X, Zap } from 'lucide-react';
-import { Task, teamColors } from '../utils/dateUtils';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from './ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Calendar, Clock, Users, Save, X, Zap, ChevronDown, Link, Trash2 } from 'lucide-react';
+import { Task, Milestone, teamColors } from '../utils/dateUtils';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -16,6 +18,7 @@ interface TaskEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (taskId: string, updates: Partial<Task>) => void;
+  milestones: Milestone[];
 }
 
 const availableTeams = [
@@ -27,14 +30,19 @@ const availableSprints = [
   'Sprint 7', 'Sprint 8', 'Sprint 9', 'Sprint 10', 'Backlog', 'Icebox'
 ];
 
-export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalProps) {
+export function TaskEditModal({ task, isOpen, onClose, onSave, milestones }: TaskEditModalProps) {
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     team: '',
     sprint: '',
-    durationDays: 1
+    durationDays: 1,
+    dependsOn: [] as string[]
   });
+  
+  const [dependencyPopoverOpen, setDependencyPopoverOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState('');
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -46,7 +54,8 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
         description: task.description,
         team: task.team,
         sprint: task.sprint || '',
-        durationDays: task.durationDays
+        durationDays: task.durationDays,
+        dependsOn: task.dependsOn || []
       });
       setErrors({});
     }
@@ -82,8 +91,9 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
       name: formData.name.trim(),
       description: formData.description.trim(),
       team: formData.team,
-      sprint: formData.sprint || undefined,
-      durationDays: formData.durationDays
+      sprint: formData.sprint === 'none' ? undefined : formData.sprint || undefined,
+      durationDays: formData.durationDays,
+      dependsOn: formData.dependsOn
     };
 
     onSave(task.taskId, updates);
@@ -115,17 +125,75 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
 
   const teamColor = teamColors[task.team] || teamColors.Default;
 
+  // Get all available tasks for dependencies (excluding the current task)
+  const availableTasks = milestones.flatMap(milestone => 
+    milestone.tasks.filter(t => t.taskId !== task?.taskId)
+  );
+
+
+  // Group tasks by milestone for better UX
+  const tasksByMilestone = milestones.reduce((acc, milestone) => {
+    const tasksInMilestone = milestone.tasks.filter(t => t.taskId !== task?.taskId);
+    if (tasksInMilestone.length > 0) {
+      acc[milestone.milestoneId] = {
+        milestone: milestone.milestoneName,
+        tasks: tasksInMilestone
+      };
+    }
+    return acc;
+  }, {} as Record<string, { milestone: string; tasks: Task[] }>);
+
+
+  const handleAddDependency = (taskId: string) => {
+    if (!formData.dependsOn.includes(taskId)) {
+      setFormData(prev => ({
+        ...prev,
+        dependsOn: [...prev.dependsOn, taskId]
+      }));
+    }
+    setDependencyPopoverOpen(false);
+    setSearchValue('');
+  };
+
+  const handleRemoveDependency = (taskId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      dependsOn: prev.dependsOn.filter(id => id !== taskId)
+    }));
+  };
+
+  // Get dependency task details for display
+  const getDependencyTaskDetails = (taskId: string) => {
+    for (const milestone of milestones) {
+      const task = milestone.tasks.find(t => t.taskId === taskId);
+      if (task) {
+        return { task, milestone: milestone.milestoneName };
+      }
+    }
+    return null;
+  };
+
+  // Filter tasks for search
+  const filteredTasks = availableTasks.filter(task => 
+    task.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+    task.description.toLowerCase().includes(searchValue.toLowerCase())
+  );
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-2xl w-full max-h-[90vh]" style={{ zIndex: 9999 }}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
             Edit Task
           </DialogTitle>
+          <DialogDescription>
+            Modify task details, assign teams, set duration, and manage dependencies.
+          </DialogDescription>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="max-h-[70vh] overflow-y-auto pr-2">
+          <div className="space-y-4">
           {/* Date information (read-only) */}
           {task.startDate && task.endDate && (
             <div className="p-3 bg-muted/50 rounded-lg">
@@ -203,7 +271,7 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
                 <SelectValue placeholder="Select sprint (optional)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No sprint assigned</SelectItem>
+                <SelectItem value="none">No sprint assigned</SelectItem>
                 {availableSprints.map((sprint) => (
                   <SelectItem key={sprint} value={sprint}>
                     {sprint}
@@ -239,6 +307,81 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
             </p>
           </div>
 
+          {/* Section Separator */}
+          <hr className="my-6 border-muted" />
+          
+          {/* Dependencies */}
+          <div className="space-y-3 border-2 border-blue-200 rounded-lg p-4 bg-blue-50/30">
+            <Label className="flex items-center gap-2 text-base font-semibold">
+              <Link className="w-5 h-5 text-blue-600" />
+              Task Dependencies
+            </Label>
+            <p className="text-sm text-muted-foreground">
+              Select tasks that must be completed before this task can start
+            </p>
+            
+            {/* Current Dependencies */}
+            {formData.dependsOn.length > 0 && (
+              <div className="space-y-1 mb-3">
+                {formData.dependsOn.map(depId => {
+                  const depDetails = getDependencyTaskDetails(depId);
+                  if (!depDetails) return null;
+                  
+                  return (
+                    <div key={depId} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{depDetails.task.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {depDetails.milestone} • {depDetails.task.team}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveDependency(depId)}
+                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            
+            {/* Add Dependency Dropdown */}
+            {availableTasks.length > 0 ? (
+              <div className="space-y-2">
+                <Select onValueChange={(value) => {
+                  handleAddDependency(value);
+                }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={`Add task dependency... (${availableTasks.length} available)`} />
+                  </SelectTrigger>
+                  <SelectContent style={{ zIndex: 99999 }}>
+                    {availableTasks
+                      .filter(task => !formData.dependsOn.includes(task.taskId))
+                      .map(task => {
+                        return (
+                          <SelectItem key={task.taskId} value={task.taskId}>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{task.name}</span>
+                              <span className="text-xs text-muted-foreground">({task.team})</span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="p-3 text-center text-sm text-muted-foreground border border-dashed rounded-lg">
+                No other tasks available for dependencies
+              </div>
+            )}
+          </div>
+
           {/* Team and sprint badges */}
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1">
@@ -261,6 +404,7 @@ export function TaskEditModal({ task, isOpen, onClose, onSave }: TaskEditModalPr
                 </Badge>
               </div>
             )}
+          </div>
           </div>
         </div>
 

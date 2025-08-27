@@ -38,11 +38,17 @@ export default function App() {
         return calculateProjectDates(updatedMilestones, projectStartDate, true);
       }
       
-      if (updates.durationDays) {
+      if (updates.durationDays || updates.dependsOn !== undefined) {
         return calculateProjectDates(updatedMilestones, projectStartDate, false);
       }
 
       return updatedMilestones;
+    });
+  }, [projectStartDate]);
+
+  const handleRecalculateTimeline = useCallback(() => {
+    setMilestones(prevMilestones => {
+      return calculateProjectDates(prevMilestones, projectStartDate, false);
     });
   }, [projectStartDate]);
 
@@ -175,6 +181,7 @@ export default function App() {
           <GanttTimeline 
             milestones={milestones}
             onUpdateTask={handleUpdateTask}
+            onRecalculateTimeline={handleRecalculateTimeline}
             expandedMilestones={expandedMilestones}
             onToggleMilestone={(milestoneId: string) => {
               const newExpanded = new Set(expandedMilestones);
