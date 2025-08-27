@@ -17,8 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { Command, CommandEmpty, CommandInput, CommandItem } from './ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Badge } from './ui/badge';
 import {
   Calendar,
@@ -29,7 +27,6 @@ import {
   Zap,
   Link,
   Trash2,
-  ChevronDown,
 } from 'lucide-react';
 import { Task, Milestone, teamColors } from '../utils/dateUtils';
 import { format, parseISO } from 'date-fns';
@@ -86,7 +83,6 @@ export function TaskEditModal({
     dependsOn: [] as string[],
   });
 
-  const [dependencyPopoverOpen, setDependencyPopoverOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Update form when task changes
@@ -171,15 +167,28 @@ export function TaskEditModal({
   const availableTasks = milestones.flatMap(milestone =>
     milestone.tasks.filter(t => t.taskId !== task?.taskId)
   );
+  
+  // Debug logging for component state
+  console.log('🏗️ TaskEditModal render - availableTasks:', availableTasks.length);
+  console.log('📊 Milestones data:', milestones.length);
+  console.log('🎯 Current task:', task?.taskId);
+  console.log('📝 Current dependencies:', formData.dependsOn);
 
   const handleAddDependency = (taskId: string) => {
+    console.log('🔍 handleAddDependency called with taskId:', taskId);
+    console.log('📋 Current dependencies:', formData.dependsOn);
+    console.log('✅ Available tasks count:', availableTasks.length);
+    console.log('🎯 Filtered available tasks:', availableTasks.filter(t => !formData.dependsOn.includes(t.taskId)).length);
+    
     if (!formData.dependsOn.includes(taskId)) {
+      console.log('➕ Adding dependency:', taskId);
       setFormData(prev => ({
         ...prev,
         dependsOn: [...prev.dependsOn, taskId],
       }));
+    } else {
+      console.log('⚠️ Dependency already exists:', taskId);
     }
-    setDependencyPopoverOpen(false);
   };
 
   const handleRemoveDependency = (taskId: string) => {
@@ -217,7 +226,7 @@ export function TaskEditModal({
           z-index: 10000 !important;
         }
         .task-edit-modal [data-radix-select-content] {
-          z-index: 10000 !important;
+          z-index: 10002 !important;
         }
         .task-edit-modal [data-radix-popover-content] {
           z-index: 10001 !important;
@@ -425,68 +434,38 @@ export function TaskEditModal({
                   </div>
                 )}
 
-                {/* Add Dependency Dropdown - Consistent Style */}
+                {/* Add Dependency Dropdown - Using Radix UI Select */}
                 {availableTasks.length > 0 ? (
-                  <Popover
-                    open={dependencyPopoverOpen}
-                    onOpenChange={setDependencyPopoverOpen}
+                  <Select 
+                    value="" 
+                    onValueChange={(value: string) => {
+                      console.log('🎯 Select onValueChange triggered with:', value);
+                      handleAddDependency(value);
+                    }}
+                    onOpenChange={(open: boolean) => {
+                      console.log('📖 Select dropdown opened/closed:', open);
+                      if (open) {
+                        const filteredTasks = availableTasks.filter(t => !formData.dependsOn.includes(t.taskId));
+                        console.log('📝 Tasks available in dropdown:', filteredTasks.map(t => ({ id: t.taskId, name: t.name })));
+                      }
+                    }}
                   >
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        role="combobox"
-                        aria-expanded={dependencyPopoverOpen}
-                        className="w-full justify-between h-10 font-normal text-sm"
-                      >
-                        Add task dependency... ({availableTasks.length}{' '}
-                        available)
-                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-full p-0 max-h-64 !z-[10001]"
-                      align="start"
-                      style={{ zIndex: 10001 }}
-                    >
-                      <Command>
-                        <CommandInput
-                          placeholder="Search tasks..."
-                          className="h-9"
-                        />
-                        <CommandEmpty className="py-6 text-center text-sm">
-                          No tasks found.
-                        </CommandEmpty>
-                        <div className="max-h-48 overflow-auto">
-                          {availableTasks
-                            .filter(t => !formData.dependsOn.includes(t.taskId))
-                            .map(task => (
-                              <CommandItem
-                                key={task.taskId}
-                                value={`${task.name} ${task.taskId} ${task.team}`}
-                                onSelect={() =>
-                                  handleAddDependency(task.taskId)
-                                }
-                                className="cursor-pointer py-1.5 px-2 text-sm"
-                              >
-                                <div className="flex items-center justify-between w-full gap-2">
-                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                    <span className="font-medium truncate text-sm">
-                                      {task.name}
-                                    </span>
-                                    <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                      ({task.team})
-                                    </span>
-                                  </div>
-                                  <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
-                                    {task.taskId}
-                                  </span>
-                                </div>
-                              </CommandItem>
-                            ))}
-                        </div>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                    <SelectTrigger className="w-full h-10 font-normal text-sm">
+                      <SelectValue placeholder={`Add task dependency... (${availableTasks.length} available)`} />
+                    </SelectTrigger>
+                    <SelectContent style={{ maxHeight: '390px', zIndex: 10002 }}>
+                      <SelectItem value="test">Test Item</SelectItem>
+                      {(() => {
+                        const filteredTasks = availableTasks.filter(t => !formData.dependsOn.includes(t.taskId));
+                        console.log('🔄 Rendering SelectItems for tasks:', filteredTasks.length);
+                        return filteredTasks.map(task => (
+                          <SelectItem key={task.taskId} value={task.taskId}>
+                            <span>{task.name} ({task.team}) - {task.taskId}</span>
+                          </SelectItem>
+                        ));
+                      })()}
+                    </SelectContent>
+                  </Select>
                 ) : (
                   <div className="p-3 text-center text-sm text-muted-foreground border border-dashed rounded-lg">
                     No other tasks available for dependencies
