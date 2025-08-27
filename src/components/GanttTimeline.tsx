@@ -40,9 +40,19 @@ import {
 import { TaskEditModal } from './TaskEditModal';
 import { TaskContextMenu } from './TaskContextMenu';
 import { CloneTaskDialog } from './CloneTaskDialog';
+import { SplitTaskDialog } from './SplitTaskDialog';
+import { MoveTaskDialog } from './MoveTaskDialog';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cloneTask, addClonedTaskToMilestone, CloneOptions } from '../utils/taskOperations';
+import { 
+  cloneTask, 
+  addClonedTaskToMilestone, 
+  splitTask,
+  moveTaskBetweenMilestones,
+  updateDependenciesAfterSplit,
+  CloneOptions,
+  SplitConfig 
+} from '../utils/taskOperations';
 
 interface GanttTimelineProps {
   milestones: Milestone[];
@@ -72,6 +82,10 @@ export function GanttTimeline({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [cloneTaskState, setCloneTaskState] = useState<Task | null>(null);
   const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
+  const [splitTaskState, setSplitTaskState] = useState<Task | null>(null);
+  const [isSplitDialogOpen, setIsSplitDialogOpen] = useState(false);
+  const [moveTaskState, setMoveTaskState] = useState<Task | null>(null);
+  const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
   const [currentMilestoneId, setCurrentMilestoneId] = useState<string>('');
   const [zoomLevel, setZoomLevel] = useState<number>(32); // Píxeles por día, default 32px
   const [nameColumnWidth, setNameColumnWidth] = useState<number>(200); // Width in pixels for name column
@@ -136,24 +150,91 @@ export function GanttTimeline({
     }
   }, [cloneTaskState, milestones, onUpdateMilestones, onRecalculateTimeline]);
 
+  const handleConfirmSplit = useCallback((config: SplitConfig) => {
+    if (!splitTaskState || !onUpdateMilestones) return;
+    
+    console.log('✂️ SPLITTING TASK:', splitTaskState.name, 'into', config.splits.length, 'parts');
+    
+    // Create split tasks
+    const splitTasks = splitTask(splitTaskState, milestones, config);
+    
+    // Remove original task and add split tasks
+    const updatedMilestones = milestones.map(milestone => ({
+      ...milestone,
+      tasks: milestone.tasks
+        .filter(t => t.taskId !== splitTaskState.taskId)
+        .concat(milestone.milestoneId === currentMilestoneId ? splitTasks : [])
+    }));
+    
+    // Update dependencies that pointed to the original task to point to the last split task
+    const finalMilestones = updateDependenciesAfterSplit(
+      updatedMilestones,
+      splitTaskState.taskId,
+      splitTasks
+    );
+    
+    onUpdateMilestones(finalMilestones);
+    
+    if (onRecalculateTimeline) {
+      onRecalculateTimeline();
+    }
+  }, [splitTaskState, milestones, currentMilestoneId, onUpdateMilestones, onRecalculateTimeline]);
+
+  const handleConfirmMove = useCallback((fromMilestoneId: string, toMilestoneId: string) => {
+    if (!moveTaskState || !onUpdateMilestones) return;
+    
+    console.log('🚚 MOVING TASK:', moveTaskState.name, 'from', fromMilestoneId, 'to', toMilestoneId);
+    
+    const updatedMilestones = moveTaskBetweenMilestones(
+      milestones,
+      moveTaskState.taskId,
+      fromMilestoneId,
+      toMilestoneId
+    );
+    
+    onUpdateMilestones(updatedMilestones);
+    
+    if (onRecalculateTimeline) {
+      onRecalculateTimeline();
+    }
+  }, [moveTaskState, milestones, onUpdateMilestones, onRecalculateTimeline]);
+
   const handleSplitTask = useCallback((task: Task) => {
-    // TODO: Implement task splitting functionality
     console.log('🔪 SPLIT TASK CLICKED:', {
       taskName: task.name,
       taskId: task.taskId,
       team: task.team,
       duration: task.durationDays
     });
-  }, []);
+    
+    const milestone = milestones.find(m => 
+      m.tasks.some(t => t.taskId === task.taskId)
+    );
+    
+    if (milestone) {
+      setCurrentMilestoneId(milestone.milestoneId);
+      setSplitTaskState(task);
+      setIsSplitDialogOpen(true);
+    }
+  }, [milestones]);
 
   const handleMoveTask = useCallback((task: Task) => {
-    // TODO: Implement task moving functionality
     console.log('📦 MOVE TASK CLICKED:', {
       taskName: task.name,
       taskId: task.taskId,
       currentMilestone: milestones.find(m => m.tasks.some(t => t.taskId === task.taskId))?.milestoneName,
       availableMilestones: milestones.map(m => m.milestoneName)
     });
+    
+    const milestone = milestones.find(m => 
+      m.tasks.some(t => t.taskId === task.taskId)
+    );
+    
+    if (milestone) {
+      setCurrentMilestoneId(milestone.milestoneId);
+      setMoveTaskState(task);
+      setIsMoveDialogOpen(true);
+    }
   }, [milestones]);
 
   const handleDeleteTask = useCallback((task: Task) => {
@@ -1088,7 +1169,7 @@ export function GanttTimeline({
                                   <TooltipProvider>
                                     <Tooltip>
                                       <TooltipTrigger asChild>
-                                        <div className="p-2 cursor-help">
+                                        <div className="p-2 pr-8 cursor-help">
                                           <div className="pl-8">
                                             <div className="flex items-center gap-2">
                                               <div className="font-medium text-sm truncate flex-1">
@@ -1276,6 +1357,29 @@ export function GanttTimeline({
           setCloneTaskState(null);
         }}
         onConfirm={handleConfirmClone}
+        milestones={milestones}
+        currentMilestoneId={currentMilestoneId}
+      />
+      
+      <SplitTaskDialog
+        task={splitTaskState}
+        isOpen={isSplitDialogOpen}
+        onClose={() => {
+          setIsSplitDialogOpen(false);
+          setSplitTaskState(null);
+        }}
+        onConfirm={handleConfirmSplit}
+        milestones={milestones}
+      />
+      
+      <MoveTaskDialog
+        task={moveTaskState}
+        isOpen={isMoveDialogOpen}
+        onClose={() => {
+          setIsMoveDialogOpen(false);
+          setMoveTaskState(null);
+        }}
+        onConfirm={handleConfirmMove}
         milestones={milestones}
         currentMilestoneId={currentMilestoneId}
       />
