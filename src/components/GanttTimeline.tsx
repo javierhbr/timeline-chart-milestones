@@ -913,7 +913,7 @@ export function GanttTimeline({
                             width: `${dayColumns.length * zoomLevel}px`,
                           }}
                         >
-                          <div className="overflow-x-auto h-full relative">
+                          <div className="h-full relative">
                             <div
                               className="h-full relative"
                               style={{
@@ -1072,7 +1072,7 @@ export function GanttTimeline({
                                   backgroundColor: milestoneColor.gentle,
                                 }}
                               >
-                                <div className="overflow-x-auto h-full relative">
+                                <div className="h-full relative">
                                   <div
                                     className="h-full relative"
                                     style={{
