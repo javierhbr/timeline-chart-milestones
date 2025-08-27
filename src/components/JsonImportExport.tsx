@@ -50,9 +50,44 @@ export function JsonImportExport({
   const [showInstructions, setShowInstructions] = useState(false);
   const [showImportOptions, setShowImportOptions] = useState(false);
 
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    let i = 0;
+
+    while (i < line.length) {
+      const char = line[i];
+      
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          // Escaped quote
+          current += '"';
+          i += 2;
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes;
+          i++;
+        }
+      } else if (char === ',' && !inQuotes) {
+        // End of field
+        result.push(current.trim());
+        current = '';
+        i++;
+      } else {
+        current += char;
+        i++;
+      }
+    }
+    
+    // Add the last field
+    result.push(current.trim());
+    return result;
+  };
+
   const parseCSV = (csvText: string): Milestone[] => {
     const lines = csvText.trim().split('\n');
-    const header = lines[0].split(',').map(h => h.trim());
+    const header = parseCSVLine(lines[0]);
 
     // Validate CSV header (more flexible)
     // const expectedHeader = [
@@ -85,8 +120,8 @@ export function JsonImportExport({
       const line = lines[i].trim();
       if (!line) continue;
 
-      // Split and pad with empty strings to ensure we have 9 values
-      const values = line.split(',').map(v => v.trim());
+      // Parse CSV line properly handling quotes
+      const values = parseCSVLine(line);
       while (values.length < 9) {
         values.push('');
       }
@@ -190,13 +225,31 @@ export function JsonImportExport({
     URL.revokeObjectURL(url);
   };
 
+  const escapeCSVField = (field: string): string => {
+    // If field contains comma, quote, or newline, wrap in quotes and escape internal quotes
+    if (field.includes(',') || field.includes('"') || field.includes('\n') || field.includes('\r')) {
+      return `"${field.replace(/"/g, '""')}"`;
+    }
+    return `"${field}"`;
+  };
+
   const handleExportCSV = () => {
     const csvHeader =
       'milestoneId,milestoneName,taskId,taskName,taskDescription,team,sprint,durationDays,dependsOn\n';
     const csvRows = milestones.flatMap(milestone =>
       milestone.tasks.map(task => {
         const dependsOn = task.dependsOn.join('|');
-        return `${milestone.milestoneId},${milestone.milestoneName},${task.taskId},${task.name},${task.description},${task.team},${task.sprint},${task.durationDays},${dependsOn}`;
+        return [
+          escapeCSVField(milestone.milestoneId),
+          escapeCSVField(milestone.milestoneName),
+          escapeCSVField(task.taskId),
+          escapeCSVField(task.name),
+          escapeCSVField(task.description),
+          escapeCSVField(task.team),
+          escapeCSVField(task.sprint || ''),
+          task.durationDays.toString(),
+          escapeCSVField(dependsOn)
+        ].join(',');
       })
     );
 
