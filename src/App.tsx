@@ -10,11 +10,17 @@ import {
   teamColors,
 } from './utils/dateUtils';
 import {
-  saveTimelineData,
-  loadTimelineData,
-  clearTimelineData,
-  hasTimelineData,
-} from './utils/localStorage';
+  Project,
+  TimelineData,
+  getCurrentProject,
+  saveProject,
+  createProject,
+  migrateOldData,
+  hasAnyProjects,
+  generateDefaultProjectName,
+} from './utils/projectStorage';
+import { ProjectManager } from './components/ProjectManager';
+import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { BarChart3, Calendar, Users, Clock, BarChart } from 'lucide-react';
 
 export default function App() {
@@ -25,29 +31,132 @@ export default function App() {
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(
     new Set()
   );
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [showProjectManager, setShowProjectManager] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [pendingProject, setPendingProject] = useState<Project | null>(null);
+  const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] = useState(false);
 
-  // Load data from localStorage on component mount
+  // Initialize app and load current project on component mount
   useEffect(() => {
-    const savedData = loadTimelineData();
-    if (savedData) {
-      setMilestones(savedData.milestones);
-      setProjectStartDate(new Date(savedData.projectStartDate));
-      setExpandedMilestones(new Set(savedData.expandedMilestones));
-    }
+    const initializeApp = () => {
+      // Migrate old data if necessary
+      migrateOldData();
+      
+      // Load current project or show project manager if no projects exist
+      const project = getCurrentProject();
+      if (project) {
+        const projectStartDate = new Date(project.timelineData.projectStartDate);
+        
+        // Ensure milestones have calculated dates
+        const milestonesWithDates = project.timelineData.milestones.length > 0 && 
+          project.timelineData.milestones[0].tasks.length > 0 && 
+          !project.timelineData.milestones[0].tasks[0].startDate
+            ? calculateProjectDates(project.timelineData.milestones, projectStartDate)
+            : project.timelineData.milestones;
+        
+        setCurrentProject(project);
+        setMilestones(milestonesWithDates);
+        setProjectStartDate(projectStartDate);
+        setExpandedMilestones(new Set(project.timelineData.expandedMilestones));
+        setHasUnsavedChanges(false);
+      } else if (!hasAnyProjects()) {
+        // Create default project for new users
+        const emptyTimelineData: TimelineData = {
+          milestones: [],
+          projectStartDate: new Date().toISOString(),
+          expandedMilestones: [],
+        };
+        const newProject = createProject(
+          generateDefaultProjectName(),
+          emptyTimelineData,
+          true
+        );
+        setCurrentProject(newProject);
+        setMilestones(newProject.timelineData.milestones);
+        setProjectStartDate(new Date(newProject.timelineData.projectStartDate));
+        setExpandedMilestones(new Set(newProject.timelineData.expandedMilestones));
+        setHasUnsavedChanges(false);
+      } else {
+        // Has projects but none selected - show project manager
+        setShowProjectManager(true);
+      }
+    };
+    
+    initializeApp();
   }, []);
 
-  // Auto-save data whenever milestones, projectStartDate, or expandedMilestones change
+  // Auto-save current project whenever timeline data changes
   useEffect(() => {
-    if (milestones.length > 0) {
-      saveTimelineData(milestones, projectStartDate, expandedMilestones);
+    if (currentProject && milestones.length > 0) {
+      const timelineData: TimelineData = {
+        milestones,
+        projectStartDate: projectStartDate.toISOString(),
+        expandedMilestones: Array.from(expandedMilestones),
+      };
+      saveProject(currentProject.id, timelineData);
+      setHasUnsavedChanges(false);
     }
-  }, [milestones, projectStartDate, expandedMilestones]);
+  }, [milestones, projectStartDate, expandedMilestones, currentProject]);
+
+  // Track unsaved changes (only set to true when values actually change)
+  const [initialLoad, setInitialLoad] = useState(true);
+  useEffect(() => {
+    if (currentProject && !initialLoad) {
+      setHasUnsavedChanges(true);
+    }
+  }, [milestones, projectStartDate, expandedMilestones, currentProject, initialLoad]);
+
+  // Reset initial load flag after first load
+  useEffect(() => {
+    if (currentProject && initialLoad) {
+      setInitialLoad(false);
+    }
+  }, [currentProject, initialLoad]);
+
+  const loadProjectData = useCallback((project: Project) => {
+    setCurrentProject(project);
+    const projectStartDate = new Date(project.timelineData.projectStartDate);
+    
+    // Ensure milestones have calculated dates
+    const milestonesWithDates = project.timelineData.milestones.length > 0 && 
+      project.timelineData.milestones[0].tasks.length > 0 && 
+      !project.timelineData.milestones[0].tasks[0].startDate
+        ? calculateProjectDates(project.timelineData.milestones, projectStartDate)
+        : project.timelineData.milestones;
+    
+    setMilestones(milestonesWithDates);
+    setProjectStartDate(projectStartDate);
+    setExpandedMilestones(new Set(project.timelineData.expandedMilestones));
+    setHasUnsavedChanges(false);
+  }, []);
+
+  const handleSelectProject = useCallback(
+    (project: Project) => {
+      if (hasUnsavedChanges && currentProject && project.id !== currentProject.id) {
+        setPendingProject(project);
+        setShowUnsavedChangesDialog(true);
+      } else {
+        loadProjectData(project);
+      }
+    },
+    [loadProjectData, hasUnsavedChanges, currentProject]
+  );
+
+  const handleConfirmProjectSwitch = useCallback(() => {
+    if (pendingProject) {
+      loadProjectData(pendingProject);
+      setPendingProject(null);
+    }
+  }, [pendingProject, loadProjectData]);
+
+  const handleCancelProjectSwitch = useCallback(() => {
+    setPendingProject(null);
+    setShowUnsavedChangesDialog(false);
+  }, []);
 
   const handleImport = useCallback(
     (importedMilestones: Milestone[]) => {
-      // Clear existing localStorage data when importing new data
-      clearTimelineData();
-      
       const calculatedMilestones = calculateProjectDates(
         importedMilestones,
         projectStartDate
@@ -56,6 +165,7 @@ export default function App() {
       
       // Reset expanded milestones when importing new data
       setExpandedMilestones(new Set());
+      setHasUnsavedChanges(true);
     },
     [projectStartDate]
   );
@@ -152,10 +262,19 @@ export default function App() {
               className="w-6 h-6 text-blue-600"
               style={{ minWidth: '24px', minHeight: '24px' }}
             />
-            <h1 className="text-lg font-semibold whitespace-nowrap">
-              {' '}
-              Timeline Milestones Chart{' '}
-            </h1>
+            <div className="flex flex-col">
+              <h1 className="text-lg font-semibold whitespace-nowrap">
+                Timeline Milestones Chart
+              </h1>
+              {currentProject && (
+                <span className="text-sm text-muted-foreground">
+                  {currentProject.name}
+                  {hasUnsavedChanges && (
+                    <span className="ml-1 text-amber-600">•</span>
+                  )}
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="h-5"></div>
@@ -166,6 +285,8 @@ export default function App() {
               onImport={handleImport}
               projectStartDate={projectStartDate}
               onStartDateChange={handleStartDateChange}
+              currentProject={currentProject}
+              onOpenProjectManager={() => setShowProjectManager(true)}
             />
           </div>
 
@@ -279,6 +400,24 @@ export default function App() {
             collapseAllMilestones={collapseAllMilestones}
           />
         </div>
+        
+        <ProjectManager
+          isOpen={showProjectManager}
+          onClose={() => setShowProjectManager(false)}
+          onSelectProject={handleSelectProject}
+          currentProjectId={currentProject?.id}
+        />
+        
+        <ConfirmationDialog
+          isOpen={showUnsavedChangesDialog}
+          onClose={handleCancelProjectSwitch}
+          onConfirm={handleConfirmProjectSwitch}
+          title="Unsaved Changes"
+          description={`You have unsaved changes in "${currentProject?.name}". Are you sure you want to switch to "${pendingProject?.name}" and lose your changes?`}
+          confirmLabel="Switch Project"
+          cancelLabel="Stay Here"
+          variant="destructive"
+        />
       </div>
     </div>
   );

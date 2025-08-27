@@ -2,14 +2,17 @@ import React, { useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card } from './ui/card';
-import { Upload, Download, Calendar, Info, X } from 'lucide-react';
+import { Upload, Download, Calendar, Info, X, FolderOpen, Save } from 'lucide-react';
 import { Milestone } from '../utils/dateUtils';
+import { Project, createProject, TimelineData, generateDefaultProjectName } from '../utils/projectStorage';
 
 interface JsonImportExportProps {
   milestones: Milestone[];
   onImport: (milestones: Milestone[]) => void;
   projectStartDate: Date;
   onStartDateChange: (date: Date) => void;
+  currentProject: Project | null;
+  onOpenProjectManager: () => void;
 }
 
 export function JsonImportExport({
@@ -17,9 +20,12 @@ export function JsonImportExport({
   onImport,
   projectStartDate,
   onStartDateChange,
+  currentProject, // eslint-disable-line @typescript-eslint/no-unused-vars
+  onOpenProjectManager,
 }: JsonImportExportProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [showImportOptions, setShowImportOptions] = useState(false);
 
   const parseCSV = (csvText: string): Milestone[] => {
     const lines = csvText.trim().split('\n');
@@ -132,7 +138,12 @@ export function JsonImportExport({
           throw new Error('Unsupported file format. Use .json or .csv');
         }
 
-        onImport(parsedData);
+        if (showImportOptions) {
+          // Show import options dialog
+          handleImportWithOptions(parsedData);
+        } else {
+          onImport(parsedData);
+        }
       } catch (error) {
         alert(
           `Error reading file: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -276,6 +287,56 @@ export function JsonImportExport({
     onImport(exampleData);
   };
 
+  const handleImportWithOptions = (importedMilestones: Milestone[]) => {
+    const shouldCreateNewProject = confirm(
+      'Do you want to create a new project with this data? Click OK for new project, Cancel to import into current project.'
+    );
+    
+    if (shouldCreateNewProject) {
+      const timelineData: TimelineData = {
+        milestones: importedMilestones,
+        projectStartDate: projectStartDate.toISOString(),
+        expandedMilestones: [],
+      };
+      
+      const projectName = prompt('Enter a name for the new project:') || generateDefaultProjectName();
+      createProject(projectName, timelineData, true);
+      
+      // Refresh the page to load the new project
+      window.location.reload();
+    } else {
+      onImport(importedMilestones);
+    }
+    
+    setShowImportOptions(false);
+  };
+
+  const handleSaveAsNewProject = () => {
+    if (milestones.length === 0) {
+      alert('No data to save. Please add some milestones and tasks first.');
+      return;
+    }
+    
+    const projectName = prompt('Enter a name for the new project:');
+    if (!projectName) return;
+    
+    const timelineData: TimelineData = {
+      milestones,
+      projectStartDate: projectStartDate.toISOString(),
+      expandedMilestones: [],
+    };
+    
+    createProject(projectName.trim(), timelineData, true);
+    
+    // Refresh the page to load the new project
+    window.location.reload();
+  };
+
+  const handleImportClick = () => {
+    setShowImportOptions(true);
+    fileInputRef.current?.click();
+  };
+
   return (
     <Card className="p-6 mb-6">
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
@@ -295,7 +356,16 @@ export function JsonImportExport({
 
         <div className="flex flex-wrap gap-2">
           <Button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={onOpenProjectManager}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <FolderOpen className="w-4 h-4" />
+            Projects
+          </Button>
+          
+          <Button
+            onClick={handleImportClick}
             variant="outline"
             className="flex items-center gap-2"
           >
@@ -325,6 +395,16 @@ export function JsonImportExport({
 
           <Button onClick={handleLoadExample} variant="secondary">
             Load Example
+          </Button>
+          
+          <Button
+            onClick={handleSaveAsNewProject}
+            variant="outline"
+            disabled={milestones.length === 0}
+            className="flex items-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            Save as New Project
           </Button>
 
           <Button

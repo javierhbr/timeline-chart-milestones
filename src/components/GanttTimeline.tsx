@@ -149,7 +149,9 @@ export function GanttTimeline({
   const timelineData = useMemo(() => {
     const allDates = sortedMilestones
       .flatMap(({ milestone }) =>
-        milestone.tasks.map(t => [parseISO(t.startDate!), parseISO(t.endDate!)])
+        milestone.tasks
+          .filter(t => t.startDate && t.endDate)
+          .map(t => [parseISO(t.startDate!), parseISO(t.endDate!)])
       )
       .flat();
 
@@ -421,8 +423,11 @@ export function GanttTimeline({
   };
 
   const TaskBar = ({ task }: { task: Task }) => {
-    const taskStart = parseISO(task.startDate!);
-    const taskEnd = parseISO(task.endDate!);
+    if (!task.startDate || !task.endDate) {
+      return null; // Don't render tasks without dates
+    }
+    const taskStart = parseISO(task.startDate);
+    const taskEnd = parseISO(task.endDate);
     const teamColor = teamColors[task.team] || teamColors.Default;
     const allMilestonesForDeps = sortedMilestones.map(
       ({ milestone }) => milestone
@@ -948,7 +953,9 @@ export function GanttTimeline({
 
                       {/* Task Rows */}
                       {expandedMilestones.has(milestone.milestoneId) &&
-                        milestone.tasks.map((task: Task) => {
+                        milestone.tasks
+                          .filter(task => task.startDate && task.endDate)
+                          .map((task: Task) => {
                           const taskStart = parseISO(task.startDate!);
                           const taskEnd = parseISO(task.endDate!);
                           const taskStartDay = differenceInDays(
