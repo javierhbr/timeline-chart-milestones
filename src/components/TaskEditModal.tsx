@@ -201,313 +201,344 @@ export function TaskEditModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent
-        className="max-h-[90vh]"
-        style={{
-          zIndex: 9999,
-          width: '50vw !important',
-          maxWidth: '50vw !important',
-          minWidth: '50vw !important',
-          '--tw-max-width': '50vw',
-        }}
-      >
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Edit Task
-          </DialogTitle>
-          <DialogDescription>
-            Modify task details, assign teams, set duration, and manage
-            dependencies.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <style>{`
+        .task-edit-modal {
+          width: 60vw !important;
+          max-width: 60vw !important;
+          min-width: 60vw !important;
+        }
+        .task-edit-modal[data-slot="dialog-content"] {
+          width: 60vw !important;
+          max-width: 60vw !important;
+        }
+        /* Fix z-index for dropdowns inside modal */
+        .task-edit-modal [data-radix-popper-content-wrapper] {
+          z-index: 10000 !important;
+        }
+        .task-edit-modal [data-radix-select-content] {
+          z-index: 10000 !important;
+        }
+        .task-edit-modal [data-radix-popover-content] {
+          z-index: 10001 !important;
+        }
+      `}</style>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent
+          className="max-h-[90vh] task-edit-modal"
+          style={{
+            zIndex: 9999,
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calendar className="w-5 h-5" />
+              Edit Task
+            </DialogTitle>
+            <DialogDescription>
+              Modify task details, assign teams, set duration, and manage
+              dependencies.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="max-h-[70vh] overflow-y-auto pr-2">
-          <div className="space-y-4">
-            {/* Date information (read-only) */}
-            {task.startDate && task.endDate && (
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                  <Calendar className="w-4 h-4" />
-                  Project dates
+          <div className="max-h-[70vh] overflow-y-auto pr-2">
+            <div className="space-y-4">
+              {/* Date information (read-only) */}
+              {task.startDate && task.endDate && (
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                    <Calendar className="w-4 h-4" />
+                    Project dates
+                  </div>
+                  <div className="text-sm">
+                    {format(parseISO(task.startDate), 'dd/MM/yyyy', {
+                      locale: es,
+                    })}{' '}
+                    -{' '}
+                    {format(parseISO(task.endDate), 'dd/MM/yyyy', {
+                      locale: es,
+                    })}
+                  </div>
                 </div>
-                <div className="text-sm">
-                  {format(parseISO(task.startDate), 'dd/MM/yyyy', {
-                    locale: es,
-                  })}{' '}
-                  -{' '}
-                  {format(parseISO(task.endDate), 'dd/MM/yyyy', { locale: es })}
-                </div>
-              </div>
-            )}
-
-            {/* Task name */}
-            <div className="space-y-2">
-              <Label htmlFor="taskName">Task name *</Label>
-              <Input
-                id="taskName"
-                value={formData.name}
-                onChange={e => handleFieldChange('name', e.target.value)}
-                placeholder="E.g.: Create initial wireframes"
-                className={errors.name ? 'border-destructive' : ''}
-              />
-              {errors.name && (
-                <p className="text-sm text-destructive">{errors.name}</p>
               )}
-            </div>
 
-            {/* Description */}
-            <div className="space-y-2">
-              <Label htmlFor="taskDescription">Description</Label>
-              <Textarea
-                id="taskDescription"
-                value={formData.description}
-                onChange={e =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                placeholder="Detailed task description..."
-                className="min-h-[100px]"
-              />
-            </div>
-
-            {/* Team */}
-            <div className="space-y-2">
-              <Label>Assigned team *</Label>
-              <Select
-                value={formData.team}
-                onValueChange={(value: string) =>
-                  setFormData({ ...formData, team: value })
-                }
-              >
-                <SelectTrigger className={errors.team ? 'border-red-500' : ''}>
-                  <SelectValue placeholder="Select team" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableTeams.map(team => (
-                    <SelectItem key={team} value={team}>
-                      {team}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.team && (
-                <p className="text-sm text-destructive">{errors.team}</p>
-              )}
-            </div>
-
-            {/* Sprint */}
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Zap className="w-4 h-4" />
-                Assigned sprint
-              </Label>
-              <Select
-                value={formData.sprint}
-                onValueChange={(value: string) =>
-                  handleFieldChange('sprint', value)
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select sprint (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No sprint assigned</SelectItem>
-                  {availableSprints.map(sprint => (
-                    <SelectItem key={sprint} value={sprint}>
-                      {sprint}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Duration */}
-            <div className="space-y-2">
-              <Label htmlFor="duration" className="flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                Duration in working days *
-              </Label>
-              <div className="flex items-center gap-2">
+              {/* Task name */}
+              <div className="space-y-2">
+                <Label htmlFor="taskName">Task name *</Label>
                 <Input
-                  id="duration"
-                  type="number"
-                  min="1"
-                  max="365"
-                  value={formData.durationDays}
-                  onChange={handleDurationChange}
-                  className={`w-24 ${errors.durationDays ? 'border-destructive' : ''}`}
+                  id="taskName"
+                  value={formData.name}
+                  onChange={e => handleFieldChange('name', e.target.value)}
+                  placeholder="E.g.: Create initial wireframes"
+                  className={errors.name ? 'border-destructive' : ''}
                 />
-                <span className="text-sm text-muted-foreground">days</span>
+                {errors.name && (
+                  <p className="text-sm text-destructive">{errors.name}</p>
+                )}
               </div>
-              {errors.durationDays && (
-                <p className="text-sm text-destructive">
-                  {errors.durationDays}
-                </p>
-              )}
+
+              {/* Description */}
+              <div className="space-y-2">
+                <Label htmlFor="taskDescription">Description</Label>
+                <Textarea
+                  id="taskDescription"
+                  value={formData.description}
+                  onChange={e =>
+                    setFormData({ ...formData, description: e.target.value })
+                  }
+                  placeholder="Detailed task description..."
+                  className="min-h-[100px]"
+                />
+              </div>
+
+              {/* Team, Sprint, and Duration - Horizontal Layout */}
+              <div className="flex flex-row gap-4 items-start">
+                {/* Team */}
+                <div className="space-y-2 flex-1">
+                  <Label>Assigned team *</Label>
+                  <Select
+                    value={formData.team}
+                    onValueChange={(value: string) =>
+                      setFormData({ ...formData, team: value })
+                    }
+                  >
+                    <SelectTrigger
+                      className={errors.team ? 'border-red-500' : ''}
+                    >
+                      <SelectValue placeholder="Select team" />
+                    </SelectTrigger>
+                    <SelectContent style={{ zIndex: 10000 }}>
+                      {availableTeams.map(team => (
+                        <SelectItem key={team} value={team}>
+                          {team}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.team && (
+                    <p className="text-sm text-destructive">{errors.team}</p>
+                  )}
+                </div>
+
+                {/* Sprint */}
+                <div className="space-y-2 flex-1">
+                  <Label className="flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Assigned sprint
+                  </Label>
+                  <Select
+                    value={formData.sprint}
+                    onValueChange={(value: string) =>
+                      handleFieldChange('sprint', value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select sprint (optional)" />
+                    </SelectTrigger>
+                    <SelectContent style={{ zIndex: 10000 }}>
+                      <SelectItem value="none">No sprint assigned</SelectItem>
+                      {availableSprints.map(sprint => (
+                        <SelectItem key={sprint} value={sprint}>
+                          {sprint}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Duration */}
+                <div className="space-y-2 flex-1">
+                  <Label htmlFor="duration" className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Duration in working days *
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="duration"
+                      type="number"
+                      min="1"
+                      max="365"
+                      value={formData.durationDays}
+                      onChange={handleDurationChange}
+                      className={`w-24 ${errors.durationDays ? 'border-destructive' : ''}`}
+                    />
+                    <span className="text-sm text-muted-foreground">days</span>
+                  </div>
+                  {errors.durationDays && (
+                    <p className="text-sm text-destructive">
+                      {errors.durationDays}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Duration help text */}
               <p className="text-xs text-muted-foreground">
                 Excludes weekends from calculation
               </p>
-            </div>
 
-            {/* Section Separator */}
-            <hr className="my-6 border-muted" />
+              {/* Section Separator */}
+              <hr className="my-6 border-muted" />
 
-            {/* Dependencies */}
-            <div className="space-y-3 border-2 border-blue-200 rounded-lg p-4 bg-blue-50/30">
-              <Label className="flex items-center gap-2 text-base font-semibold">
-                <Link className="w-5 h-5 text-blue-600" />
-                Task Dependencies
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Select tasks that must be completed before this task can start
-              </p>
+              {/* Dependencies */}
+              <div className="space-y-3 border-2 border-blue-200 rounded-lg p-4 bg-blue-50/30">
+                <Label className="flex items-center gap-2 text-base font-semibold">
+                  <Link className="w-5 h-5 text-blue-600" />
+                  Task Dependencies
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Select tasks that must be completed before this task can start
+                </p>
 
-              {/* Current Dependencies */}
-              {formData.dependsOn.length > 0 && (
-                <div className="space-y-1 mb-3">
-                  {formData.dependsOn.map(depId => {
-                    const depDetails = getDependencyTaskDetails(depId);
-                    if (!depDetails) return null;
+                {/* Current Dependencies */}
+                {formData.dependsOn.length > 0 && (
+                  <div className="space-y-1 mb-3">
+                    {formData.dependsOn.map(depId => {
+                      const depDetails = getDependencyTaskDetails(depId);
+                      if (!depDetails) return null;
 
-                    return (
-                      <div
-                        key={depId}
-                        className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg"
-                      >
-                        <div className="flex-1">
-                          <div className="text-sm font-medium">
-                            {depDetails.task.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {depDetails.milestone} • {depDetails.task.team}
-                          </div>
-                        </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveDependency(depId)}
-                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                      return (
+                        <div
+                          key={depId}
+                          className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg"
                         >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
+                          <div className="flex-1">
+                            <div className="text-sm font-medium">
+                              {depDetails.task.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {depDetails.milestone} • {depDetails.task.team}
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveDependency(depId)}
+                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
-              {/* Add Dependency Dropdown - Consistent Style */}
-              {availableTasks.length > 0 ? (
-                <Popover
-                  open={dependencyPopoverOpen}
-                  onOpenChange={setDependencyPopoverOpen}
-                >
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={dependencyPopoverOpen}
-                      className="w-full justify-between h-10 font-normal text-sm"
-                    >
-                      Add task dependency... ({availableTasks.length} available)
-                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    className="w-full p-0 max-h-64 !z-[10001]"
-                    align="start"
-                    style={{ zIndex: 10001 }}
+                {/* Add Dependency Dropdown - Consistent Style */}
+                {availableTasks.length > 0 ? (
+                  <Popover
+                    open={dependencyPopoverOpen}
+                    onOpenChange={setDependencyPopoverOpen}
                   >
-                    <Command>
-                      <CommandInput
-                        placeholder="Search tasks..."
-                        className="h-9"
-                      />
-                      <CommandEmpty className="py-6 text-center text-sm">
-                        No tasks found.
-                      </CommandEmpty>
-                      <div className="max-h-48 overflow-auto">
-                        {availableTasks
-                          .filter(t => !formData.dependsOn.includes(t.taskId))
-                          .map(task => (
-                            <CommandItem
-                              key={task.taskId}
-                              value={`${task.name} ${task.taskId} ${task.team}`}
-                              onSelect={() => handleAddDependency(task.taskId)}
-                              className="cursor-pointer py-1.5 px-2 text-sm"
-                            >
-                              <div className="flex items-center justify-between w-full gap-2">
-                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                  <span className="font-medium truncate text-sm">
-                                    {task.name}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                    ({task.team})
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={dependencyPopoverOpen}
+                        className="w-full justify-between h-10 font-normal text-sm"
+                      >
+                        Add task dependency... ({availableTasks.length}{' '}
+                        available)
+                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      className="w-full p-0 max-h-64 !z-[10001]"
+                      align="start"
+                      style={{ zIndex: 10001 }}
+                    >
+                      <Command>
+                        <CommandInput
+                          placeholder="Search tasks..."
+                          className="h-9"
+                        />
+                        <CommandEmpty className="py-6 text-center text-sm">
+                          No tasks found.
+                        </CommandEmpty>
+                        <div className="max-h-48 overflow-auto">
+                          {availableTasks
+                            .filter(t => !formData.dependsOn.includes(t.taskId))
+                            .map(task => (
+                              <CommandItem
+                                key={task.taskId}
+                                value={`${task.name} ${task.taskId} ${task.team}`}
+                                onSelect={() =>
+                                  handleAddDependency(task.taskId)
+                                }
+                                className="cursor-pointer py-1.5 px-2 text-sm"
+                              >
+                                <div className="flex items-center justify-between w-full gap-2">
+                                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                    <span className="font-medium truncate text-sm">
+                                      {task.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                      ({task.team})
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                                    {task.taskId}
                                   </span>
                                 </div>
-                                <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
-                                  {task.taskId}
-                                </span>
-                              </div>
-                            </CommandItem>
-                          ))}
-                      </div>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-              ) : (
-                <div className="p-3 text-center text-sm text-muted-foreground border border-dashed rounded-lg">
-                  No other tasks available for dependencies
-                </div>
-              )}
-            </div>
-
-            {/* Team and sprint badges */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                <Badge
-                  variant="outline"
-                  style={{
-                    borderColor:
-                      teamColors[formData.team] || teamColors.Default,
-                    color: teamColors[formData.team] || teamColors.Default,
-                  }}
-                >
-                  {formData.team || 'No team'}
-                </Badge>
+                              </CommandItem>
+                            ))}
+                        </div>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                ) : (
+                  <div className="p-3 text-center text-sm text-muted-foreground border border-dashed rounded-lg">
+                    No other tasks available for dependencies
+                  </div>
+                )}
               </div>
-              {formData.sprint && (
+
+              {/* Team and sprint badges */}
+              <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-1">
-                  <Zap className="w-4 h-4 text-muted-foreground" />
-                  <Badge variant="secondary">{formData.sprint}</Badge>
+                  <Users className="w-4 h-4 text-muted-foreground" />
+                  <Badge
+                    variant="outline"
+                    style={{
+                      borderColor:
+                        teamColors[formData.team] || teamColors.Default,
+                      color: teamColors[formData.team] || teamColors.Default,
+                    }}
+                  >
+                    {formData.team || 'No team'}
+                  </Badge>
                 </div>
-              )}
+                {formData.sprint && (
+                  <div className="flex items-center gap-1">
+                    <Zap className="w-4 h-4 text-muted-foreground" />
+                    <Badge variant="secondary">{formData.sprint}</Badge>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Action buttons */}
-        <div className="flex gap-2 pt-4">
-          <Button
-            onClick={handleSave}
-            className="flex-1 flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            Save changes
-          </Button>
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="flex items-center gap-2"
-          >
-            <X className="w-4 h-4" />
-            Cancel
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          {/* Action buttons */}
+          <div className="flex gap-2 pt-4">
+            <Button
+              onClick={handleSave}
+              className="flex-1 flex items-center gap-2"
+            >
+              <Save className="w-4 h-4" />
+              Save changes
+            </Button>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              className="flex items-center gap-2"
+            >
+              <X className="w-4 h-4" />
+              Cancel
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
