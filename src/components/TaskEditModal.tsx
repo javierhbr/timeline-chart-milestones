@@ -43,32 +43,46 @@ interface TaskEditModalProps {
   milestones: Milestone[];
 }
 
-const availableTeams = [
-  'UX',
-  'UI',
-  'PM',
-  'Dev',
-  'QA',
-  'Backend',
-  'Frontend',
-  'Design',
-  'Marketing',
-];
+// Extract unique teams and sprints from project data
+function getAvailableTeams(milestones: Milestone[]): string[] {
+  const teams = new Set<string>();
+  milestones.forEach(milestone => {
+    milestone.tasks.forEach(task => {
+      if (task.team && task.team.trim()) {
+        teams.add(task.team);
+      }
+    });
+  });
+  
+  const teamsArray = Array.from(teams).sort();
+  
+  // Add default teams if none exist
+  if (teamsArray.length === 0) {
+    return ['Dev', 'QA', 'Design', 'PM', 'UX', 'UI', 'Backend', 'Frontend', 'Marketing'];
+  }
+  
+  return teamsArray;
+}
 
-const availableSprints = [
-  'Sprint 1',
-  'Sprint 2',
-  'Sprint 3',
-  'Sprint 4',
-  'Sprint 5',
-  'Sprint 6',
-  'Sprint 7',
-  'Sprint 8',
-  'Sprint 9',
-  'Sprint 10',
-  'Backlog',
-  'Icebox',
-];
+function getAvailableSprints(milestones: Milestone[]): string[] {
+  const sprints = new Set<string>();
+  milestones.forEach(milestone => {
+    milestone.tasks.forEach(task => {
+      if (task.sprint && task.sprint.trim()) {
+        sprints.add(task.sprint);
+      }
+    });
+  });
+  
+  const sprintsArray = Array.from(sprints).sort();
+  
+  // Add default sprints if none exist
+  if (sprintsArray.length === 0) {
+    return ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Sprint 4', 'Sprint 5', 'Backlog', 'Icebox'];
+  }
+  
+  return sprintsArray;
+}
 
 export function TaskEditModal({
   task,
@@ -88,6 +102,10 @@ export function TaskEditModal({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [dependencyPopoverOpen, setDependencyPopoverOpen] = useState(false);
+
+  // Get dynamic teams and sprints from project data
+  const availableTeams = getAvailableTeams(milestones);
+  const availableSprints = getAvailableSprints(milestones);
 
   // Update form when task changes
   useEffect(() => {
@@ -174,25 +192,14 @@ export function TaskEditModal({
   
   
   // Debug logging for component state
-  console.log('🏗️ TaskEditModal render - availableTasks:', availableTasks.length);
-  console.log('📊 Milestones data:', milestones.length);
-  console.log('🎯 Current task:', task?.taskId);
-  console.log('📝 Current dependencies:', formData.dependsOn);
 
   const handleAddDependency = (taskId: string) => {
-    console.log('🔍 handleAddDependency called with taskId:', taskId);
-    console.log('📋 Current dependencies:', formData.dependsOn);
-    console.log('✅ Available tasks count:', availableTasks.length);
-    console.log('🎯 Filtered available tasks:', availableTasks.filter(t => !formData.dependsOn.includes(t.taskId)).length);
     
     if (!formData.dependsOn.includes(taskId)) {
-      console.log('➕ Adding dependency:', taskId);
       setFormData(prev => ({
         ...prev,
         dependsOn: [...prev.dependsOn, taskId],
       }));
-    } else {
-      console.log('⚠️ Dependency already exists:', taskId);
     }
     setDependencyPopoverOpen(false);
   };

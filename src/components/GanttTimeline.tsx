@@ -38,12 +38,16 @@ import {
   getTimelineRange,
 } from '../utils/dateUtils';
 import { TaskEditModal } from './TaskEditModal';
+import { TaskContextMenu } from './TaskContextMenu';
+import { CloneTaskDialog } from './CloneTaskDialog';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { cloneTask, addClonedTaskToMilestone, CloneOptions } from '../utils/taskOperations';
 
 interface GanttTimelineProps {
   milestones: Milestone[];
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
+  onUpdateMilestones?: (milestones: Milestone[]) => void;
   onRecalculateTimeline?: () => void;
   expandedMilestones?: Set<string>;
   onToggleMilestone?: (milestoneId: string) => void;
@@ -54,6 +58,7 @@ interface GanttTimelineProps {
 export function GanttTimeline({
   milestones,
   onUpdateTask,
+  onUpdateMilestones,
   onRecalculateTimeline,
   expandedMilestones: propExpandedMilestones,
   onToggleMilestone: propOnToggleMilestone,
@@ -65,6 +70,9 @@ export function GanttTimeline({
   >(new Set());
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [cloneTaskState, setCloneTaskState] = useState<Task | null>(null);
+  const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false);
+  const [currentMilestoneId, setCurrentMilestoneId] = useState<string>('');
   const [zoomLevel, setZoomLevel] = useState<number>(32); // Píxeles por día, default 32px
   const [nameColumnWidth, setNameColumnWidth] = useState<number>(200); // Width in pixels for name column
 
@@ -87,8 +95,93 @@ export function GanttTimeline({
     startWidth: number;
   } | null>(null);
 
-  const timelineRef = useRef<HTMLDivElement>(null);
+  const timelineRef = useRef<HTMLTableSectionElement>(null);
   const ganttContainerRef = useRef<HTMLDivElement>(null);
+
+  // Clone handlers
+  const handleCloneTask = useCallback((task: Task) => {
+    console.log('🔄 CLONE TASK HANDLER CALLED:', {
+      taskName: task.name,
+      taskId: task.taskId
+    });
+    
+    const milestone = milestones.find(m => 
+      m.tasks.some(t => t.taskId === task.taskId)
+    );
+    
+    if (milestone) {
+      console.log('✅ Found milestone for task, opening clone dialog:', milestone.milestoneName);
+      setCurrentMilestoneId(milestone.milestoneId);
+      setCloneTaskState(task);
+      setIsCloneDialogOpen(true);
+    } else {
+      console.log('❌ Could not find milestone for task');
+    }
+  }, [milestones]);
+
+  const handleConfirmClone = useCallback(async (options: CloneOptions) => {
+    if (!cloneTaskState || !onUpdateMilestones) return;
+    
+    const clonedTaskResult = cloneTask(cloneTaskState, milestones, options);
+    const updatedMilestones = addClonedTaskToMilestone(
+      milestones, 
+      clonedTaskResult, 
+      options.targetMilestoneId
+    );
+    
+    onUpdateMilestones(updatedMilestones);
+    
+    if (onRecalculateTimeline) {
+      onRecalculateTimeline();
+    }
+  }, [cloneTaskState, milestones, onUpdateMilestones, onRecalculateTimeline]);
+
+  const handleSplitTask = useCallback((task: Task) => {
+    // TODO: Implement task splitting functionality
+    console.log('🔪 SPLIT TASK CLICKED:', {
+      taskName: task.name,
+      taskId: task.taskId,
+      team: task.team,
+      duration: task.durationDays
+    });
+  }, []);
+
+  const handleMoveTask = useCallback((task: Task) => {
+    // TODO: Implement task moving functionality
+    console.log('📦 MOVE TASK CLICKED:', {
+      taskName: task.name,
+      taskId: task.taskId,
+      currentMilestone: milestones.find(m => m.tasks.some(t => t.taskId === task.taskId))?.milestoneName,
+      availableMilestones: milestones.map(m => m.milestoneName)
+    });
+  }, [milestones]);
+
+  const handleDeleteTask = useCallback((task: Task) => {
+    console.log('🗑️ DELETE TASK HANDLER CALLED:', {
+      taskName: task.name,
+      taskId: task.taskId,
+      hasUpdateMilestones: !!onUpdateMilestones
+    });
+    
+    if (!onUpdateMilestones) {
+      console.log('❌ No onUpdateMilestones handler available');
+      return;
+    }
+    
+    // Remove task from milestones
+    const updatedMilestones = milestones.map(milestone => ({
+      ...milestone,
+      tasks: milestone.tasks.filter(t => t.taskId !== task.taskId)
+    }));
+    
+    console.log('✅ Task deleted, updating milestones');
+    onUpdateMilestones(updatedMilestones);
+    
+    if (onRecalculateTimeline) {
+      console.log('✅ Recalculating timeline');
+      onRecalculateTimeline();
+    }
+  }, [milestones, onUpdateMilestones, onRecalculateTimeline]);
 
   // Zoom functions
   const zoomIn = useCallback(() => {
@@ -452,6 +545,9 @@ export function GanttTimeline({
                 minWidth: '30px',
               }}
               onMouseDown={e => {
+                // Don't start dragging on right-click (context menu)
+                if (e.button === 2) return;
+                
                 // Don't start dragging if clicking on edit button
                 const target = e.target as HTMLElement;
                 if (target.closest('button[title="Edit task"]')) {
@@ -463,6 +559,7 @@ export function GanttTimeline({
               <div
                 className="w-3 h-full bg-white/30 cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity rounded-l-lg flex items-center justify-center"
                 onMouseDown={e => {
+                  if (e.button === 2) return; // Don't handle right-click
                   e.stopPropagation();
                   handleMouseDown(
                     e,
@@ -500,6 +597,7 @@ export function GanttTimeline({
               <div
                 className="w-3 h-full bg-white/30 cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity rounded-r-lg flex items-center justify-center"
                 onMouseDown={e => {
+                  if (e.button === 2) return; // Don't handle right-click
                   e.stopPropagation();
                   handleMouseDown(
                     e,
@@ -1100,7 +1198,19 @@ export function GanttTimeline({
                                           height: '28px',
                                         }}
                                       >
-                                        <TaskBar task={task} />
+                                        <TaskContextMenu
+                                          task={task}
+                                          onClone={handleCloneTask}
+                                          onSplit={handleSplitTask}
+                                          onMove={handleMoveTask}
+                                          onDelete={handleDeleteTask}
+                                          onEdit={(task) => {
+                                            setEditingTask(task);
+                                            setIsEditModalOpen(true);
+                                          }}
+                                        >
+                                          <TaskBar task={task} />
+                                        </TaskContextMenu>
                                       </div>
 
                                       {/* Task name and dates to the right */}
@@ -1156,6 +1266,18 @@ export function GanttTimeline({
           }
         }}
         milestones={milestones}
+      />
+      
+      <CloneTaskDialog
+        task={cloneTaskState}
+        isOpen={isCloneDialogOpen}
+        onClose={() => {
+          setIsCloneDialogOpen(false);
+          setCloneTaskState(null);
+        }}
+        onConfirm={handleConfirmClone}
+        milestones={milestones}
+        currentMilestoneId={currentMilestoneId}
       />
     </>
   );

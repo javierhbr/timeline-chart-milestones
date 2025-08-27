@@ -245,6 +245,15 @@ export default function App() {
     });
   }, [projectStartDate]);
 
+  const handleUpdateMilestones = useCallback((updatedMilestones: Milestone[]) => {
+    const recalculatedMilestones = calculateProjectDates(
+      updatedMilestones,
+      projectStartDate,
+      false
+    );
+    setMilestones(recalculatedMilestones);
+  }, [projectStartDate]);
+
   const totalTasks = milestones.reduce((acc, m) => acc + m.tasks.length, 0);
   const uniqueTeams = new Set(milestones.flatMap(m => m.tasks.map(t => t.team)))
     .size;
@@ -408,6 +417,7 @@ export default function App() {
           <GanttTimeline
             milestones={milestones}
             onUpdateTask={handleUpdateTask}
+            onUpdateMilestones={handleUpdateMilestones}
             onRecalculateTimeline={handleRecalculateTimeline}
             expandedMilestones={expandedMilestones}
             onToggleMilestone={(milestoneId: string) => {
