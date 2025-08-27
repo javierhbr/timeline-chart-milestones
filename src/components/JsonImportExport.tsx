@@ -2,7 +2,13 @@ import React, { useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card } from './ui/card';
-import { Upload, Download, Calendar, Info, X, FolderOpen, Save } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
+import { Upload, Download, Calendar, Info, X, FolderOpen, Save, ChevronDown, Plus, FileText, HelpCircle } from 'lucide-react';
 import { Milestone } from '../utils/dateUtils';
 import { Project, createProject, TimelineData, generateDefaultProjectName } from '../utils/projectStorage';
 
@@ -355,66 +361,120 @@ export function JsonImportExport({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={onOpenProjectManager}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <FolderOpen className="w-4 h-4" />
-            Projects
-          </Button>
-          
-          <Button
-            onClick={handleImportClick}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Upload className="w-4 h-4" />
-            Import CSV/JSON
-          </Button>
+          {/* Projects Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <FolderOpen className="w-4 h-4" />
+                Projects
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => {
+                const projectName = generateDefaultProjectName();
+                const timelineData: TimelineData = {
+                  milestones: [],
+                  projectStartDate: new Date().toISOString(),
+                  expandedMilestones: [],
+                };
+                createProject(projectName, timelineData, true);
+                window.location.reload();
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                New Project
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onOpenProjectManager}>
+                <FolderOpen className="w-4 h-4 mr-2" />
+                Open Project
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={handleSaveAsNewProject}
+                disabled={milestones.length === 0}
+              >
+                <Save className="w-4 h-4 mr-2" />
+                Save as New Project
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          <Button
-            onClick={handleExport}
-            variant="outline"
-            disabled={milestones.length === 0}
-            className="flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" />
-            Export JSON
-          </Button>
+          {/* Import Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Upload className="w-4 h-4" />
+                Import
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.accept = ".csv";
+                  fileInputRef.current.click();
+                }
+              }}>
+                <FileText className="w-4 h-4 mr-2" />
+                CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.accept = ".json";
+                  fileInputRef.current.click();
+                }
+              }}>
+                <FileText className="w-4 h-4 mr-2" />
+                JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-          <Button
-            onClick={handleExportCSV}
-            variant="outline"
-            disabled={milestones.length === 0}
-            className="flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" />
-            Export CSV
-          </Button>
+          {/* Export Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2"
+                disabled={milestones.length === 0}
+              >
+                <Download className="w-4 h-4" />
+                Export
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={handleExport}>
+                <FileText className="w-4 h-4 mr-2" />
+                JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileText className="w-4 h-4 mr-2" />
+                CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
+          {/* Examples Button */}
           <Button onClick={handleLoadExample} variant="secondary">
             Load Example
           </Button>
-          
-          <Button
-            onClick={handleSaveAsNewProject}
-            variant="outline"
-            disabled={milestones.length === 0}
-            className="flex items-center gap-2"
-          >
-            <Save className="w-4 h-4" />
-            Save as New Project
-          </Button>
 
-          <Button
-            onClick={() => setShowInstructions(!showInstructions)}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <Info className="w-4 h-4" />
-            {showInstructions ? 'Hide' : 'Show'} File Format
-          </Button>
+          {/* Help Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <HelpCircle className="w-4 h-4" />
+                Help
+                <ChevronDown className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => setShowInstructions(!showInstructions)}>
+                <Info className="w-4 h-4 mr-2" />
+                {showInstructions ? 'Hide' : 'Show'} File Format
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 

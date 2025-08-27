@@ -43,7 +43,6 @@ import {
   TimelineData,
 } from '../utils/projectStorage';
 import { formatDistanceToNow } from 'date-fns';
-import { Badge } from './ui/badge';
 
 interface ProjectManagerProps {
   isOpen: boolean;
@@ -180,15 +179,6 @@ export function ProjectManager({
           ? 'border-blue-500 bg-blue-50/50 shadow-md' 
           : 'border-transparent hover:border-gray-200'
       }`}>
-        {isCurrentProject && (
-          <Badge
-            variant="default"
-            className="absolute -top-2 -right-2 bg-blue-500 hover:bg-blue-600 shadow-sm"
-          >
-            Current
-          </Badge>
-        )}
-        
         <div
           onClick={() => {
             onSelectProject(project);
@@ -197,21 +187,26 @@ export function ProjectManager({
           className="flex-1"
         >
           <div className="flex items-start justify-between mb-4">
-            <h3 className="font-semibold text-lg truncate text-gray-900" style={{width: 'calc(100% - 40px)'}}>{project.name}</h3>
+            <div className="flex items-center gap-2" style={{width: 'calc(100% - 40px)'}}>
+              {isCurrentProject && (
+                <div className="h-2.5 w-2.5 rounded-full bg-blue-500 flex-shrink-0" title="Current project" />
+              )}
+              <h3 className="font-semibold text-lg truncate text-gray-900">{project.name}</h3>
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-6 w-6 p-0 hover:bg-gray-100"
-                  onClick={e => e.stopPropagation()}
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={e => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     openRenameDialog(project);
                   }}
@@ -220,7 +215,7 @@ export function ProjectManager({
                   Rename
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={e => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     handleDuplicateProject(project);
                   }}
@@ -230,7 +225,7 @@ export function ProjectManager({
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={e => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     openDeleteDialog(project);
                   }}
@@ -282,16 +277,16 @@ export function ProjectManager({
           }}
           className="flex items-start justify-between gap-4"
         >
-          <div className="flex items-start gap-3" style={{width: 'calc(100% - 40px)'}}>
-            {isCurrentProject && (
-              <Badge variant="default" className="bg-blue-500 flex-shrink-0 mt-1">
-                Current
-              </Badge>
-            )}
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-base truncate text-gray-900 mb-2">
+          <div className="flex-1 min-w-0" style={{width: 'calc(100% - 40px)'}}>
+            <div className="flex items-center gap-2 mb-2">
+              {isCurrentProject && (
+                <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" title="Current project" />
+              )}
+              <h3 className="font-semibold text-base truncate text-gray-900">
                 {project.name}
               </h3>
+            </div>
+            <div className="pl-4">
               <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                 <span className="flex items-center gap-1 whitespace-nowrap">
                   <FolderOpen className="h-3 w-3 flex-shrink-0" />
@@ -317,14 +312,14 @@ export function ProjectManager({
                   variant="ghost"
                   size="sm"
                   className="h-8 w-8 p-0 hover:bg-gray-100"
-                  onClick={e => e.stopPropagation()}
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
                 >
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
-                onClick={e => {
+                onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
                   openRenameDialog(project);
                 }}
@@ -333,7 +328,7 @@ export function ProjectManager({
                 Rename
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={e => {
+                onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
                   handleDuplicateProject(project);
                 }}
@@ -343,7 +338,7 @@ export function ProjectManager({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={e => {
+                onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
                   openDeleteDialog(project);
                 }}
@@ -362,7 +357,10 @@ export function ProjectManager({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="w-[30vw] max-w-none max-h-[85vh] overflow-hidden flex flex-col p-0">
+        <DialogContent 
+          className="max-h-[85vh] overflow-hidden flex flex-col p-0"
+          style={{ width: '50vw', maxWidth: 'none' }}
+        >
           <DialogHeader className="px-6 py-4 border-b">
             <DialogTitle className="flex items-center gap-2 text-xl">
               <FolderOpen className="h-6 w-6" />
@@ -371,6 +369,9 @@ export function ProjectManager({
             <DialogDescription className="text-base mt-1">
               Create, manage, and switch between your Gantt timeline projects.
             </DialogDescription>
+            <div className="text-sm text-muted-foreground mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded mx-6">
+              ⚠️ All project data is saved locally in your browser's storage and will be lost if you clear browser data.
+            </div>
           </DialogHeader>
 
           <div className="flex items-center justify-between gap-4 px-6 py-4 bg-gray-50/50">
@@ -434,7 +435,7 @@ export function ProjectManager({
               <div
                 className={
                   viewMode === 'grid'
-                    ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'
+                    ? 'grid grid-cols-1 sm:grid-cols-2 gap-4'
                     : 'space-y-4'
                 }
               >
