@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { JsonImportExport } from './components/JsonImportExport';
 import { GanttTimeline } from './components/GanttTimeline';
 import { Card } from './components/ui/card';
@@ -9,6 +9,12 @@ import {
   calculateProjectDates,
   teamColors,
 } from './utils/dateUtils';
+import {
+  saveTimelineData,
+  loadTimelineData,
+  clearTimelineData,
+  hasTimelineData,
+} from './utils/localStorage';
 import { BarChart3, Calendar, Users, Clock, BarChart } from 'lucide-react';
 
 export default function App() {
@@ -20,13 +26,36 @@ export default function App() {
     new Set()
   );
 
+  // Load data from localStorage on component mount
+  useEffect(() => {
+    const savedData = loadTimelineData();
+    if (savedData) {
+      setMilestones(savedData.milestones);
+      setProjectStartDate(new Date(savedData.projectStartDate));
+      setExpandedMilestones(new Set(savedData.expandedMilestones));
+    }
+  }, []);
+
+  // Auto-save data whenever milestones, projectStartDate, or expandedMilestones change
+  useEffect(() => {
+    if (milestones.length > 0) {
+      saveTimelineData(milestones, projectStartDate, expandedMilestones);
+    }
+  }, [milestones, projectStartDate, expandedMilestones]);
+
   const handleImport = useCallback(
     (importedMilestones: Milestone[]) => {
+      // Clear existing localStorage data when importing new data
+      clearTimelineData();
+      
       const calculatedMilestones = calculateProjectDates(
         importedMilestones,
         projectStartDate
       );
       setMilestones(calculatedMilestones);
+      
+      // Reset expanded milestones when importing new data
+      setExpandedMilestones(new Set());
     },
     [projectStartDate]
   );
