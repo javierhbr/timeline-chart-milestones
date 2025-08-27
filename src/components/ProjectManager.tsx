@@ -108,7 +108,11 @@ export function ProjectManager({
       expandedMilestones: [],
     };
 
-    const newProject = createProject(newProjectName.trim(), emptyTimelineData, true);
+    const newProject = createProject(
+      newProjectName.trim(),
+      emptyTimelineData,
+      true
+    );
     loadProjects();
     setNewProjectName('');
     setShowNewProjectDialog(false);
@@ -174,11 +178,13 @@ export function ProjectManager({
     const isCurrentProject = project.id === currentProjectId;
 
     return (
-      <Card className={`p-5 hover:shadow-lg transition-all duration-200 cursor-pointer relative border-2 ${
-        isCurrentProject 
-          ? 'border-blue-500 bg-blue-50/50 shadow-md' 
-          : 'border-transparent hover:border-gray-200'
-      }`}>
+      <Card
+        className={`p-5 hover:shadow-lg transition-all duration-200 cursor-pointer relative border-2 ${
+          isCurrentProject
+            ? 'border-blue-500 bg-blue-50/50 shadow-md'
+            : 'border-transparent hover:border-gray-200'
+        }`}
+      >
         <div
           onClick={() => {
             onSelectProject(project);
@@ -187,11 +193,19 @@ export function ProjectManager({
           className="flex-1"
         >
           <div className="flex items-start justify-between mb-4">
-            <div className="flex items-center gap-2" style={{width: 'calc(100% - 40px)'}}>
+            <div
+              className="flex items-center gap-2"
+              style={{ width: 'calc(100% - 40px)' }}
+            >
               {isCurrentProject && (
-                <div className="h-2.5 w-2.5 rounded-full bg-blue-500 flex-shrink-0" title="Current project" />
+                <div
+                  className="h-2.5 w-2.5 rounded-full bg-blue-500 flex-shrink-0"
+                  title="Current project"
+                />
               )}
-              <h3 className="font-semibold text-lg truncate text-gray-900">{project.name}</h3>
+              <h3 className="font-semibold text-lg truncate text-gray-900">
+                {project.name}
+              </h3>
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -242,7 +256,8 @@ export function ProjectManager({
             <div className="flex items-center gap-6">
               <span className="flex items-center gap-2 text-sm text-gray-600">
                 <FolderOpen className="h-4 w-4 text-blue-500" />
-                <span className="font-medium">{totalMilestones}</span> milestones
+                <span className="font-medium">{totalMilestones}</span>{' '}
+                milestones
               </span>
               <span className="flex items-center gap-2 text-sm text-gray-600">
                 <Calendar className="h-4 w-4 text-green-500" />
@@ -252,7 +267,10 @@ export function ProjectManager({
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t border-gray-100">
               <Clock className="h-3 w-3" />
-              Modified {formatDistanceToNow(new Date(project.lastModified), { addSuffix: true })}
+              Modified{' '}
+              {formatDistanceToNow(new Date(project.lastModified), {
+                addSuffix: true,
+              })}
             </div>
           </div>
         </div>
@@ -265,11 +283,13 @@ export function ProjectManager({
     const isCurrentProject = project.id === currentProjectId;
 
     return (
-      <Card className={`p-4 hover:shadow-md transition-all duration-200 cursor-pointer border-l-4 ${
-        isCurrentProject 
-          ? 'border-l-blue-500 bg-blue-50/30 shadow-sm' 
-          : 'border-l-transparent hover:border-l-gray-300'
-      }`}>
+      <Card
+        className={`p-4 hover:shadow-md transition-all duration-200 cursor-pointer border-l-4 ${
+          isCurrentProject
+            ? 'border-l-blue-500 bg-blue-50/30 shadow-sm'
+            : 'border-l-transparent hover:border-l-gray-300'
+        }`}
+      >
         <div
           onClick={() => {
             onSelectProject(project);
@@ -277,10 +297,16 @@ export function ProjectManager({
           }}
           className="flex items-start justify-between gap-4"
         >
-          <div className="flex-1 min-w-0" style={{width: 'calc(100% - 40px)'}}>
+          <div
+            className="flex-1 min-w-0"
+            style={{ width: 'calc(100% - 40px)' }}
+          >
             <div className="flex items-center gap-2 mb-2">
               {isCurrentProject && (
-                <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" title="Current project" />
+                <div
+                  className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0"
+                  title="Current project"
+                />
               )}
               <h3 className="font-semibold text-base truncate text-gray-900">
                 {project.name}
@@ -300,20 +326,23 @@ export function ProjectManager({
               <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                 <Clock className="h-3 w-3 flex-shrink-0" />
                 <span className="truncate">
-                  Modified {formatDistanceToNow(new Date(project.lastModified), { addSuffix: true })}
+                  Modified{' '}
+                  {formatDistanceToNow(new Date(project.lastModified), {
+                    addSuffix: true,
+                  })}
                 </span>
               </div>
             </div>
           </div>
 
           <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0 hover:bg-gray-100"
-                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
-                >
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 hover:bg-gray-100"
+                onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              >
                 <MoreVertical className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
@@ -357,7 +386,7 @@ export function ProjectManager({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent 
+        <DialogContent
           className="max-h-[85vh] overflow-hidden flex flex-col p-0"
           style={{ width: '50vw', maxWidth: 'none' }}
         >
@@ -370,7 +399,8 @@ export function ProjectManager({
               Create, manage, and switch between your Gantt timeline projects.
             </DialogDescription>
             <div className="text-sm text-muted-foreground mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded mx-6">
-              ⚠️ All project data is saved locally in your browser's storage and will be lost if you clear browser data.
+              ⚠️ All project data is saved locally in your browser's storage and
+              will be lost if you clear browser data.
             </div>
           </DialogHeader>
 
@@ -405,7 +435,10 @@ export function ProjectManager({
                 </Button>
               </div>
 
-              <Button onClick={openNewProjectDialog} className="flex items-center gap-2">
+              <Button
+                onClick={openNewProjectDialog}
+                className="flex items-center gap-2"
+              >
                 <Plus className="h-4 w-4" />
                 New Project
               </Button>
@@ -417,12 +450,14 @@ export function ProjectManager({
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <FolderOpen className="h-16 w-16 text-muted-foreground mb-6" />
                 <h3 className="text-xl font-semibold mb-2">
-                  {projects.length === 0 ? 'No projects yet' : 'No projects found'}
+                  {projects.length === 0
+                    ? 'No projects yet'
+                    : 'No projects found'}
                 </h3>
                 <p className="text-muted-foreground mb-6 max-w-md">
                   {projects.length === 0
                     ? 'Create your first project to get started with organizing your Gantt timelines.'
-                    : 'Try adjusting your search terms to find the project you\'re looking for.'}
+                    : "Try adjusting your search terms to find the project you're looking for."}
                 </p>
                 {projects.length === 0 && (
                   <Button onClick={openNewProjectDialog} size="lg">
@@ -453,7 +488,10 @@ export function ProjectManager({
       </Dialog>
 
       {/* New Project Dialog */}
-      <Dialog open={showNewProjectDialog} onOpenChange={setShowNewProjectDialog}>
+      <Dialog
+        open={showNewProjectDialog}
+        onOpenChange={setShowNewProjectDialog}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New Project</DialogTitle>
@@ -520,7 +558,10 @@ export function ProjectManager({
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowRenameDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setShowRenameDialog(false)}
+            >
               Cancel
             </Button>
             <Button

@@ -8,9 +8,26 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
-import { Upload, Download, Calendar, Info, X, FolderOpen, Save, ChevronDown, Plus, FileText, HelpCircle } from 'lucide-react';
+import {
+  Upload,
+  Download,
+  Calendar,
+  Info,
+  X,
+  FolderOpen,
+  Save,
+  ChevronDown,
+  Plus,
+  FileText,
+  HelpCircle,
+} from 'lucide-react';
 import { Milestone } from '../utils/dateUtils';
-import { Project, createProject, TimelineData, generateDefaultProjectName } from '../utils/projectStorage';
+import {
+  Project,
+  createProject,
+  TimelineData,
+  generateDefaultProjectName,
+} from '../utils/projectStorage';
 
 interface JsonImportExportProps {
   milestones: Milestone[];
@@ -297,23 +314,25 @@ export function JsonImportExport({
     const shouldCreateNewProject = confirm(
       'Do you want to create a new project with this data? Click OK for new project, Cancel to import into current project.'
     );
-    
+
     if (shouldCreateNewProject) {
       const timelineData: TimelineData = {
         milestones: importedMilestones,
         projectStartDate: projectStartDate.toISOString(),
         expandedMilestones: [],
       };
-      
-      const projectName = prompt('Enter a name for the new project:') || generateDefaultProjectName();
+
+      const projectName =
+        prompt('Enter a name for the new project:') ||
+        generateDefaultProjectName();
       createProject(projectName, timelineData, true);
-      
+
       // Refresh the page to load the new project
       window.location.reload();
     } else {
       onImport(importedMilestones);
     }
-    
+
     setShowImportOptions(false);
   };
 
@@ -322,25 +341,20 @@ export function JsonImportExport({
       alert('No data to save. Please add some milestones and tasks first.');
       return;
     }
-    
+
     const projectName = prompt('Enter a name for the new project:');
     if (!projectName) return;
-    
+
     const timelineData: TimelineData = {
       milestones,
       projectStartDate: projectStartDate.toISOString(),
       expandedMilestones: [],
     };
-    
+
     createProject(projectName.trim(), timelineData, true);
-    
+
     // Refresh the page to load the new project
     window.location.reload();
-  };
-
-  const handleImportClick = () => {
-    setShowImportOptions(true);
-    fileInputRef.current?.click();
   };
 
   return (
@@ -371,16 +385,18 @@ export function JsonImportExport({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => {
-                const projectName = generateDefaultProjectName();
-                const timelineData: TimelineData = {
-                  milestones: [],
-                  projectStartDate: new Date().toISOString(),
-                  expandedMilestones: [],
-                };
-                createProject(projectName, timelineData, true);
-                window.location.reload();
-              }}>
+              <DropdownMenuItem
+                onClick={() => {
+                  const projectName = generateDefaultProjectName();
+                  const timelineData: TimelineData = {
+                    milestones: [],
+                    projectStartDate: new Date().toISOString(),
+                    expandedMilestones: [],
+                  };
+                  createProject(projectName, timelineData, true);
+                  window.location.reload();
+                }}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 New Project
               </DropdownMenuItem>
@@ -388,7 +404,7 @@ export function JsonImportExport({
                 <FolderOpen className="w-4 h-4 mr-2" />
                 Open Project
               </DropdownMenuItem>
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={handleSaveAsNewProject}
                 disabled={milestones.length === 0}
               >
@@ -408,21 +424,25 @@ export function JsonImportExport({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => {
-                if (fileInputRef.current) {
-                  fileInputRef.current.accept = ".csv";
-                  fileInputRef.current.click();
-                }
-              }}>
+              <DropdownMenuItem
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.accept = '.csv';
+                    fileInputRef.current.click();
+                  }
+                }}
+              >
                 <FileText className="w-4 h-4 mr-2" />
                 CSV
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                if (fileInputRef.current) {
-                  fileInputRef.current.accept = ".json";
-                  fileInputRef.current.click();
-                }
-              }}>
+              <DropdownMenuItem
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.accept = '.json';
+                    fileInputRef.current.click();
+                  }
+                }}
+              >
                 <FileText className="w-4 h-4 mr-2" />
                 JSON
               </DropdownMenuItem>
@@ -432,8 +452,8 @@ export function JsonImportExport({
           {/* Export Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="flex items-center gap-2"
                 disabled={milestones.length === 0}
               >
@@ -469,7 +489,9 @@ export function JsonImportExport({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => setShowInstructions(!showInstructions)}>
+              <DropdownMenuItem
+                onClick={() => setShowInstructions(!showInstructions)}
+              >
                 <Info className="w-4 h-4 mr-2" />
                 {showInstructions ? 'Hide' : 'Show'} File Format
               </DropdownMenuItem>

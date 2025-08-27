@@ -31,9 +31,9 @@ export function loadTimelineData(): TimelineData | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return null;
-    
+
     const data: TimelineData = JSON.parse(stored);
-    
+
     // Validate the structure
     if (
       !data.milestones ||
@@ -46,7 +46,7 @@ export function loadTimelineData(): TimelineData | null {
       clearTimelineData();
       return null;
     }
-    
+
     return data;
   } catch (error) {
     console.warn('Failed to load timeline data from localStorage:', error);

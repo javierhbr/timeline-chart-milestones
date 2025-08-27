@@ -25,7 +25,9 @@ const OLD_STORAGE_KEY = 'gantt-timeline-data';
 const MAX_RECENT_PROJECTS = 5;
 
 export function generateProjectId(): string {
-  return 'project_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  return (
+    'project_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
+  );
 }
 
 export function generateDefaultProjectName(): string {
@@ -43,9 +45,9 @@ export function getProjectsStorage(): ProjectsStorage {
         lastAccessedProjectIds: [],
       };
     }
-    
+
     const data: ProjectsStorage = JSON.parse(stored);
-    
+
     // Validate the structure
     if (
       typeof data !== 'object' ||
@@ -60,7 +62,7 @@ export function getProjectsStorage(): ProjectsStorage {
         lastAccessedProjectIds: [],
       };
     }
-    
+
     return data;
   } catch (error) {
     console.warn('Failed to load projects storage from localStorage:', error);
@@ -96,22 +98,25 @@ export function createProject(
 
   const storage = getProjectsStorage();
   storage.projects[project.id] = project;
-  
+
   if (makeActive) {
     storage.currentProjectId = project.id;
   }
 
   // Update recent projects list
   updateRecentProjects(storage, project.id);
-  
+
   saveProjectsStorage(storage);
   return project;
 }
 
-export function saveProject(projectId: string, timelineData: TimelineData): void {
+export function saveProject(
+  projectId: string,
+  timelineData: TimelineData
+): void {
   const storage = getProjectsStorage();
   const project = storage.projects[projectId];
-  
+
   if (!project) {
     console.warn(`Project with id ${projectId} not found`);
     return;
@@ -119,17 +124,17 @@ export function saveProject(projectId: string, timelineData: TimelineData): void
 
   project.timelineData = timelineData;
   project.lastModified = Date.now();
-  
+
   // Update recent projects list
   updateRecentProjects(storage, projectId);
-  
+
   saveProjectsStorage(storage);
 }
 
 export function loadProject(projectId: string): Project | null {
   const storage = getProjectsStorage();
   const project = storage.projects[projectId];
-  
+
   if (!project) {
     console.warn(`Project with id ${projectId} not found`);
     return null;
@@ -139,37 +144,37 @@ export function loadProject(projectId: string): Project | null {
   storage.currentProjectId = projectId;
   updateRecentProjects(storage, projectId);
   saveProjectsStorage(storage);
-  
+
   return project;
 }
 
 export function deleteProject(projectId: string): void {
   const storage = getProjectsStorage();
-  
+
   if (!storage.projects[projectId]) {
     console.warn(`Project with id ${projectId} not found`);
     return;
   }
 
   delete storage.projects[projectId];
-  
+
   // Remove from recent projects
   storage.lastAccessedProjectIds = storage.lastAccessedProjectIds.filter(
     id => id !== projectId
   );
-  
+
   // If this was the current project, clear current project
   if (storage.currentProjectId === projectId) {
     storage.currentProjectId = null;
   }
-  
+
   saveProjectsStorage(storage);
 }
 
 export function renameProject(projectId: string, newName: string): void {
   const storage = getProjectsStorage();
   const project = storage.projects[projectId];
-  
+
   if (!project) {
     console.warn(`Project with id ${projectId} not found`);
     return;
@@ -180,10 +185,13 @@ export function renameProject(projectId: string, newName: string): void {
   saveProjectsStorage(storage);
 }
 
-export function duplicateProject(projectId: string, newName?: string): Project | null {
+export function duplicateProject(
+  projectId: string,
+  newName?: string
+): Project | null {
   const storage = getProjectsStorage();
   const originalProject = storage.projects[projectId];
-  
+
   if (!originalProject) {
     console.warn(`Project with id ${projectId} not found`);
     return null;
@@ -202,11 +210,11 @@ export function listProjects(): Project[] {
 
 export function getCurrentProject(): Project | null {
   const storage = getProjectsStorage();
-  
+
   if (!storage.currentProjectId) {
     return null;
   }
-  
+
   return storage.projects[storage.currentProjectId] || null;
 }
 
@@ -220,26 +228,29 @@ export function getRecentProjects(): Project[] {
 
 export function setCurrentProject(projectId: string): void {
   const storage = getProjectsStorage();
-  
+
   if (!storage.projects[projectId]) {
     console.warn(`Project with id ${projectId} not found`);
     return;
   }
-  
+
   storage.currentProjectId = projectId;
   updateRecentProjects(storage, projectId);
   saveProjectsStorage(storage);
 }
 
-function updateRecentProjects(storage: ProjectsStorage, projectId: string): void {
+function updateRecentProjects(
+  storage: ProjectsStorage,
+  projectId: string
+): void {
   // Remove if already in list
   storage.lastAccessedProjectIds = storage.lastAccessedProjectIds.filter(
     id => id !== projectId
   );
-  
+
   // Add to beginning
   storage.lastAccessedProjectIds.unshift(projectId);
-  
+
   // Keep only the most recent projects
   storage.lastAccessedProjectIds = storage.lastAccessedProjectIds.slice(
     0,
@@ -251,20 +262,20 @@ function updateRecentProjects(storage: ProjectsStorage, projectId: string): void
 export function migrateOldData(): void {
   try {
     const oldData = localStorage.getItem(OLD_STORAGE_KEY);
-    
+
     if (!oldData) {
       return; // No old data to migrate
     }
 
     const storage = getProjectsStorage();
-    
+
     // Only migrate if no projects exist yet
     if (Object.keys(storage.projects).length > 0) {
       return; // Projects already exist, don't migrate
     }
 
     const oldTimelineData = JSON.parse(oldData);
-    
+
     // Validate old data structure
     if (
       !oldTimelineData.milestones ||
@@ -286,12 +297,13 @@ export function migrateOldData(): void {
 
     // Create default project from old data
     createProject('Default Project', timelineData, true);
-    
-    console.log('Successfully migrated old timeline data to new project structure');
-    
+
+    console.log(
+      'Successfully migrated old timeline data to new project structure'
+    );
+
     // Remove old data after successful migration
     localStorage.removeItem(OLD_STORAGE_KEY);
-    
   } catch (error) {
     console.warn('Failed to migrate old timeline data:', error);
   }
@@ -315,11 +327,11 @@ export function hasAnyProjects(): boolean {
 export function exportProjectAsJSON(projectId: string): string | null {
   const storage = getProjectsStorage();
   const project = storage.projects[projectId];
-  
+
   if (!project) {
     return null;
   }
-  
+
   return JSON.stringify(project.timelineData.milestones, null, 2);
 }
 
