@@ -1,4 +1,12 @@
-import { addDays, format, isWeekend, startOfWeek, endOfWeek, differenceInDays, parseISO } from 'date-fns';
+import {
+  addDays,
+  format,
+  isWeekend,
+  startOfWeek,
+  endOfWeek,
+  differenceInDays,
+  parseISO,
+} from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export interface Task {
@@ -23,64 +31,83 @@ export interface Milestone {
 
 // Colores por equipo
 export const teamColors: Record<string, string> = {
-  'Analysis': '#3b82f6',     // blue
-  'Development': '#f59e0b',  // amber
-  'Documentation': '#8b5cf6', // violet  
-  'Automation': '#10b981',   // emerald
-  'QA': '#ef4444',          // red
-  'Infrastructure': '#6366f1', // indigo
-  'UX': '#3b82f6',          // blue
-  'UI': '#8b5cf6',          // violet  
-  'PM': '#10b981',          // emerald
-  'Dev': '#f59e0b',         // amber
-  'Backend': '#6366f1',     // indigo
-  'Frontend': '#06b6d4',    // cyan
-  'Design': '#ec4899',      // pink
-  'Marketing': '#84cc16',   // lime
-  'Default': '#6b7280'      // gray
+  Analysis: '#3b82f6', // blue
+  Development: '#f59e0b', // amber
+  Documentation: '#8b5cf6', // violet
+  Automation: '#10b981', // emerald
+  QA: '#ef4444', // red
+  Infrastructure: '#6366f1', // indigo
+  UX: '#3b82f6', // blue
+  UI: '#8b5cf6', // violet
+  PM: '#10b981', // emerald
+  Dev: '#f59e0b', // amber
+  Backend: '#6366f1', // indigo
+  Frontend: '#06b6d4', // cyan
+  Design: '#ec4899', // pink
+  Marketing: '#84cc16', // lime
+  Default: '#6b7280', // gray
 };
 
 // Añadir días laborables (excluyendo fines de semana)
 export function addBusinessDays(startDate: Date, businessDays: number): Date {
   let currentDate = new Date(startDate);
   let remainingDays = businessDays;
-  
+
   while (remainingDays > 0) {
     currentDate = addDays(currentDate, 1);
     if (!isWeekend(currentDate)) {
       remainingDays--;
     }
   }
-  
+
   return currentDate;
 }
 
 // Calcular fechas de todas las tareas basado en dependencias
-export function calculateProjectDates(milestones: Milestone[], projectStartDate: Date, preserveManualDates: boolean = false): Milestone[] {
-  const updatedMilestones = JSON.parse(JSON.stringify(milestones)) as Milestone[];
+export function calculateProjectDates(
+  milestones: Milestone[],
+  projectStartDate: Date,
+  preserveManualDates: boolean = false
+): Milestone[] {
+  const updatedMilestones = JSON.parse(
+    JSON.stringify(milestones)
+  ) as Milestone[];
   const taskDateMap = new Map<string, { start: Date; end: Date }>();
-  
+
   // Auto-create inter-milestone dependencies for sequential execution
   // Sort milestones by their ID to ensure consistent ordering
-  const sortedMilestones = [...updatedMilestones].sort((a, b) => a.milestoneId.localeCompare(b.milestoneId));
-  
+  const sortedMilestones = [...updatedMilestones].sort((a, b) =>
+    a.milestoneId.localeCompare(b.milestoneId)
+  );
+
   // Add dependencies between milestones: each milestone's first task depends on previous milestone's last task
   for (let i = 1; i < sortedMilestones.length; i++) {
     const currentMilestone = sortedMilestones[i];
     const previousMilestone = sortedMilestones[i - 1];
-    
-    if (currentMilestone.tasks.length > 0 && previousMilestone.tasks.length > 0) {
+
+    if (
+      currentMilestone.tasks.length > 0 &&
+      previousMilestone.tasks.length > 0
+    ) {
       const firstTaskOfCurrent = currentMilestone.tasks[0];
-      const lastTaskOfPrevious = previousMilestone.tasks[previousMilestone.tasks.length - 1];
-      
+      const lastTaskOfPrevious =
+        previousMilestone.tasks[previousMilestone.tasks.length - 1];
+
       // Only add dependency if the first task doesn't already have dependencies to previous milestones
-      const hasInterMilestoneDependency = firstTaskOfCurrent.dependsOn.some(depId => 
-        updatedMilestones.some(m => m.milestoneId !== currentMilestone.milestoneId && m.tasks.some(t => t.taskId === depId))
+      const hasInterMilestoneDependency = firstTaskOfCurrent.dependsOn.some(
+        depId =>
+          updatedMilestones.some(
+            m =>
+              m.milestoneId !== currentMilestone.milestoneId &&
+              m.tasks.some(t => t.taskId === depId)
+          )
       );
-      
+
       if (!hasInterMilestoneDependency) {
         // Find the actual task object in the updatedMilestones array and update it
-        const milestoneInUpdated = updatedMilestones.find(m => m.milestoneId === currentMilestone.milestoneId);
+        const milestoneInUpdated = updatedMilestones.find(
+          m => m.milestoneId === currentMilestone.milestoneId
+        );
         if (milestoneInUpdated && milestoneInUpdated.tasks.length > 0) {
           const taskToUpdate = milestoneInUpdated.tasks[0];
           if (!taskToUpdate.dependsOn.includes(lastTaskOfPrevious.taskId)) {
@@ -90,19 +117,24 @@ export function calculateProjectDates(milestones: Milestone[], projectStartDate:
       }
     }
   }
-  
+
   // Set to track tasks currently being calculated to detect circular dependencies
   const calculatingTasks = new Set<string>();
-  
+
   // Función recursiva para calcular fechas de una tarea
-  const calculateTaskDates = (task: Task, milestone: Milestone): { start: Date; end: Date } => {
+  const calculateTaskDates = (
+    task: Task,
+    _milestone: Milestone
+  ): { start: Date; end: Date } => {
     if (taskDateMap.has(task.taskId)) {
       return taskDateMap.get(task.taskId)!;
     }
-    
+
     // Check for circular dependency
     if (calculatingTasks.has(task.taskId)) {
-      console.warn(`Circular dependency detected for task: ${task.name} (${task.taskId})`);
+      console.warn(
+        `Circular dependency detected for task: ${task.name} (${task.taskId})`
+      );
       // Return a default date to break the cycle
       const defaultStart = projectStartDate;
       const defaultEnd = addBusinessDays(defaultStart, task.durationDays - 1);
@@ -110,31 +142,31 @@ export function calculateProjectDates(milestones: Milestone[], projectStartDate:
       taskDateMap.set(task.taskId, dates);
       return dates;
     }
-    
+
     calculatingTasks.add(task.taskId);
-    
+
     // Si preserveManualDates está activo y la tarea ya tiene fechas, usarlas
     if (preserveManualDates && task.startDate && task.endDate) {
       const dates = {
         start: parseISO(task.startDate),
-        end: parseISO(task.endDate)
+        end: parseISO(task.endDate),
       };
       taskDateMap.set(task.taskId, dates);
       calculatingTasks.delete(task.taskId);
       return dates;
     }
-    
+
     let taskStartDate = projectStartDate;
-    
+
     // Si tiene dependencias, calcular basado en la tarea que termine más tarde
     if (task.dependsOn && task.dependsOn.length > 0) {
       let latestEndDate = projectStartDate;
-      
+
       for (const depId of task.dependsOn) {
         // Buscar la tarea dependiente en todos los milestones
         let depTask: Task | undefined;
         let depMilestone: Milestone | undefined;
-        
+
         for (const ms of updatedMilestones) {
           const found = ms.tasks.find(t => t.taskId === depId);
           if (found) {
@@ -143,7 +175,7 @@ export function calculateProjectDates(milestones: Milestone[], projectStartDate:
             break;
           }
         }
-        
+
         if (depTask && depMilestone) {
           const depDates = calculateTaskDates(depTask, depMilestone);
           if (depDates.end > latestEndDate) {
@@ -151,25 +183,25 @@ export function calculateProjectDates(milestones: Milestone[], projectStartDate:
           }
         }
       }
-      
+
       taskStartDate = addDays(latestEndDate, 1);
       // Asegurar que no comience en fin de semana
       while (isWeekend(taskStartDate)) {
         taskStartDate = addDays(taskStartDate, 1);
       }
     }
-    
+
     const taskEndDate = addBusinessDays(taskStartDate, task.durationDays - 1);
-    
+
     const dates = { start: taskStartDate, end: taskEndDate };
     taskDateMap.set(task.taskId, dates);
-    
+
     // Remove from calculating set
     calculatingTasks.delete(task.taskId);
-    
+
     return dates;
   };
-  
+
   // Calcular fechas para todas las tareas
   for (const milestone of updatedMilestones) {
     for (const task of milestone.tasks) {
@@ -177,45 +209,52 @@ export function calculateProjectDates(milestones: Milestone[], projectStartDate:
       task.startDate = format(dates.start, 'yyyy-MM-dd');
       task.endDate = format(dates.end, 'yyyy-MM-dd');
     }
-    
+
     // Calcular fechas del milestone basado en sus tareas
     if (milestone.tasks.length > 0) {
       const taskDates = milestone.tasks.map(t => ({
         start: parseISO(t.startDate!),
-        end: parseISO(t.endDate!)
+        end: parseISO(t.endDate!),
       }));
-      
-      const milestoneStart = new Date(Math.min(...taskDates.map(d => d.start.getTime())));
-      const milestoneEnd = new Date(Math.max(...taskDates.map(d => d.end.getTime())));
-      
+
+      const milestoneStart = new Date(
+        Math.min(...taskDates.map(d => d.start.getTime()))
+      );
+      const milestoneEnd = new Date(
+        Math.max(...taskDates.map(d => d.end.getTime()))
+      );
+
       milestone.startDate = format(milestoneStart, 'yyyy-MM-dd');
       milestone.endDate = format(milestoneEnd, 'yyyy-MM-dd');
     }
   }
-  
+
   return updatedMilestones;
 }
 
 // Generar semanas para el timeline
-export function generateWeeks(startDate: Date, endDate: Date): Array<{ weekStart: Date; weekEnd: Date; label: string }> {
+export function generateWeeks(
+  startDate: Date,
+  endDate: Date
+): Array<{ weekStart: Date; weekEnd: Date; label: string }> {
   const weeks: Array<{ weekStart: Date; weekEnd: Date; label: string }> = [];
   let currentWeek = startOfWeek(startDate, { locale: es });
   const projectEnd = endOfWeek(endDate, { locale: es });
-  
+
   let weekNumber = 1;
-  
+
   while (currentWeek <= projectEnd) {
     const weekEnd = endOfWeek(currentWeek, { locale: es });
     weeks.push({
       weekStart: currentWeek,
       weekEnd: weekEnd,
-      label: `Sem ${weekNumber}`
+      label: `Sem ${weekNumber}`,
     });
-    
+
     currentWeek = addDays(weekEnd, 1);
     weekNumber++;
   }
-  
+
   return weeks;
 }
 
@@ -227,39 +266,54 @@ export function getTaskPosition(
   totalDays: number
 ): { left: number; width: number } {
   const dayWidth = 100 / totalDays; // Porcentaje por día
-  
+
   const startOffset = Math.max(0, differenceInDays(taskStart, timelineStart));
   const duration = differenceInDays(taskEnd, taskStart) + 1;
-  
+
   return {
     left: startOffset * dayWidth,
-    width: duration * dayWidth
+    width: duration * dayWidth,
   };
 }
 
 // Nueva función para obtener el rango real del timeline alineado con semanas
-export function getTimelineRange(projectStart: Date, projectEnd: Date): { timelineStart: Date; timelineEnd: Date; totalDays: number } {
+export function getTimelineRange(
+  projectStart: Date,
+  projectEnd: Date
+): { timelineStart: Date; timelineEnd: Date; totalDays: number } {
   const timelineStart = startOfWeek(projectStart, { locale: es });
   const timelineEnd = endOfWeek(projectEnd, { locale: es });
   const totalDays = differenceInDays(timelineEnd, timelineStart) + 1;
-  
+
   return { timelineStart, timelineEnd, totalDays };
 }
 
-export const calculateMilestoneDates = (milestone: Milestone): { startDate: Date; endDate: Date } => {
+export const calculateMilestoneDates = (
+  milestone: Milestone
+): { startDate: Date; endDate: Date } => {
   if (!milestone.tasks || milestone.tasks.length === 0) {
     // Si no hay tareas, usar las fechas originales del milestone o fechas por defecto
-    const defaultStart = milestone.startDate ? parseISO(milestone.startDate) : new Date();
-    const defaultEnd = milestone.endDate ? parseISO(milestone.endDate) : addDays(defaultStart, 7);
+    const defaultStart = milestone.startDate
+      ? parseISO(milestone.startDate)
+      : new Date();
+    const defaultEnd = milestone.endDate
+      ? parseISO(milestone.endDate)
+      : addDays(defaultStart, 7);
     return { startDate: defaultStart, endDate: defaultEnd };
   }
 
   // Filtrar tareas que tienen fechas válidas
-  const tasksWithDates = milestone.tasks.filter(task => task.startDate && task.endDate);
-  
+  const tasksWithDates = milestone.tasks.filter(
+    task => task.startDate && task.endDate
+  );
+
   if (tasksWithDates.length === 0) {
-    const defaultStart = milestone.startDate ? parseISO(milestone.startDate) : new Date();
-    const defaultEnd = milestone.endDate ? parseISO(milestone.endDate) : addDays(defaultStart, 7);
+    const defaultStart = milestone.startDate
+      ? parseISO(milestone.startDate)
+      : new Date();
+    const defaultEnd = milestone.endDate
+      ? parseISO(milestone.endDate)
+      : addDays(defaultStart, 7);
     return { startDate: defaultStart, endDate: defaultEnd };
   }
 
@@ -269,7 +323,7 @@ export const calculateMilestoneDates = (milestone: Milestone): { startDate: Date
     return taskStart < earliest ? taskStart : earliest;
   }, parseISO(tasksWithDates[0].startDate!));
 
-  // Calcular fecha más tardía (fin del milestone) 
+  // Calcular fecha más tardía (fin del milestone)
   const endDate = tasksWithDates.reduce((latest, task) => {
     const taskEnd = parseISO(task.endDate!);
     return taskEnd > latest ? taskEnd : latest;
@@ -279,9 +333,12 @@ export const calculateMilestoneDates = (milestone: Milestone): { startDate: Date
 };
 
 // Función para encontrar tareas que dependen de una tarea específica
-export const findTasksThatDependOn = (taskId: string, allMilestones: Milestone[]): Task[] => {
+export const findTasksThatDependOn = (
+  taskId: string,
+  allMilestones: Milestone[]
+): Task[] => {
   const dependentTasks: Task[] = [];
-  
+
   allMilestones.forEach(milestone => {
     milestone.tasks.forEach(task => {
       if (task.dependsOn && task.dependsOn.includes(taskId)) {
@@ -289,15 +346,18 @@ export const findTasksThatDependOn = (taskId: string, allMilestones: Milestone[]
       }
     });
   });
-  
+
   return dependentTasks;
 };
 
 // Función para obtener información completa de dependencias de una tarea
-export const getTaskDependencyInfo = (task: Task, allMilestones: Milestone[]) => {
+export const getTaskDependencyInfo = (
+  task: Task,
+  allMilestones: Milestone[]
+) => {
   const dependsOnTasks: Task[] = [];
   const dependentTasks = findTasksThatDependOn(task.taskId, allMilestones);
-  
+
   // Buscar las tareas de las que depende esta tarea
   if (task.dependsOn) {
     task.dependsOn.forEach(depId => {
@@ -309,10 +369,10 @@ export const getTaskDependencyInfo = (task: Task, allMilestones: Milestone[]) =>
       });
     });
   }
-  
+
   return {
     dependsOn: dependsOnTasks,
     dependents: dependentTasks,
-    hasDependencies: dependsOnTasks.length > 0 || dependentTasks.length > 0
+    hasDependencies: dependsOnTasks.length > 0 || dependentTasks.length > 0,
   };
 };

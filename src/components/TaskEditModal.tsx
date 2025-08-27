@@ -1,14 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from './ui/dialog';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Badge } from './ui/badge';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from './ui/command';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
+import { Command, CommandEmpty, CommandInput, CommandItem } from './ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Calendar, Clock, Users, Save, X, Zap, ChevronDown, Link, Trash2 } from 'lucide-react';
+import { Badge } from './ui/badge';
+import {
+  Calendar,
+  Clock,
+  Users,
+  Save,
+  X,
+  Zap,
+  Link,
+  Trash2,
+  ChevronDown,
+} from 'lucide-react';
 import { Task, Milestone, teamColors } from '../utils/dateUtils';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -22,28 +44,49 @@ interface TaskEditModalProps {
 }
 
 const availableTeams = [
-  'UX', 'UI', 'PM', 'Dev', 'QA', 'Backend', 'Frontend', 'Design', 'Marketing'
+  'UX',
+  'UI',
+  'PM',
+  'Dev',
+  'QA',
+  'Backend',
+  'Frontend',
+  'Design',
+  'Marketing',
 ];
 
 const availableSprints = [
-  'Sprint 1', 'Sprint 2', 'Sprint 3', 'Sprint 4', 'Sprint 5', 'Sprint 6',
-  'Sprint 7', 'Sprint 8', 'Sprint 9', 'Sprint 10', 'Backlog', 'Icebox'
+  'Sprint 1',
+  'Sprint 2',
+  'Sprint 3',
+  'Sprint 4',
+  'Sprint 5',
+  'Sprint 6',
+  'Sprint 7',
+  'Sprint 8',
+  'Sprint 9',
+  'Sprint 10',
+  'Backlog',
+  'Icebox',
 ];
 
-export function TaskEditModal({ task, isOpen, onClose, onSave, milestones }: TaskEditModalProps) {
-  
+export function TaskEditModal({
+  task,
+  isOpen,
+  onClose,
+  onSave,
+  milestones,
+}: TaskEditModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     team: '',
     sprint: '',
     durationDays: 1,
-    dependsOn: [] as string[]
+    dependsOn: [] as string[],
   });
-  
-  const [dependencyPopoverOpen, setDependencyPopoverOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
 
+  const [dependencyPopoverOpen, setDependencyPopoverOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Update form when task changes
@@ -55,7 +98,7 @@ export function TaskEditModal({ task, isOpen, onClose, onSave, milestones }: Tas
         team: task.team,
         sprint: task.sprint || '',
         durationDays: task.durationDays,
-        dependsOn: task.dependsOn || []
+        dependsOn: task.dependsOn || [],
       });
       setErrors({});
     }
@@ -91,9 +134,10 @@ export function TaskEditModal({ task, isOpen, onClose, onSave, milestones }: Tas
       name: formData.name.trim(),
       description: formData.description.trim(),
       team: formData.team,
-      sprint: formData.sprint === 'none' ? undefined : formData.sprint || undefined,
+      sprint:
+        formData.sprint === 'none' ? undefined : formData.sprint || undefined,
       durationDays: formData.durationDays,
-      dependsOn: formData.dependsOn
+      dependsOn: formData.dependsOn,
     };
 
     onSave(task.taskId, updates);
@@ -102,7 +146,7 @@ export function TaskEditModal({ task, isOpen, onClose, onSave, milestones }: Tas
 
   const handleFieldChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear field error when modified
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -123,42 +167,25 @@ export function TaskEditModal({ task, isOpen, onClose, onSave, milestones }: Tas
 
   if (!task) return null;
 
-  const teamColor = teamColors[task.team] || teamColors.Default;
-
   // Get all available tasks for dependencies (excluding the current task)
-  const availableTasks = milestones.flatMap(milestone => 
+  const availableTasks = milestones.flatMap(milestone =>
     milestone.tasks.filter(t => t.taskId !== task?.taskId)
   );
-
-
-  // Group tasks by milestone for better UX
-  const tasksByMilestone = milestones.reduce((acc, milestone) => {
-    const tasksInMilestone = milestone.tasks.filter(t => t.taskId !== task?.taskId);
-    if (tasksInMilestone.length > 0) {
-      acc[milestone.milestoneId] = {
-        milestone: milestone.milestoneName,
-        tasks: tasksInMilestone
-      };
-    }
-    return acc;
-  }, {} as Record<string, { milestone: string; tasks: Task[] }>);
-
 
   const handleAddDependency = (taskId: string) => {
     if (!formData.dependsOn.includes(taskId)) {
       setFormData(prev => ({
         ...prev,
-        dependsOn: [...prev.dependsOn, taskId]
+        dependsOn: [...prev.dependsOn, taskId],
       }));
     }
     setDependencyPopoverOpen(false);
-    setSearchValue('');
   };
 
   const handleRemoveDependency = (taskId: string) => {
     setFormData(prev => ({
       ...prev,
-      dependsOn: prev.dependsOn.filter(id => id !== taskId)
+      dependsOn: prev.dependsOn.filter(id => id !== taskId),
     }));
   };
 
@@ -173,252 +200,306 @@ export function TaskEditModal({ task, isOpen, onClose, onSave, milestones }: Tas
     return null;
   };
 
-  // Filter tasks for search
-  const filteredTasks = availableTasks.filter(task => 
-    task.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-    task.description.toLowerCase().includes(searchValue.toLowerCase())
-  );
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl w-full max-h-[90vh]" style={{ zIndex: 9999 }}>
+      <DialogContent
+        className="max-h-[90vh]"
+        style={{
+          zIndex: 9999,
+          width: '50vw !important',
+          maxWidth: '50vw !important',
+          minWidth: '50vw !important',
+          '--tw-max-width': '50vw',
+        }}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="w-5 h-5" />
             Edit Task
           </DialogTitle>
           <DialogDescription>
-            Modify task details, assign teams, set duration, and manage dependencies.
+            Modify task details, assign teams, set duration, and manage
+            dependencies.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="max-h-[70vh] overflow-y-auto pr-2">
           <div className="space-y-4">
-          {/* Date information (read-only) */}
-          {task.startDate && task.endDate && (
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                <Calendar className="w-4 h-4" />
-                Project dates
+            {/* Date information (read-only) */}
+            {task.startDate && task.endDate && (
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                  <Calendar className="w-4 h-4" />
+                  Project dates
+                </div>
+                <div className="text-sm">
+                  {format(parseISO(task.startDate), 'dd/MM/yyyy', {
+                    locale: es,
+                  })}{' '}
+                  -{' '}
+                  {format(parseISO(task.endDate), 'dd/MM/yyyy', { locale: es })}
+                </div>
               </div>
-              <div className="text-sm">
-                {format(parseISO(task.startDate), 'dd/MM/yyyy', { locale: es })} - {format(parseISO(task.endDate), 'dd/MM/yyyy', { locale: es })}
-              </div>
-            </div>
-          )}
-
-          {/* Task name */}
-          <div className="space-y-2">
-            <Label htmlFor="taskName">Task name *</Label>
-            <Input
-              id="taskName"
-              value={formData.name}
-              onChange={(e) => handleFieldChange('name', e.target.value)}
-              placeholder="E.g.: Create initial wireframes"
-              className={errors.name ? 'border-destructive' : ''}
-            />
-            {errors.name && (
-              <p className="text-sm text-destructive">{errors.name}</p>
             )}
-          </div>
 
-          {/* Description */}
-          <div className="space-y-2">
-            <Label htmlFor="taskDescription">Description</Label>
-            <Textarea
-              id="taskDescription"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Detailed task description..."
-              className="min-h-[100px]"
-            />
-          </div>
-
-          {/* Team */}
-          <div className="space-y-2">
-            <Label>Assigned team *</Label>
-            <Select
-              value={formData.team}
-              onValueChange={(value) => setFormData({ ...formData, team: value })}
-            >
-              <SelectTrigger className={errors.team ? 'border-red-500' : ''}>
-                <SelectValue placeholder="Select team" />
-              </SelectTrigger>
-              <SelectContent>
-                {availableTeams.map((team) => (
-                  <SelectItem key={team} value={team}>
-                    {team}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.team && (
-              <p className="text-sm text-destructive">{errors.team}</p>
-            )}
-          </div>
-
-          {/* Sprint */}
-          <div className="space-y-2">
-            <Label className="flex items-center gap-2">
-              <Zap className="w-4 h-4" />
-              Assigned sprint
-            </Label>
-            <Select
-              value={formData.sprint}
-              onValueChange={(value) => handleFieldChange('sprint', value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select sprint (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No sprint assigned</SelectItem>
-                {availableSprints.map((sprint) => (
-                  <SelectItem key={sprint} value={sprint}>
-                    {sprint}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Duration */}
-          <div className="space-y-2">
-            <Label htmlFor="duration" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
-              Duration in working days *
-            </Label>
-            <div className="flex items-center gap-2">
+            {/* Task name */}
+            <div className="space-y-2">
+              <Label htmlFor="taskName">Task name *</Label>
               <Input
-                id="duration"
-                type="number"
-                min="1"
-                max="365"
-                value={formData.durationDays}
-                onChange={handleDurationChange}
-                className={`w-24 ${errors.durationDays ? 'border-destructive' : ''}`}
+                id="taskName"
+                value={formData.name}
+                onChange={e => handleFieldChange('name', e.target.value)}
+                placeholder="E.g.: Create initial wireframes"
+                className={errors.name ? 'border-destructive' : ''}
               />
-              <span className="text-sm text-muted-foreground">days</span>
+              {errors.name && (
+                <p className="text-sm text-destructive">{errors.name}</p>
+              )}
             </div>
-            {errors.durationDays && (
-              <p className="text-sm text-destructive">{errors.durationDays}</p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Excludes weekends from calculation
-            </p>
-          </div>
 
-          {/* Section Separator */}
-          <hr className="my-6 border-muted" />
-          
-          {/* Dependencies */}
-          <div className="space-y-3 border-2 border-blue-200 rounded-lg p-4 bg-blue-50/30">
-            <Label className="flex items-center gap-2 text-base font-semibold">
-              <Link className="w-5 h-5 text-blue-600" />
-              Task Dependencies
-            </Label>
-            <p className="text-sm text-muted-foreground">
-              Select tasks that must be completed before this task can start
-            </p>
-            
-            {/* Current Dependencies */}
-            {formData.dependsOn.length > 0 && (
-              <div className="space-y-1 mb-3">
-                {formData.dependsOn.map(depId => {
-                  const depDetails = getDependencyTaskDetails(depId);
-                  if (!depDetails) return null;
-                  
-                  return (
-                    <div key={depId} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{depDetails.task.name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {depDetails.milestone} • {depDetails.task.team}
-                        </div>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveDependency(depId)}
-                        className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-            
-            {/* Add Dependency Dropdown */}
-            {availableTasks.length > 0 ? (
-              <div className="space-y-2">
-                <Select onValueChange={(value) => {
-                  handleAddDependency(value);
-                }}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={`Add task dependency... (${availableTasks.length} available)`} />
-                  </SelectTrigger>
-                  <SelectContent style={{ zIndex: 99999 }}>
-                    {availableTasks
-                      .filter(task => !formData.dependsOn.includes(task.taskId))
-                      .map(task => {
-                        return (
-                          <SelectItem key={task.taskId} value={task.taskId}>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{task.name}</span>
-                              <span className="text-xs text-muted-foreground">({task.team})</span>
-                            </div>
-                          </SelectItem>
-                        );
-                      })}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
-              <div className="p-3 text-center text-sm text-muted-foreground border border-dashed rounded-lg">
-                No other tasks available for dependencies
-              </div>
-            )}
-          </div>
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="taskDescription">Description</Label>
+              <Textarea
+                id="taskDescription"
+                value={formData.description}
+                onChange={e =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
+                placeholder="Detailed task description..."
+                className="min-h-[100px]"
+              />
+            </div>
 
-          {/* Team and sprint badges */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1">
-              <Users className="w-4 h-4 text-muted-foreground" />
-              <Badge 
-                variant="outline"
-                style={{ 
-                  borderColor: teamColors[formData.team] || teamColors.Default,
-                  color: teamColors[formData.team] || teamColors.Default 
-                }}
+            {/* Team */}
+            <div className="space-y-2">
+              <Label>Assigned team *</Label>
+              <Select
+                value={formData.team}
+                onValueChange={(value: string) =>
+                  setFormData({ ...formData, team: value })
+                }
               >
-                {formData.team || 'No team'}
-              </Badge>
+                <SelectTrigger className={errors.team ? 'border-red-500' : ''}>
+                  <SelectValue placeholder="Select team" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTeams.map(team => (
+                    <SelectItem key={team} value={team}>
+                      {team}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.team && (
+                <p className="text-sm text-destructive">{errors.team}</p>
+              )}
             </div>
-            {formData.sprint && (
+
+            {/* Sprint */}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Zap className="w-4 h-4" />
+                Assigned sprint
+              </Label>
+              <Select
+                value={formData.sprint}
+                onValueChange={(value: string) =>
+                  handleFieldChange('sprint', value)
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sprint (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No sprint assigned</SelectItem>
+                  {availableSprints.map(sprint => (
+                    <SelectItem key={sprint} value={sprint}>
+                      {sprint}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Duration */}
+            <div className="space-y-2">
+              <Label htmlFor="duration" className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Duration in working days *
+              </Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="duration"
+                  type="number"
+                  min="1"
+                  max="365"
+                  value={formData.durationDays}
+                  onChange={handleDurationChange}
+                  className={`w-24 ${errors.durationDays ? 'border-destructive' : ''}`}
+                />
+                <span className="text-sm text-muted-foreground">days</span>
+              </div>
+              {errors.durationDays && (
+                <p className="text-sm text-destructive">
+                  {errors.durationDays}
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Excludes weekends from calculation
+              </p>
+            </div>
+
+            {/* Section Separator */}
+            <hr className="my-6 border-muted" />
+
+            {/* Dependencies */}
+            <div className="space-y-3 border-2 border-blue-200 rounded-lg p-4 bg-blue-50/30">
+              <Label className="flex items-center gap-2 text-base font-semibold">
+                <Link className="w-5 h-5 text-blue-600" />
+                Task Dependencies
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                Select tasks that must be completed before this task can start
+              </p>
+
+              {/* Current Dependencies */}
+              {formData.dependsOn.length > 0 && (
+                <div className="space-y-1 mb-3">
+                  {formData.dependsOn.map(depId => {
+                    const depDetails = getDependencyTaskDetails(depId);
+                    if (!depDetails) return null;
+
+                    return (
+                      <div
+                        key={depId}
+                        className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="text-sm font-medium">
+                            {depDetails.task.name}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {depDetails.milestone} • {depDetails.task.team}
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveDependency(depId)}
+                          className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Add Dependency Dropdown - Consistent Style */}
+              {availableTasks.length > 0 ? (
+                <Popover
+                  open={dependencyPopoverOpen}
+                  onOpenChange={setDependencyPopoverOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={dependencyPopoverOpen}
+                      className="w-full justify-between h-10 font-normal text-sm"
+                    >
+                      Add task dependency... ({availableTasks.length} available)
+                      <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-full p-0 max-h-64 !z-[10001]"
+                    align="start"
+                    style={{ zIndex: 10001 }}
+                  >
+                    <Command>
+                      <CommandInput
+                        placeholder="Search tasks..."
+                        className="h-9"
+                      />
+                      <CommandEmpty className="py-6 text-center text-sm">
+                        No tasks found.
+                      </CommandEmpty>
+                      <div className="max-h-48 overflow-auto">
+                        {availableTasks
+                          .filter(t => !formData.dependsOn.includes(t.taskId))
+                          .map(task => (
+                            <CommandItem
+                              key={task.taskId}
+                              value={`${task.name} ${task.taskId} ${task.team}`}
+                              onSelect={() => handleAddDependency(task.taskId)}
+                              className="cursor-pointer py-1.5 px-2 text-sm"
+                            >
+                              <div className="flex items-center justify-between w-full gap-2">
+                                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                                  <span className="font-medium truncate text-sm">
+                                    {task.name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                    ({task.team})
+                                  </span>
+                                </div>
+                                <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                                  {task.taskId}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                      </div>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              ) : (
+                <div className="p-3 text-center text-sm text-muted-foreground border border-dashed rounded-lg">
+                  No other tasks available for dependencies
+                </div>
+              )}
+            </div>
+
+            {/* Team and sprint badges */}
+            <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1">
-                <Zap className="w-4 h-4 text-muted-foreground" />
-                <Badge variant="secondary">
-                  {formData.sprint}
+                <Users className="w-4 h-4 text-muted-foreground" />
+                <Badge
+                  variant="outline"
+                  style={{
+                    borderColor:
+                      teamColors[formData.team] || teamColors.Default,
+                    color: teamColors[formData.team] || teamColors.Default,
+                  }}
+                >
+                  {formData.team || 'No team'}
                 </Badge>
               </div>
-            )}
-          </div>
+              {formData.sprint && (
+                <div className="flex items-center gap-1">
+                  <Zap className="w-4 h-4 text-muted-foreground" />
+                  <Badge variant="secondary">{formData.sprint}</Badge>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
         {/* Action buttons */}
         <div className="flex gap-2 pt-4">
-          <Button 
+          <Button
             onClick={handleSave}
             className="flex-1 flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
             Save changes
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={onClose}
             className="flex items-center gap-2"
           >
