@@ -458,6 +458,43 @@ export function JsonImportExport({
     URL.revokeObjectURL(url);
   };
 
+  const handleExportImportableCSV = () => {
+    // CSV format compatible for re-importing into the timeline
+    // Header matches exactly what the import function expects
+    const csvHeader = 'milestoneId,milestoneName,taskId,taskName,taskDescription,team,sprint,durationDays,dependsOn\n';
+    
+    const csvRows = milestones.flatMap(milestone => {
+      return milestone.tasks.map(task => {
+        // Format dependencies as pipe-separated string (as expected by import)
+        const dependsOn = task.dependsOn.join('|');
+        
+        return [
+          escapeCSVField(milestone.milestoneId),
+          escapeCSVField(milestone.milestoneName),
+          escapeCSVField(task.taskId),
+          escapeCSVField(task.name),
+          escapeCSVField(task.description),
+          escapeCSVField(task.team),
+          escapeCSVField(task.sprint || ''),
+          escapeCSVNumeric(task.durationDays),
+          escapeCSVField(dependsOn),
+        ].join(',');
+      });
+    });
+
+    const csvContent = csvHeader + csvRows.join('\n');
+    const dataBlob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gantt-importable-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportTimelineSummary = () => {
     const csvHeader =
       'Milestone Name,Start Date,End Date,Duration (Days),Task Count,Teams Involved,Critical Path,Progress %,Dependencies\n';
@@ -926,6 +963,10 @@ export function JsonImportExport({
               <DropdownMenuItem onClick={handleExportCSV}>
                 <FileText className="w-4 h-4 mr-2" />
                 CSV (Task Details)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportImportableCSV}>
+                <FileText className="w-4 h-4 mr-2" />
+                CSV (Importable Format)
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportExcelCSV}>
                 <FileText className="w-4 h-4 mr-2" />
