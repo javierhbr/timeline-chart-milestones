@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { Badge } from '../ui/badge';
 import { GripVertical } from 'lucide-react';
 import {
@@ -45,7 +45,7 @@ interface TaskRowProps {
   onResizeStart: (e: React.MouseEvent) => void;
 }
 
-export function TaskRow({
+const TaskRow = memo(function TaskRow({
   task,
   milestones,
   milestoneColor,
@@ -61,15 +61,32 @@ export function TaskRow({
   onEdit,
   onResizeStart,
 }: TaskRowProps) {
-  if (!task.startDate || !task.endDate) {
+  // Memoize expensive date calculations
+  const taskCalculations = useMemo(() => {
+    if (!task.startDate || !task.endDate) {
+      return null;
+    }
+
+    const taskStart = parseISO(task.startDate);
+    const taskEnd = parseISO(task.endDate);
+    const taskStartDay = differenceInDays(taskStart, timelineStart);
+    const taskDurationDays = differenceInDays(taskEnd, taskStart) + 1;
+    const teamColor = teamColors[task.team] || teamColors.Default;
+
+    return {
+      taskStart,
+      taskEnd,
+      taskStartDay,
+      taskDurationDays,
+      teamColor,
+    };
+  }, [task.startDate, task.endDate, task.team, timelineStart]);
+
+  if (!taskCalculations) {
     return null;
   }
 
-  const taskStart = parseISO(task.startDate);
-  const taskEnd = parseISO(task.endDate);
-  const taskStartDay = differenceInDays(taskStart, timelineStart);
-  const taskDurationDays = differenceInDays(taskEnd, taskStart) + 1;
-  const teamColor = teamColors[task.team] || teamColors.Default;
+  const { taskStart, taskEnd, taskStartDay, taskDurationDays, teamColor } = taskCalculations;
 
   return (
     <tr
@@ -237,4 +254,6 @@ export function TaskRow({
       </td>
     </tr>
   );
-}
+});
+
+export { TaskRow };

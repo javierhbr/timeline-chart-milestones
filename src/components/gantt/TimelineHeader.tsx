@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { GripVertical } from 'lucide-react';
 import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -28,7 +28,7 @@ interface TimelineHeaderProps {
   onResizeStart: (e: React.MouseEvent) => void;
 }
 
-export function TimelineHeader({
+const TimelineHeader = memo(function TimelineHeader({
   dayColumns,
   zoomLevel,
   deliverableMarkers,
@@ -36,6 +36,59 @@ export function TimelineHeader({
   gridNameColumns,
   onResizeStart,
 }: TimelineHeaderProps) {
+  // Memoize expensive month grouping calculation
+  const monthGroups = useMemo(() => {
+    const groups: {
+      month: string;
+      year: number;
+      startIndex: number;
+      width: number;
+    }[] = [];
+    let currentMonth = '';
+    let currentYear = 0;
+    let startIndex = 0;
+
+    dayColumns.forEach((day, index) => {
+      if (day.isNewMonth || index === 0) {
+        if (currentMonth && groups.length > 0) {
+          groups[groups.length - 1].width =
+            (index - startIndex) * zoomLevel;
+        }
+        currentMonth = day.monthName;
+        currentYear = day.year;
+        startIndex = index;
+        groups.push({
+          month: currentMonth,
+          year: currentYear,
+          startIndex,
+          width: 0,
+        });
+      }
+
+      if (index === dayColumns.length - 1) {
+        groups[groups.length - 1].width =
+          (index - startIndex + 1) * zoomLevel;
+      }
+    });
+
+    return groups;
+  }, [dayColumns, zoomLevel]);
+
+  // Memoize deliverable markers by day for better performance
+  const deliverablesByDay = useMemo(() => {
+    const markersByDay = new Map<number, DeliverableMarker[]>();
+    
+    deliverableMarkers.forEach(marker => {
+      const markerDay = differenceInDays(marker.date, timelineStart);
+      if (!markersByDay.has(markerDay)) {
+        markersByDay.set(markerDay, []);
+      }
+      markersByDay.get(markerDay)!.push(marker);
+    });
+    
+    return markersByDay;
+  }, [deliverableMarkers, timelineStart]);
+
   return (
     <thead>
       <tr>
@@ -74,115 +127,75 @@ export function TimelineHeader({
           <div className="flex flex-col">
             {/* Month Header Row */}
             <div className="flex border-b border-muted-foreground/20 pb-1">
-              {(() => {
-                const monthGroups: {
-                  month: string;
-                  year: number;
-                  startIndex: number;
-                  width: number;
-                }[] = [];
-                let currentMonth = '';
-                let currentYear = 0;
-                let startIndex = 0;
-
-                dayColumns.forEach((day, index) => {
-                  if (day.isNewMonth || index === 0) {
-                    if (currentMonth && monthGroups.length > 0) {
-                      monthGroups[monthGroups.length - 1].width =
-                        (index - startIndex) * zoomLevel;
-                    }
-                    currentMonth = day.monthName;
-                    currentYear = day.year;
-                    startIndex = index;
-                    monthGroups.push({
-                      month: currentMonth,
-                      year: currentYear,
-                      startIndex,
-                      width: 0,
-                    });
-                  }
-
-                  if (index === dayColumns.length - 1) {
-                    monthGroups[monthGroups.length - 1].width =
-                      (index - startIndex + 1) * zoomLevel;
-                  }
-                });
-
-                return monthGroups.map((group, idx) => (
-                  <div
-                    key={`month-${idx}`}
-                    className="flex items-center justify-center text-sm font-semibold text-primary bg-primary/5 border-r border-muted-foreground/20"
-                    style={{
-                      width: `${group.width}px`,
-                      minWidth: `${group.width}px`,
-                    }}
-                  >
-                    {zoomLevel >= 32 ? (
-                      <div className="text-center">
-                        <div>{group.month}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {group.year}
-                        </div>
+              {monthGroups.map((group, _idx) => (
+                <div
+                  key={`month-${group.startIndex}-${group.month}-${group.year}`}
+                  className="flex items-center justify-center text-sm font-semibold text-primary bg-primary/5 border-r border-muted-foreground/20"
+                  style={{
+                    width: `${group.width}px`,
+                    minWidth: `${group.width}px`,
+                  }}
+                >
+                  {zoomLevel >= 32 ? (
+                    <div className="text-center">
+                      <div>{group.month}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {group.year}
                       </div>
-                    ) : zoomLevel >= 16 ? (
-                      `${group.month} ${group.year}`
-                    ) : (
-                      `${group.month.slice(0, 3)} ${group.year}`
-                    )}
-                  </div>
-                ));
-              })()}
+                    </div>
+                  ) : zoomLevel >= 16 ? (
+                    `${group.month} ${group.year}`
+                  ) : (
+                    `${group.month.slice(0, 3)} ${group.year}`
+                  )}
+                </div>
+              ))}
             </div>
 
             {/* Week Header Row */}
             <div className="flex">
-              {dayColumns.map((day, index) => (
-                <div
-                  key={`day-${index}`}
-                  className={`relative text-xs flex-shrink-0 ${day.isWeekStart ? 'border-l-2 border-l-blue-500' : ''}`}
-                  style={{
-                    width: `${zoomLevel}px`,
-                    minWidth: `${zoomLevel}px`,
-                  }}
-                >
-                  {/* Show date only on Mondays (week start) - adaptive based on zoom */}
-                  {day.isWeekStart && (
-                    <div className="px-0.5 py-0.5 text-center">
-                      {zoomLevel >= 24 ? (
-                        <>
-                          <div className="text-[9px] font-medium">
-                            {format(day.date, 'dd/MM', {
-                              locale: es,
-                            })}
+              {dayColumns.map((day, index) => {
+                const dayMarkers = deliverablesByDay.get(index) || [];
+                
+                return (
+                  <div
+                    key={`day-${day.date.getTime()}-${index}`}
+                    className={`relative text-xs flex-shrink-0 ${day.isWeekStart ? 'border-l-2 border-l-blue-500' : ''}`}
+                    style={{
+                      width: `${zoomLevel}px`,
+                      minWidth: `${zoomLevel}px`,
+                    }}
+                  >
+                    {/* Show date only on Mondays (week start) - adaptive based on zoom */}
+                    {day.isWeekStart && (
+                      <div className="px-0.5 py-0.5 text-center">
+                        {zoomLevel >= 24 ? (
+                          <>
+                            <div className="text-[9px] font-medium">
+                              {format(day.date, 'dd/MM', {
+                                locale: es,
+                              })}
+                            </div>
+                            <div className="text-[7px] text-muted-foreground">
+                              Sem {day.weekNumber + 1}
+                            </div>
+                          </>
+                        ) : zoomLevel >= 12 ? (
+                          <div className="text-[7px] font-medium transform -rotate-90 origin-center whitespace-nowrap">
+                            {format(day.date, 'dd/MM', { locale: es })}
                           </div>
-                          <div className="text-[7px] text-muted-foreground">
-                            Sem {day.weekNumber + 1}
+                        ) : (
+                          <div className="text-[6px] font-medium transform -rotate-90 origin-center whitespace-nowrap">
+                            {format(day.date, 'dd/M', { locale: es })}
                           </div>
-                        </>
-                      ) : zoomLevel >= 12 ? (
-                        <div className="text-[7px] font-medium transform -rotate-90 origin-center whitespace-nowrap">
-                          {format(day.date, 'dd/MM', { locale: es })}
-                        </div>
-                      ) : (
-                        <div className="text-[6px] font-medium transform -rotate-90 origin-center whitespace-nowrap">
-                          {format(day.date, 'dd/M', { locale: es })}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    )}
 
-                  {/* Deliverable markers for this specific day */}
-                  {deliverableMarkers
-                    .filter(marker => {
-                      const markerDay = differenceInDays(
-                        marker.date,
-                        timelineStart
-                      );
-                      return markerDay === index;
-                    })
-                    .map((marker, markerIndex) => (
+                    {/* Deliverable markers for this specific day */}
+                    {dayMarkers.map((marker, markerIndex) => (
                       <div
-                        key={`deliverable-${index}-${markerIndex}`}
+                        key={`deliverable-${marker.name}-${markerIndex}`}
                         className="absolute top-0 left-1/2 transform -translate-x-1/2 flex flex-col items-center z-30 pointer-events-none"
                       >
                         <div className="flex flex-col items-center">
@@ -204,12 +217,15 @@ export function TimelineHeader({
                         </div>
                       </div>
                     ))}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </th>
       </tr>
     </thead>
   );
-}
+});
+
+export { TimelineHeader };

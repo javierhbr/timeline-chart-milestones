@@ -1,5 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { JsonImportExport } from './components/JsonImportExport';
+import React, { useState, useCallback, useEffect, Suspense, lazy, useRef, useMemo } from 'react';
 import { GanttTimeline } from './components/GanttTimeline';
 import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
@@ -19,9 +18,12 @@ import {
   hasAnyProjects,
   generateDefaultProjectName,
 } from './utils/projectStorage';
-import { ProjectManager } from './components/ProjectManager';
-import { ConfirmationDialog } from './components/ConfirmationDialog';
 import { BarChart3, Calendar, Users, Clock, BarChart } from 'lucide-react';
+
+// Lazy load heavy components
+const JsonImportExport = lazy(() => import('./components/JsonImportExport').then(module => ({ default: module.JsonImportExport })));
+const ProjectManager = lazy(() => import('./components/ProjectManager').then(module => ({ default: module.ProjectManager })));
+const ConfirmationDialog = lazy(() => import('./components/ConfirmationDialog').then(module => ({ default: module.ConfirmationDialog })));
 
 export default function App() {
   const [milestones, setMilestones] = useState<Milestone[]>([]);
@@ -99,18 +101,34 @@ export default function App() {
     initializeApp();
   }, []);
 
-  // Auto-save current project whenever timeline data changes
+  // Debounced auto-save current project whenever timeline data changes
+  const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   useEffect(() => {
     if (currentProject && milestones.length > 0) {
-      const timelineData: TimelineData = {
-        milestones,
-        projectStartDate: projectStartDate.toISOString(),
-        expandedMilestones: Array.from(expandedMilestones),
-        milestoneOrder,
-      };
-      saveProject(currentProject.id, timelineData);
-      setHasUnsavedChanges(false);
+      // Clear previous timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      
+      // Set new timeout for debounced save
+      saveTimeoutRef.current = setTimeout(() => {
+        const timelineData: TimelineData = {
+          milestones,
+          projectStartDate: projectStartDate.toISOString(),
+          expandedMilestones: Array.from(expandedMilestones),
+          milestoneOrder,
+        };
+        saveProject(currentProject.id, timelineData);
+        setHasUnsavedChanges(false);
+      }, 1000); // Debounce for 1 second
     }
+
+    // Cleanup timeout on unmount
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
   }, [
     milestones,
     projectStartDate,
@@ -274,13 +292,24 @@ export default function App() {
     setMilestoneOrder(newOrder);
   }, []);
 
-  const totalTasks = milestones.reduce((acc, m) => acc + m.tasks.length, 0);
-  const uniqueTeams = new Set(milestones.flatMap(m => m.tasks.map(t => t.team)))
-    .size;
-  const totalDuration = milestones.reduce(
-    (acc, m) => acc + Math.max(...m.tasks.map(t => t.durationDays), 0),
-    0
-  );
+  // Memoize expensive project statistics calculations
+  const projectStats = useMemo(() => {
+    const totalTasks = milestones.reduce((acc, m) => acc + m.tasks.length, 0);
+    const uniqueTeams = new Set(milestones.flatMap(m => m.tasks.map(t => t.team))).size;
+    const totalDuration = milestones.reduce(
+      (acc, m) => acc + Math.max(...m.tasks.map(t => t.durationDays), 0),
+      0
+    );
+    
+    return { totalTasks, uniqueTeams, totalDuration };
+  }, [milestones]);
+
+  const { totalTasks, uniqueTeams, totalDuration } = projectStats;
+
+  // Memoize team list for badges
+  const teamList = useMemo(() => {
+    return Array.from(new Set(milestones.flatMap(m => m.tasks.map(t => t.team))));
+  }, [milestones]);
 
   const expandAllMilestones = useCallback(() => {
     const allMilestoneIds = new Set(milestones.map(m => m.milestoneId));
@@ -290,6 +319,18 @@ export default function App() {
   const collapseAllMilestones = useCallback(() => {
     setExpandedMilestones(new Set());
   }, []);
+
+  const handleToggleMilestone = useCallback((milestoneId: string) => {
+    const newExpanded = new Set(expandedMilestones);
+    if (newExpanded.has(milestoneId)) {
+      newExpanded.delete(milestoneId);
+    } else {
+      newExpanded.add(milestoneId);
+    }
+    setExpandedMilestones(newExpanded);
+  }, [expandedMilestones]);
+
+  const handleOpenProjectManager = useCallback(() => setShowProjectManager(true), []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -332,14 +373,16 @@ export default function App() {
           <div className="h-5"></div>
 
           <div className="w-full ">
-            <JsonImportExport
-              milestones={milestones}
-              onImport={handleImport}
-              projectStartDate={projectStartDate}
-              onStartDateChange={handleStartDateChange}
-              currentProject={currentProject}
-              onOpenProjectManager={() => setShowProjectManager(true)}
-            />
+            <Suspense fallback={<div className="p-4">Loading...</div>}>
+              <JsonImportExport
+                milestones={milestones}
+                onImport={handleImport}
+                projectStartDate={projectStartDate}
+                onStartDateChange={handleStartDateChange}
+                currentProject={currentProject}
+                onOpenProjectManager={handleOpenProjectManager}
+              />
+            </Suspense>
           </div>
 
           {milestones.length > 0 && (
@@ -402,9 +445,7 @@ export default function App() {
                 </div>
 
                 <div className="flex flex-wrap gap-2">
-                  {Array.from(
-                    new Set(milestones.flatMap(m => m.tasks.map(t => t.team)))
-                  ).map(team => (
+                  {teamList.map(team => (
                     <Badge
                       key={team}
                       variant="outline"
@@ -440,15 +481,7 @@ export default function App() {
             onUpdateMilestones={handleUpdateMilestones}
             onRecalculateTimeline={handleRecalculateTimeline}
             expandedMilestones={expandedMilestones}
-            onToggleMilestone={(milestoneId: string) => {
-              const newExpanded = new Set(expandedMilestones);
-              if (newExpanded.has(milestoneId)) {
-                newExpanded.delete(milestoneId);
-              } else {
-                newExpanded.add(milestoneId);
-              }
-              setExpandedMilestones(newExpanded);
-            }}
+            onToggleMilestone={handleToggleMilestone}
             expandAllMilestones={expandAllMilestones}
             collapseAllMilestones={collapseAllMilestones}
             milestoneOrder={milestoneOrder}
@@ -456,23 +489,25 @@ export default function App() {
           />
         </div>
 
-        <ProjectManager
-          isOpen={showProjectManager}
-          onClose={() => setShowProjectManager(false)}
-          onSelectProject={handleSelectProject}
-          currentProjectId={currentProject?.id}
-        />
+        <Suspense fallback={<div />}>
+          <ProjectManager
+            isOpen={showProjectManager}
+            onClose={() => setShowProjectManager(false)}
+            onSelectProject={handleSelectProject}
+            currentProjectId={currentProject?.id}
+          />
 
-        <ConfirmationDialog
-          isOpen={showUnsavedChangesDialog}
-          onClose={handleCancelProjectSwitch}
-          onConfirm={handleConfirmProjectSwitch}
-          title="Unsaved Changes"
-          description={`You have unsaved changes in "${currentProject?.name}". Are you sure you want to switch to "${pendingProject?.name}" and lose your changes?`}
-          confirmLabel="Switch Project"
-          cancelLabel="Stay Here"
-          variant="destructive"
-        />
+          <ConfirmationDialog
+            isOpen={showUnsavedChangesDialog}
+            onClose={handleCancelProjectSwitch}
+            onConfirm={handleConfirmProjectSwitch}
+            title="Unsaved Changes"
+            description={`You have unsaved changes in "${currentProject?.name}". Are you sure you want to switch to "${pendingProject?.name}" and lose your changes?`}
+            confirmLabel="Switch Project"
+            cancelLabel="Stay Here"
+            variant="destructive"
+          />
+        </Suspense>
       </div>
     </div>
   );

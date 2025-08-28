@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import { Badge } from '../ui/badge';
 import {
   Tooltip,
@@ -25,26 +25,42 @@ interface TaskBarProps {
   onEditClick: (task: Task) => void;
 }
 
-export function TaskBar({
+const TaskBar = memo(function TaskBar({
   task,
   milestones,
   onMouseDown,
   onEditClick,
 }: TaskBarProps) {
-  if (!task.startDate || !task.endDate) {
-    return null;
-  }
+  // Memoize expensive calculations
+  const taskData = useMemo(() => {
+    if (!task.startDate || !task.endDate) {
+      return null;
+    }
 
-  const taskStart = parseISO(task.startDate);
-  const taskEnd = parseISO(task.endDate);
-  const teamColor = teamColors[task.team] || teamColors.Default;
-  const dependencyInfo = getTaskDependencyInfo(task, milestones);
+    const taskStart = parseISO(task.startDate);
+    const taskEnd = parseISO(task.endDate);
+    const teamColor = teamColors[task.team] || teamColors.Default;
+    const dependencyInfo = getTaskDependencyInfo(task, milestones);
 
-  const handleEditClick = (e: React.MouseEvent) => {
+    return {
+      taskStart,
+      taskEnd,
+      teamColor,
+      dependencyInfo,
+    };
+  }, [task, milestones]);
+
+  const handleEditClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onEditClick(task);
-  };
+  }, [onEditClick, task]);
+
+  if (!taskData) {
+    return null;
+  }
+
+  const { taskStart, taskEnd, teamColor, dependencyInfo } = taskData;
 
   return (
     <TooltipProvider>
@@ -147,4 +163,6 @@ export function TaskBar({
       </Tooltip>
     </TooltipProvider>
   );
-}
+});
+
+export { TaskBar };

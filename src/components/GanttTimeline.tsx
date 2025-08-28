@@ -4,6 +4,8 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  Suspense,
+  lazy,
 } from 'react';
 import { Card } from './ui/card';
 import { ZoomControls } from './gantt/ZoomControls';
@@ -18,12 +20,6 @@ import {
   calculateMilestoneDates,
   getTimelineRange,
 } from '../utils/dateUtils';
-import { TaskEditModal } from './TaskEditModal';
-import { CloneTaskDialog } from './CloneTaskDialog';
-import { SplitTaskDialog } from './SplitTaskDialog';
-import { MoveTaskDialog } from './MoveTaskDialog';
-import { MilestoneEditDialog } from './MilestoneEditDialog';
-import { MilestoneCreateDialog } from './MilestoneCreateDialog';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
 import {
   cloneTask,
@@ -36,6 +32,14 @@ import {
   SplitConfig,
 } from '../utils/taskOperations';
 import { createNewMilestone } from '../utils/milestoneOperations';
+
+// Lazy load dialog components
+const TaskEditModal = lazy(() => import('./TaskEditModal').then(module => ({ default: module.TaskEditModal })));
+const CloneTaskDialog = lazy(() => import('./CloneTaskDialog').then(module => ({ default: module.CloneTaskDialog })));
+const SplitTaskDialog = lazy(() => import('./SplitTaskDialog').then(module => ({ default: module.SplitTaskDialog })));
+const MoveTaskDialog = lazy(() => import('./MoveTaskDialog').then(module => ({ default: module.MoveTaskDialog })));
+const MilestoneEditDialog = lazy(() => import('./MilestoneEditDialog').then(module => ({ default: module.MilestoneEditDialog })));
+const MilestoneCreateDialog = lazy(() => import('./MilestoneCreateDialog').then(module => ({ default: module.MilestoneCreateDialog })));
 
 interface GanttTimelineProps {
   milestones: Milestone[];
@@ -720,6 +724,49 @@ export function GanttTimeline({
     setMilestoneDragState(null);
   }, [milestoneDragState, sortedMilestones, onUpdateMilestoneOrder]);
 
+  // Memoized dialog handlers
+  const handleEditModalClose = useCallback(() => setIsEditModalOpen(false), []);
+  
+  const handleEditModalSave = useCallback((taskId: string, updates: Partial<Task>) => {
+    onUpdateTask(taskId, updates);
+    // Trigger timeline recalculation when dependencies change
+    if (updates.dependsOn !== undefined && onRecalculateTimeline) {
+      onRecalculateTimeline();
+    }
+  }, [onUpdateTask, onRecalculateTimeline]);
+
+  const handleCloneDialogClose = useCallback(() => {
+    setIsCloneDialogOpen(false);
+    setCloneTaskState(null);
+  }, []);
+
+  const handleSplitDialogClose = useCallback(() => {
+    setIsSplitDialogOpen(false);
+    setSplitTaskState(null);
+  }, []);
+
+  const handleMoveDialogClose = useCallback(() => {
+    setIsMoveDialogOpen(false);
+    setMoveTaskState(null);
+  }, []);
+
+  const handleMilestoneEditDialogClose = useCallback(() => {
+    setIsMilestoneEditDialogOpen(false);
+    setEditingMilestone(null);
+  }, []);
+
+  const handleTaskCreateDialogClose = useCallback(() => {
+    setIsTaskCreateDialogOpen(false);
+    setCreatingTaskForMilestone(null);
+  }, []);
+
+  const handleMilestoneCreateDialogClose = useCallback(() => setIsMilestoneCreateDialogOpen(false), []);
+
+  const handleTaskEdit = useCallback((task: Task) => {
+    setEditingTask(task);
+    setIsEditModalOpen(true);
+  }, []);
+
   // Early return if no timeline data
   if (!timelineData) {
     return (
@@ -881,10 +928,7 @@ export function GanttTimeline({
                               onSplit={handleSplitTask}
                               onMove={handleMoveTask}
                               onDelete={handleDeleteTask}
-                              onEdit={task => {
-                                setEditingTask(task);
-                                setIsEditModalOpen(true);
-                              }}
+                              onEdit={handleTaskEdit}
                               onResizeStart={handleResizeStart}
                             />
                           ))}
@@ -903,84 +947,66 @@ export function GanttTimeline({
         </Card>
       </div>
 
-      <TaskEditModal
-        task={editingTask}
-        isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        onSave={(taskId, updates) => {
-          onUpdateTask(taskId, updates);
-          // Trigger timeline recalculation when dependencies change
-          if (updates.dependsOn !== undefined && onRecalculateTimeline) {
-            onRecalculateTimeline();
-          }
-        }}
-        milestones={milestones}
-      />
+      {/* Lazy-loaded dialog components wrapped in Suspense */}
+      <Suspense fallback={<div />}>
+        <TaskEditModal
+          task={editingTask}
+          isOpen={isEditModalOpen}
+          onClose={handleEditModalClose}
+          onSave={handleEditModalSave}
+          milestones={milestones}
+        />
 
-      <CloneTaskDialog
-        task={cloneTaskState}
-        isOpen={isCloneDialogOpen}
-        onClose={() => {
-          setIsCloneDialogOpen(false);
-          setCloneTaskState(null);
-        }}
-        onConfirm={handleConfirmClone}
-        milestones={milestones}
-        currentMilestoneId={currentMilestoneId}
-      />
+        <CloneTaskDialog
+          task={cloneTaskState}
+          isOpen={isCloneDialogOpen}
+          onClose={handleCloneDialogClose}
+          onConfirm={handleConfirmClone}
+          milestones={milestones}
+          currentMilestoneId={currentMilestoneId}
+        />
 
-      <SplitTaskDialog
-        task={splitTaskState}
-        isOpen={isSplitDialogOpen}
-        onClose={() => {
-          setIsSplitDialogOpen(false);
-          setSplitTaskState(null);
-        }}
-        onConfirm={handleConfirmSplit}
-        milestones={milestones}
-      />
+        <SplitTaskDialog
+          task={splitTaskState}
+          isOpen={isSplitDialogOpen}
+          onClose={handleSplitDialogClose}
+          onConfirm={handleConfirmSplit}
+          milestones={milestones}
+        />
 
-      <MoveTaskDialog
-        task={moveTaskState}
-        isOpen={isMoveDialogOpen}
-        onClose={() => {
-          setIsMoveDialogOpen(false);
-          setMoveTaskState(null);
-        }}
-        onConfirm={handleConfirmMove}
-        milestones={milestones}
-        currentMilestoneId={currentMilestoneId}
-      />
+        <MoveTaskDialog
+          task={moveTaskState}
+          isOpen={isMoveDialogOpen}
+          onClose={handleMoveDialogClose}
+          onConfirm={handleConfirmMove}
+          milestones={milestones}
+          currentMilestoneId={currentMilestoneId}
+        />
 
-      <MilestoneEditDialog
-        milestone={editingMilestone}
-        isOpen={isMilestoneEditDialogOpen}
-        onClose={() => {
-          setIsMilestoneEditDialogOpen(false);
-          setEditingMilestone(null);
-        }}
-        onConfirm={handleConfirmMilestoneEdit}
-        milestones={milestones}
-      />
+        <MilestoneEditDialog
+          milestone={editingMilestone}
+          isOpen={isMilestoneEditDialogOpen}
+          onClose={handleMilestoneEditDialogClose}
+          onConfirm={handleConfirmMilestoneEdit}
+          milestones={milestones}
+        />
 
-      {/* Task Create Dialog - Uses TaskEditModal in create mode */}
-      <TaskEditModal
-        task={null} // null indicates create mode
-        isOpen={isTaskCreateDialogOpen}
-        onClose={() => {
-          setIsTaskCreateDialogOpen(false);
-          setCreatingTaskForMilestone(null);
-        }}
-        onSave={handleConfirmTaskCreate}
-        milestones={milestones}
-      />
+        {/* Task Create Dialog - Uses TaskEditModal in create mode */}
+        <TaskEditModal
+          task={null} // null indicates create mode
+          isOpen={isTaskCreateDialogOpen}
+          onClose={handleTaskCreateDialogClose}
+          onSave={handleConfirmTaskCreate}
+          milestones={milestones}
+        />
 
-      <MilestoneCreateDialog
-        isOpen={isMilestoneCreateDialogOpen}
-        onClose={() => setIsMilestoneCreateDialogOpen(false)}
-        onConfirm={handleConfirmMilestoneCreate}
-        milestones={milestones}
-      />
+        <MilestoneCreateDialog
+          isOpen={isMilestoneCreateDialogOpen}
+          onClose={handleMilestoneCreateDialogClose}
+          onConfirm={handleConfirmMilestoneCreate}
+          milestones={milestones}
+        />
+      </Suspense>
     </>
   );
 }
