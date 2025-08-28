@@ -103,24 +103,50 @@ export function TaskEditModal({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [dependencyPopoverOpen, setDependencyPopoverOpen] = useState(false);
 
-  // Get dynamic teams and sprints from project data
-  const availableTeams = getAvailableTeams(milestones);
-  const availableSprints = getAvailableSprints(milestones);
+  // Get dynamic teams and sprints from project data - memoize to prevent infinite re-renders
+  const availableTeams = React.useMemo(() => getAvailableTeams(milestones), [milestones]);
+  const availableSprints = React.useMemo(() => getAvailableSprints(milestones), [milestones]);
 
-  // Update form when task changes
+  // Update form when task changes or modal opens/closes
   useEffect(() => {
-    if (task) {
-      setFormData({
-        name: task.name,
-        description: task.description,
-        team: task.team,
-        sprint: task.sprint || '',
-        durationDays: task.durationDays,
-        dependsOn: task.dependsOn || [],
-      });
+    console.log('🎯 TaskEditModal useEffect triggered:', { 
+      isOpen, 
+      hasTask: !!task, 
+      taskName: task?.name,
+      availableTeamsCount: availableTeams.length,
+      availableSprintsCount: availableSprints.length 
+    });
+    
+    if (isOpen) {
+      if (task) {
+        // Edit mode - populate with existing task data
+        console.log('✏️ EDIT MODE - populating form with task data');
+        setFormData({
+          name: task.name,
+          description: task.description,
+          team: task.team,
+          sprint: task.sprint || '',
+          durationDays: task.durationDays,
+          dependsOn: task.dependsOn || [],
+        });
+      } else {
+        // Create mode - use default values
+        const defaultTeam = availableTeams.length > 0 ? availableTeams[0] : 'Dev';
+        const defaultSprint = availableSprints.length > 0 ? availableSprints[0] : '';
+        
+        console.log('➕ CREATE MODE - setting default form values:', { defaultTeam, defaultSprint });
+        setFormData({
+          name: '',
+          description: '',
+          team: defaultTeam,
+          sprint: defaultSprint,
+          durationDays: 1,
+          dependsOn: [],
+        });
+      }
       setErrors({});
     }
-  }, [task]);
+  }, [task, isOpen, availableTeams, availableSprints]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -146,7 +172,7 @@ export function TaskEditModal({
   };
 
   const handleSave = () => {
-    if (!task || !validateForm()) return;
+    if (!validateForm()) return;
 
     const updates: Partial<Task> = {
       name: formData.name.trim(),
@@ -158,7 +184,9 @@ export function TaskEditModal({
       dependsOn: formData.dependsOn,
     };
 
-    onSave(task.taskId, updates);
+    // In create mode, task is null, so we pass a placeholder taskId that will be replaced
+    const taskId = task ? task.taskId : 'new-task-placeholder';
+    onSave(taskId, updates);
     onClose();
   };
 
@@ -183,7 +211,7 @@ export function TaskEditModal({
     }
   };
 
-  if (!task) return null;
+  // Remove the early return - we need to render the dialog for both create and edit modes
 
   // Get all available tasks for dependencies (excluding the current task)
   const availableTasks = milestones.flatMap(milestone =>
@@ -255,18 +283,20 @@ export function TaskEditModal({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="w-5 h-5" />
-              Edit Task
+              {task ? 'Edit Task' : 'Create New Task'}
             </DialogTitle>
             <DialogDescription>
-              Modify task details, assign teams, set duration, and manage
-              dependencies.
+              {task 
+                ? 'Modify task details, assign teams, set duration, and manage dependencies.'
+                : 'Create a new task with details, team assignment, duration, and dependencies.'
+              }
             </DialogDescription>
           </DialogHeader>
 
           <div className="max-h-[70vh] overflow-y-auto pr-2">
             <div className="space-y-4">
-              {/* Date information (read-only) */}
-              {task.startDate && task.endDate && (
+              {/* Date information (read-only) - only show for existing tasks */}
+              {task && task.startDate && task.endDate && (
                 <div className="p-3 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                     <Calendar className="w-4 h-4" />
@@ -544,7 +574,7 @@ export function TaskEditModal({
               className="flex-1 flex items-center gap-2"
             >
               <Save className="w-4 h-4" />
-              Save changes
+              {task ? 'Save changes' : 'Create task'}
             </Button>
             <Button
               variant="outline"

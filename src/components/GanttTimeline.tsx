@@ -42,6 +42,8 @@ import { TaskContextMenu } from './TaskContextMenu';
 import { CloneTaskDialog } from './CloneTaskDialog';
 import { SplitTaskDialog } from './SplitTaskDialog';
 import { MoveTaskDialog } from './MoveTaskDialog';
+import { MilestoneContextMenu } from './MilestoneContextMenu';
+import { MilestoneEditDialog } from './MilestoneEditDialog';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { 
@@ -50,6 +52,7 @@ import {
   splitTask,
   moveTaskBetweenMilestones,
   updateDependenciesAfterSplit,
+  generateUniqueTaskId,
   CloneOptions,
   SplitConfig 
 } from '../utils/taskOperations';
@@ -86,6 +89,10 @@ export function GanttTimeline({
   const [isSplitDialogOpen, setIsSplitDialogOpen] = useState(false);
   const [moveTaskState, setMoveTaskState] = useState<Task | null>(null);
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
+  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
+  const [isMilestoneEditDialogOpen, setIsMilestoneEditDialogOpen] = useState(false);
+  const [creatingTaskForMilestone, setCreatingTaskForMilestone] = useState<Milestone | null>(null);
+  const [isTaskCreateDialogOpen, setIsTaskCreateDialogOpen] = useState(false);
   const [currentMilestoneId, setCurrentMilestoneId] = useState<string>('');
   const [zoomLevel, setZoomLevel] = useState<number>(32); // Píxeles por día, default 32px
   const [nameColumnWidth, setNameColumnWidth] = useState<number>(200); // Width in pixels for name column
@@ -198,6 +205,90 @@ export function GanttTimeline({
       onRecalculateTimeline();
     }
   }, [moveTaskState, milestones, onUpdateMilestones, onRecalculateTimeline]);
+
+  // Milestone handlers
+  const handleEditMilestone = useCallback((milestone: Milestone) => {
+    console.log('✏️ EDIT MILESTONE CLICKED:', {
+      milestoneName: milestone.milestoneName,
+      milestoneId: milestone.milestoneId,
+      taskCount: milestone.tasks.length
+    });
+    
+    setEditingMilestone(milestone);
+    setIsMilestoneEditDialogOpen(true);
+  }, []);
+
+  const handleConfirmMilestoneEdit = useCallback((milestoneId: string, updates: { milestoneName: string; description?: string }) => {
+    if (!onUpdateMilestones) return;
+    
+    console.log('✅ UPDATING MILESTONE:', milestoneId, updates);
+    
+    const updatedMilestones = milestones.map(milestone => 
+      milestone.milestoneId === milestoneId 
+        ? { ...milestone, ...updates }
+        : milestone
+    );
+    
+    onUpdateMilestones(updatedMilestones);
+  }, [milestones, onUpdateMilestones]);
+
+  const handleAddTaskToMilestone = useCallback((milestone: Milestone) => {
+    console.log('➕ ADD TASK TO MILESTONE CLICKED:', {
+      milestoneName: milestone.milestoneName,
+      milestoneId: milestone.milestoneId,
+      currentTaskCount: milestone.tasks.length
+    });
+    
+    console.log('🔧 SETTING DIALOG STATE:', {
+      creatingTaskForMilestone: milestone,
+      isTaskCreateDialogOpen: true,
+      currentMilestoneId: milestone.milestoneId
+    });
+    
+    setCreatingTaskForMilestone(milestone);
+    setCurrentMilestoneId(milestone.milestoneId);
+    setIsTaskCreateDialogOpen(true);
+    
+    // Debug: Check state immediately after
+    setTimeout(() => {
+      console.log('📊 DIALOG STATE CHECK after 100ms');
+    }, 100);
+  }, []);
+
+  const handleConfirmTaskCreate = useCallback((taskId: string, updates: Partial<Task>) => {
+    if (!creatingTaskForMilestone || !onUpdateMilestones) return;
+    
+    console.log('✅ CREATING NEW TASK:', updates.name, 'for milestone:', creatingTaskForMilestone.milestoneName);
+    
+    // Generate unique task ID
+    const newTaskId = generateUniqueTaskId(milestones);
+    
+    // Create new task with all required fields
+    const newTask: Task = {
+      taskId: newTaskId,
+      name: updates.name || 'New Task',
+      description: updates.description || '',
+      team: updates.team || 'Dev',
+      sprint: updates.sprint || '',
+      durationDays: updates.durationDays || 1,
+      dependsOn: updates.dependsOn || [],
+      startDate: undefined, // Will be calculated
+      endDate: undefined, // Will be calculated
+    };
+    
+    // Add task to the specific milestone
+    const updatedMilestones = milestones.map(milestone => 
+      milestone.milestoneId === creatingTaskForMilestone.milestoneId
+        ? { ...milestone, tasks: [...milestone.tasks, newTask] }
+        : milestone
+    );
+    
+    onUpdateMilestones(updatedMilestones);
+    
+    if (onRecalculateTimeline) {
+      onRecalculateTimeline();
+    }
+  }, [creatingTaskForMilestone, milestones, onUpdateMilestones, onRecalculateTimeline]);
 
   const handleSplitTask = useCallback((task: Task) => {
     console.log('🔪 SPLIT TASK CLICKED:', {
@@ -1051,34 +1142,42 @@ export function GanttTimeline({
                           }}
                         >
                           <div className="p-2">
-                            <button
-                              onClick={() =>
-                                toggleMilestone(milestone.milestoneId)
-                              }
-                              className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded-lg p-3 transition-colors min-h-[44px]"
+                            <MilestoneContextMenu
+                              milestone={milestone}
+                              isExpanded={expandedMilestones.has(milestone.milestoneId)}
+                              onEdit={handleEditMilestone}
+                              onAddTask={handleAddTaskToMilestone}
+                              onToggle={(m) => toggleMilestone(m.milestoneId)}
                             >
-                              {expandedMilestones.has(milestone.milestoneId) ? (
-                                <ChevronDown className="w-5 h-5 text-primary" />
-                              ) : (
-                                <ChevronRight className="w-5 h-5 text-primary" />
-                              )}
-                              <div>
-                                <div className="font-semibold text-base">
-                                  {milestone.milestoneName}
+                              <button
+                                onClick={() =>
+                                  toggleMilestone(milestone.milestoneId)
+                                }
+                                className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded-lg p-3 transition-colors min-h-[44px]"
+                              >
+                                {expandedMilestones.has(milestone.milestoneId) ? (
+                                  <ChevronDown className="w-5 h-5 text-primary" />
+                                ) : (
+                                  <ChevronRight className="w-5 h-5 text-primary" />
+                                )}
+                                <div>
+                                  <div className="font-semibold text-base">
+                                    {milestone.milestoneName}
+                                  </div>
+                                  <div className="text-sm text-muted-foreground mt-1">
+                                    {format(milestoneDates.startDate, 'dd/MM', {
+                                      locale: es,
+                                    })}{' '}
+                                    -{' '}
+                                    {format(milestoneDates.endDate, 'dd/MM', {
+                                      locale: es,
+                                    })}{' '}
+                                    • {milestone.tasks.length} task
+                                    {milestone.tasks.length !== 1 ? 's' : ''}
+                                  </div>
                                 </div>
-                                <div className="text-sm text-muted-foreground mt-1">
-                                  {format(milestoneDates.startDate, 'dd/MM', {
-                                    locale: es,
-                                  })}{' '}
-                                  -{' '}
-                                  {format(milestoneDates.endDate, 'dd/MM', {
-                                    locale: es,
-                                  })}{' '}
-                                  • {milestone.tasks.length} task
-                                  {milestone.tasks.length !== 1 ? 's' : ''}
-                                </div>
-                              </div>
-                            </button>
+                              </button>
+                            </MilestoneContextMenu>
                           </div>
                           {/* Drag Resize Handle with Icon - Highly Visible */}
                           <div
@@ -1382,6 +1481,34 @@ export function GanttTimeline({
         onConfirm={handleConfirmMove}
         milestones={milestones}
         currentMilestoneId={currentMilestoneId}
+      />
+      
+      <MilestoneEditDialog
+        milestone={editingMilestone}
+        isOpen={isMilestoneEditDialogOpen}
+        onClose={() => {
+          setIsMilestoneEditDialogOpen(false);
+          setEditingMilestone(null);
+        }}
+        onConfirm={handleConfirmMilestoneEdit}
+        milestones={milestones}
+      />
+      
+      {/* Task Create Dialog - Uses TaskEditModal in create mode */}
+      {console.log('🖥️ RENDERING TaskEditModal (CREATE MODE):', { 
+        isTaskCreateDialogOpen, 
+        creatingTaskForMilestone: creatingTaskForMilestone?.milestoneName 
+      })}
+      <TaskEditModal
+        task={null} // null indicates create mode
+        isOpen={isTaskCreateDialogOpen}
+        onClose={() => {
+          console.log('❌ TASK CREATE DIALOG CLOSED');
+          setIsTaskCreateDialogOpen(false);
+          setCreatingTaskForMilestone(null);
+        }}
+        onSave={handleConfirmTaskCreate}
+        milestones={milestones}
       />
     </>
   );
