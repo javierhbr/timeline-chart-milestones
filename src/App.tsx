@@ -378,8 +378,8 @@ export default function App() {
   const handleOpenProjectManager = useCallback(() => setShowProjectManager(true), []);
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="w-[90%] mx-auto py-6">
+    <div className="min-h-screen bg-background" style={{ paddingLeft: '10px', paddingRight: '10px' }}>
+      <div className="w-full py-6">
         <div className="space-y-6">
           {/* Header */}
           <div
