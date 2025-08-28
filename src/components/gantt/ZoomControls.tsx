@@ -35,7 +35,7 @@ export function ZoomControls({
         variant="outline"
         size="sm"
         onClick={onZoomOut}
-        disabled={zoomLevel <= 8}
+        disabled={zoomLevel <= 1}
         className="flex items-center gap-1"
       >
         <ZoomOut className="w-4 h-4" />
@@ -54,14 +54,14 @@ export function ZoomControls({
         variant="outline"
         size="sm"
         onClick={onZoomIn}
-        disabled={zoomLevel >= 80}
+        disabled={zoomLevel >= 120}
         className="flex items-center gap-1"
       >
         <ZoomIn className="w-4 h-4" />
         In
       </Button>
       <div className="ml-3 px-2 py-1 bg-muted rounded text-xs font-medium">
-        {Math.round(zoomLevel)}px/día
+        {zoomLevel < 4 ? zoomLevel.toFixed(1) : Math.round(zoomLevel)}px/día
       </div>
 
       {/* Expand/Collapse Controls */}

@@ -363,13 +363,27 @@ export function GanttTimeline({
     [milestones, onUpdateMilestones, onRecalculateTimeline]
   );
 
-  // Zoom functions
+  // Zoom functions with more granular control
   const zoomIn = useCallback(() => {
-    setZoomLevel(prev => Math.min(Math.round(prev * 1.5), 80)); // Max 80px por día
+    setZoomLevel(prev => {
+      let newLevel = prev * 1.5;
+      // Round to reasonable values
+      if (newLevel < 4) newLevel = Math.max(newLevel, 2);
+      else if (newLevel < 10) newLevel = Math.round(newLevel);
+      else newLevel = Math.round(newLevel / 2) * 2; // Round to even numbers for higher zoom
+      return Math.min(newLevel, 120);
+    });
   }, []);
 
   const zoomOut = useCallback(() => {
-    setZoomLevel(prev => Math.max(Math.round(prev / 1.5), 8)); // Min 8px por día
+    setZoomLevel(prev => {
+      let newLevel = prev / 1.5;
+      // Round to reasonable values with more zoom out levels
+      if (newLevel < 4) newLevel = Math.max(Math.round(newLevel * 2) / 2, 1); // Allow 0.5px increments for extreme zoom
+      else if (newLevel < 10) newLevel = Math.round(newLevel);
+      else newLevel = Math.round(newLevel / 2) * 2;
+      return Math.max(newLevel, 1); // Minimum 1px per day for extreme zoom out
+    });
   }, []);
 
   const resetZoom = useCallback(() => {
