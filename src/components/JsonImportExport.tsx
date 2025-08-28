@@ -86,9 +86,57 @@ export function JsonImportExport({
     return result;
   };
 
+  const parseCSVRows = (csvText: string): string[] => {
+    const rows: string[] = [];
+    let currentRow = '';
+    let inQuotes = false;
+    let i = 0;
+
+    while (i < csvText.length) {
+      const char = csvText[i];
+
+      if (char === '"') {
+        if (inQuotes && csvText[i + 1] === '"') {
+          // Escaped quote
+          currentRow += '""';
+          i += 2;
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes;
+          currentRow += char;
+          i++;
+        }
+      } else if (char === '\n' && !inQuotes) {
+        // End of row only if not inside quotes
+        if (currentRow.trim()) {
+          rows.push(currentRow);
+        }
+        currentRow = '';
+        i++;
+      } else if (char === '\r' && !inQuotes && csvText[i + 1] === '\n') {
+        // Handle Windows line endings
+        if (currentRow.trim()) {
+          rows.push(currentRow);
+        }
+        currentRow = '';
+        i += 2;
+      } else {
+        currentRow += char;
+        i++;
+      }
+    }
+
+    // Add the last row
+    if (currentRow.trim()) {
+      rows.push(currentRow);
+    }
+
+    return rows;
+  };
+
   const parseCSV = (csvText: string): Milestone[] => {
-    const lines = csvText.trim().split('\n');
-    const header = parseCSVLine(lines[0]);
+    const rows = parseCSVRows(csvText.trim());
+    const header = parseCSVLine(rows[0]);
 
     // Validate CSV header (more flexible)
     // const expectedHeader = [
@@ -117,12 +165,12 @@ export function JsonImportExport({
 
     const milestonesMap = new Map<string, Milestone>();
 
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i].trim();
+      if (!row) continue;
 
       // Parse CSV line properly handling quotes
-      const values = parseCSVLine(line);
+      const values = parseCSVLine(row);
       while (values.length < 9) {
         values.push('');
       }
@@ -227,16 +275,13 @@ export function JsonImportExport({
   };
 
   const escapeCSVField = (field: string): string => {
-    // If field contains comma, quote, or newline, wrap in quotes and escape internal quotes
-    if (
-      field.includes(',') ||
-      field.includes('"') ||
-      field.includes('\n') ||
-      field.includes('\r')
-    ) {
-      return `"${field.replace(/"/g, '""')}"`;
-    }
-    return `"${field}"`;
+    // Always wrap strings in quotes and escape internal quotes
+    return `"${field.replace(/"/g, '""')}"`;
+  };
+
+  const escapeCSVNumeric = (value: number | string): string => {
+    // Numeric values should not be quoted
+    return value.toString();
   };
 
   const handleExportCSV = () => {
@@ -272,10 +317,10 @@ export function JsonImportExport({
           escapeCSVField(task.description),
           escapeCSVField(task.team),
           escapeCSVField(task.sprint || ''),
-          task.durationDays.toString(),
+          escapeCSVNumeric(task.durationDays),
           escapeCSVField(task.startDate || ''),
           escapeCSVField(task.endDate || ''),
-          actualDuration.toString(),
+          escapeCSVNumeric(actualDuration),
           escapeCSVField(dependsOn),
           escapeCSVField(dependsOnNames),
         ].join(',');
@@ -323,8 +368,8 @@ export function JsonImportExport({
           escapeCSVField(task.name),
           escapeCSVField(startDateFormatted),
           escapeCSVField(endDateFormatted),
-          actualDuration.toString(),
-          '0', // % Complete - default to 0, could be enhanced later
+          escapeCSVNumeric(actualDuration),
+          escapeCSVNumeric(0), // % Complete - default to 0, could be enhanced later
           escapeCSVField(predecessors),
           escapeCSVField(task.team),
           escapeCSVField(milestone.milestoneName),
@@ -386,11 +431,11 @@ export function JsonImportExport({
         escapeCSVField(milestone.milestoneName),
         escapeCSVField(startDateFormatted),
         escapeCSVField(endDateFormatted),
-        duration.toString(),
-        taskCount.toString(),
+        escapeCSVNumeric(duration),
+        escapeCSVNumeric(taskCount),
         escapeCSVField(teamsInvolved),
-        hasExternalDeps ? 'Yes' : 'No',
-        '0', // Progress % - default to 0, could be enhanced later
+        escapeCSVField(hasExternalDeps ? 'Yes' : 'No'),
+        escapeCSVNumeric(0), // Progress % - default to 0, could be enhanced later
         escapeCSVField([...milestoneDependencies].join(';')),
       ].join(',');
     });
