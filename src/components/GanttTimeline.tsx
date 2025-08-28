@@ -1291,7 +1291,7 @@ export function GanttTimeline({
                                           </div>
                                         </div>
                                       </TooltipTrigger>
-                                      <TooltipContent className="max-w-sm">
+                                      <TooltipContent className="max-w-sm" side="right" align="start">
                                         <div className="space-y-2">
                                           <div className="font-medium">
                                             {task.name}
