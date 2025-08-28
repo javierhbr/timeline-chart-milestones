@@ -6,6 +6,7 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  Plus,
 } from 'lucide-react';
 
 interface ZoomControlsProps {
@@ -15,6 +16,7 @@ interface ZoomControlsProps {
   onResetZoom: () => void;
   expandAllMilestones?: () => void;
   collapseAllMilestones?: () => void;
+  onCreateMilestone?: () => void;
 }
 
 export function ZoomControls({
@@ -24,6 +26,7 @@ export function ZoomControls({
   onResetZoom,
   expandAllMilestones,
   collapseAllMilestones,
+  onCreateMilestone,
 }: ZoomControlsProps) {
   return (
     <div className="flex items-center gap-2 mb-4 p-2 bg-muted/30 rounded-lg">
@@ -83,6 +86,22 @@ export function ZoomControls({
           >
             <ChevronUp className="w-4 h-4" />
             Collapse All
+          </Button>
+        </>
+      )}
+      
+      {/* Create Milestone Control */}
+      {onCreateMilestone && (
+        <>
+          <div className="mx-2 h-4 w-px bg-muted-foreground/30"></div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onCreateMilestone}
+            className="flex items-center gap-1 bg-primary/5 hover:bg-primary/10 border-primary/20"
+          >
+            <Plus className="w-4 h-4" />
+            Add Milestone
           </Button>
         </>
       )}

@@ -23,6 +23,7 @@ import { CloneTaskDialog } from './CloneTaskDialog';
 import { SplitTaskDialog } from './SplitTaskDialog';
 import { MoveTaskDialog } from './MoveTaskDialog';
 import { MilestoneEditDialog } from './MilestoneEditDialog';
+import { MilestoneCreateDialog } from './MilestoneCreateDialog';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
 import { 
   cloneTask, 
@@ -34,6 +35,7 @@ import {
   CloneOptions,
   SplitConfig 
 } from '../utils/taskOperations';
+import { createNewMilestone } from '../utils/milestoneOperations';
 
 interface GanttTimelineProps {
   milestones: Milestone[];
@@ -44,6 +46,8 @@ interface GanttTimelineProps {
   onToggleMilestone?: (milestoneId: string) => void;
   expandAllMilestones?: () => void;
   collapseAllMilestones?: () => void;
+  milestoneOrder?: string[];
+  onUpdateMilestoneOrder?: (order: string[]) => void;
 }
 
 export function GanttTimeline({
@@ -55,6 +59,8 @@ export function GanttTimeline({
   onToggleMilestone: propOnToggleMilestone,
   expandAllMilestones,
   collapseAllMilestones,
+  milestoneOrder,
+  onUpdateMilestoneOrder,
 }: GanttTimelineProps) {
   const [localExpandedMilestones, setLocalExpandedMilestones] = useState<
     Set<string>
@@ -71,6 +77,7 @@ export function GanttTimeline({
   const [isMilestoneEditDialogOpen, setIsMilestoneEditDialogOpen] = useState(false);
   const [creatingTaskForMilestone, setCreatingTaskForMilestone] = useState<Milestone | null>(null);
   const [isTaskCreateDialogOpen, setIsTaskCreateDialogOpen] = useState(false);
+  const [isMilestoneCreateDialogOpen, setIsMilestoneCreateDialogOpen] = useState(false);
   const [currentMilestoneId, setCurrentMilestoneId] = useState<string>('');
   const [zoomLevel, setZoomLevel] = useState<number>(32); // Píxeles por día, default 32px
   const [nameColumnWidth, setNameColumnWidth] = useState<number>(200); // Width in pixels for name column
@@ -92,6 +99,12 @@ export function GanttTimeline({
     isResizing: boolean;
     startX: number;
     startWidth: number;
+  } | null>(null);
+  const [milestoneDragState, setMilestoneDragState] = useState<{
+    draggedMilestoneId: string;
+    draggedIndex: number;
+    targetIndex: number;
+    isDragging: boolean;
   } | null>(null);
 
   const timelineRef = useRef<HTMLTableSectionElement>(null);
@@ -209,6 +222,26 @@ export function GanttTimeline({
     
     onUpdateMilestones(updatedMilestones);
   }, [milestones, onUpdateMilestones]);
+
+  const handleCreateMilestone = useCallback(() => {
+    console.log('➕ CREATE MILESTONE CLICKED');
+    setIsMilestoneCreateDialogOpen(true);
+  }, []);
+
+  const handleConfirmMilestoneCreate = useCallback((milestoneName: string, description?: string) => {
+    if (!onUpdateMilestones) return;
+    
+    console.log('✅ CREATING NEW MILESTONE:', { milestoneName, description });
+    
+    const newMilestone = createNewMilestone(milestoneName, milestones, description);
+    const updatedMilestones = [...milestones, newMilestone];
+    
+    onUpdateMilestones(updatedMilestones);
+    
+    if (onRecalculateTimeline) {
+      onRecalculateTimeline();
+    }
+  }, [milestones, onUpdateMilestones, onRecalculateTimeline]);
 
   const handleAddTaskToMilestone = useCallback((milestone: Milestone) => {
     console.log('➕ ADD TASK TO MILESTONE CLICKED:', {
@@ -377,16 +410,39 @@ export function GanttTimeline({
     setResizeState(null);
   }, []);
 
-  // Pre-sort milestones by calculated start dates early in the component
+  // Sort milestones by custom order if available, otherwise by calculated start dates
   const sortedMilestones = useMemo(() => {
-    return milestones
-      .map((milestone, originalIndex) => ({ milestone, originalIndex }))
-      .sort((a, b) => {
+    const milestonesWithIndex = milestones.map((milestone, originalIndex) => ({ 
+      milestone, 
+      originalIndex 
+    }));
+
+    // If custom order is provided and contains milestone IDs, use it
+    if (milestoneOrder && milestoneOrder.length > 0) {
+      const orderMap = new Map(milestoneOrder.map((id, index) => [id, index]));
+      
+      return milestonesWithIndex.sort((a, b) => {
+        const aOrder = orderMap.get(a.milestone.milestoneId) ?? Number.MAX_SAFE_INTEGER;
+        const bOrder = orderMap.get(b.milestone.milestoneId) ?? Number.MAX_SAFE_INTEGER;
+        
+        if (aOrder !== bOrder) {
+          return aOrder - bOrder;
+        }
+        
+        // Fall back to date sorting for milestones not in custom order
         const aDates = calculateMilestoneDates(a.milestone);
         const bDates = calculateMilestoneDates(b.milestone);
         return aDates.startDate.getTime() - bDates.startDate.getTime();
       });
-  }, [milestones]);
+    }
+
+    // Default to date-based sorting
+    return milestonesWithIndex.sort((a, b) => {
+      const aDates = calculateMilestoneDates(a.milestone);
+      const bDates = calculateMilestoneDates(b.milestone);
+      return aDates.startDate.getTime() - bDates.startDate.getTime();
+    });
+  }, [milestones, milestoneOrder]);
 
   // Calculate timeline data early
   const timelineData = useMemo(() => {
@@ -612,6 +668,60 @@ export function GanttTimeline({
     };
   }, [resizeState, handleResizeMove, handleResizeEnd]);
 
+  // Milestone drag and drop handlers
+  const handleMilestoneDragStart = useCallback((milestoneId: string, index: number) => {
+    console.log('🎯 MILESTONE DRAG START:', { milestoneId, index });
+    setMilestoneDragState({
+      draggedMilestoneId: milestoneId,
+      draggedIndex: index,
+      targetIndex: index,
+      isDragging: true,
+    });
+  }, []);
+
+  const handleMilestoneDragOver = useCallback((targetIndex: number) => {
+    if (!milestoneDragState) return;
+    
+    if (milestoneDragState.targetIndex !== targetIndex) {
+      console.log('🎯 MILESTONE DRAG OVER:', { targetIndex });
+      setMilestoneDragState(prev => prev ? {
+        ...prev,
+        targetIndex,
+      } : null);
+    }
+  }, [milestoneDragState]);
+
+  const handleMilestoneDragEnd = useCallback(() => {
+    if (!milestoneDragState || !onUpdateMilestoneOrder) {
+      setMilestoneDragState(null);
+      return;
+    }
+
+    console.log('🎯 MILESTONE DRAG END:', milestoneDragState);
+
+    // Only reorder if position actually changed
+    if (milestoneDragState.draggedIndex !== milestoneDragState.targetIndex) {
+      // Always use the current sorted milestones order as the basis
+      const currentOrderedMilestones = sortedMilestones.map(({ milestone }) => milestone.milestoneId);
+      console.log('🔍 CURRENT ORDERED MILESTONES:', currentOrderedMilestones);
+      console.log('🔍 MILESTONE ORDER STATE:', milestoneOrder);
+      
+      const newOrder = [...currentOrderedMilestones];
+      
+      // Remove dragged item
+      const [draggedId] = newOrder.splice(milestoneDragState.draggedIndex, 1);
+      
+      // Insert at target position
+      newOrder.splice(milestoneDragState.targetIndex, 0, draggedId);
+      
+      console.log('🔄 NEW MILESTONE ORDER:', newOrder);
+      console.log('🔄 DRAGGED ID:', draggedId);
+      onUpdateMilestoneOrder(newOrder);
+    }
+
+    setMilestoneDragState(null);
+  }, [milestoneDragState, milestoneOrder, sortedMilestones, onUpdateMilestoneOrder]);
+
   // Early return if no timeline data
   if (!timelineData) {
     return (
@@ -676,6 +786,7 @@ export function GanttTimeline({
           onResetZoom={resetZoom}
           expandAllMilestones={expandAllMilestones}
           collapseAllMilestones={collapseAllMilestones}
+          onCreateMilestone={handleCreateMilestone}
         />
 
         <Card className="overflow-hidden">
@@ -711,8 +822,10 @@ export function GanttTimeline({
 
               {/* Table Body */}
               <tbody ref={timelineRef}>
-                {sortedMilestones.map(({ milestone, originalIndex }) => {
+                {sortedMilestones.map(({ milestone, originalIndex }, index) => {
                   const milestoneColor = getMilestoneColor(originalIndex);
+                  const isDragging = milestoneDragState?.draggedMilestoneId === milestone.milestoneId;
+                  const isDragTarget = milestoneDragState?.targetIndex === index;
 
                   return (
                     <React.Fragment key={milestone.milestoneId}>
@@ -728,6 +841,12 @@ export function GanttTimeline({
                         onEdit={handleEditMilestone}
                         onAddTask={handleAddTaskToMilestone}
                         onResizeStart={handleResizeStart}
+                        onDragStart={onUpdateMilestoneOrder ? handleMilestoneDragStart : undefined}
+                        onDragOver={onUpdateMilestoneOrder ? handleMilestoneDragOver : undefined}
+                        onDragEnd={onUpdateMilestoneOrder ? handleMilestoneDragEnd : undefined}
+                        dragIndex={index}
+                        isDragging={isDragging}
+                        isDragTarget={isDragTarget}
                       />
                       
                       {expandedMilestones.has(milestone.milestoneId) &&
@@ -844,6 +963,13 @@ export function GanttTimeline({
           setCreatingTaskForMilestone(null);
         }}
         onSave={handleConfirmTaskCreate}
+        milestones={milestones}
+      />
+      
+      <MilestoneCreateDialog
+        isOpen={isMilestoneCreateDialogOpen}
+        onClose={() => setIsMilestoneCreateDialogOpen(false)}
+        onConfirm={handleConfirmMilestoneCreate}
         milestones={milestones}
       />
     </>

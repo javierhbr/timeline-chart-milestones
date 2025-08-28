@@ -31,6 +31,7 @@ export default function App() {
   const [expandedMilestones, setExpandedMilestones] = useState<Set<string>>(
     new Set()
   );
+  const [milestoneOrder, setMilestoneOrder] = useState<string[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [showProjectManager, setShowProjectManager] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -66,6 +67,7 @@ export default function App() {
         setMilestones(milestonesWithDates);
         setProjectStartDate(projectStartDate);
         setExpandedMilestones(new Set(project.timelineData.expandedMilestones));
+        setMilestoneOrder(project.timelineData.milestoneOrder || []);
         setHasUnsavedChanges(false);
       } else if (!hasAnyProjects()) {
         // Create default project for new users
@@ -73,6 +75,7 @@ export default function App() {
           milestones: [],
           projectStartDate: new Date().toISOString(),
           expandedMilestones: [],
+          milestoneOrder: [],
         };
         const newProject = createProject(
           generateDefaultProjectName(),
@@ -85,6 +88,7 @@ export default function App() {
         setExpandedMilestones(
           new Set(newProject.timelineData.expandedMilestones)
         );
+        setMilestoneOrder(newProject.timelineData.milestoneOrder || []);
         setHasUnsavedChanges(false);
       } else {
         // Has projects but none selected - show project manager
@@ -102,11 +106,12 @@ export default function App() {
         milestones,
         projectStartDate: projectStartDate.toISOString(),
         expandedMilestones: Array.from(expandedMilestones),
+        milestoneOrder,
       };
       saveProject(currentProject.id, timelineData);
       setHasUnsavedChanges(false);
     }
-  }, [milestones, projectStartDate, expandedMilestones, currentProject]);
+  }, [milestones, projectStartDate, expandedMilestones, milestoneOrder, currentProject]);
 
   // Track unsaved changes (only set to true when values actually change)
   const [initialLoad, setInitialLoad] = useState(true);
@@ -118,6 +123,7 @@ export default function App() {
     milestones,
     projectStartDate,
     expandedMilestones,
+    milestoneOrder,
     currentProject,
     initialLoad,
   ]);
@@ -147,6 +153,7 @@ export default function App() {
     setMilestones(milestonesWithDates);
     setProjectStartDate(projectStartDate);
     setExpandedMilestones(new Set(project.timelineData.expandedMilestones));
+    setMilestoneOrder(project.timelineData.milestoneOrder || []);
     setHasUnsavedChanges(false);
   }, []);
 
@@ -253,6 +260,12 @@ export default function App() {
     );
     setMilestones(recalculatedMilestones);
   }, [projectStartDate]);
+
+  const handleUpdateMilestoneOrder = useCallback((newOrder: string[]) => {
+    console.log('🔄 UPDATING MILESTONE ORDER:', newOrder);
+    console.log('🔄 OLD ORDER WAS:', milestoneOrder);
+    setMilestoneOrder(newOrder);
+  }, [milestoneOrder]);
 
   const totalTasks = milestones.reduce((acc, m) => acc + m.tasks.length, 0);
   const uniqueTeams = new Set(milestones.flatMap(m => m.tasks.map(t => t.team)))
@@ -431,6 +444,8 @@ export default function App() {
             }}
             expandAllMilestones={expandAllMilestones}
             collapseAllMilestones={collapseAllMilestones}
+            milestoneOrder={milestoneOrder}
+            onUpdateMilestoneOrder={handleUpdateMilestoneOrder}
           />
         </div>
 

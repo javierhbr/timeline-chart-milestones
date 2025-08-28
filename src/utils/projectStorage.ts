@@ -4,6 +4,7 @@ export interface TimelineData {
   milestones: Milestone[];
   projectStartDate: string;
   expandedMilestones: string[];
+  milestoneOrder?: string[];
 }
 
 export interface Project {
