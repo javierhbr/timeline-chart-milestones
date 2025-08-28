@@ -23,6 +23,7 @@ interface TaskBarProps {
     taskEnd: Date
   ) => void;
   onEditClick: (task: Task) => void;
+  showLabels?: boolean;
 }
 
 const TaskBar = memo(function TaskBar({
@@ -30,6 +31,7 @@ const TaskBar = memo(function TaskBar({
   milestones,
   onMouseDown,
   onEditClick,
+  showLabels = true,
 }: TaskBarProps) {
   // Memoize expensive calculations
   const taskData = useMemo(() => {
@@ -63,25 +65,26 @@ const TaskBar = memo(function TaskBar({
   const { taskStart, taskEnd, teamColor, dependencyInfo } = taskData;
 
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div
-            className="w-full h-6 rounded-lg cursor-move flex items-center justify-between shadow-sm border border-white/20 group"
-            style={{
-              background: `linear-gradient(135deg, ${teamColor} 0%, ${teamColor}dd 100%)`,
-              minWidth: '30px',
-            }}
-            onMouseDown={e => {
-              if (e.button === 2) return;
+    <div className="relative">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className="w-full h-6 rounded-lg cursor-move flex items-center justify-between shadow-sm border border-white/20 group"
+              style={{
+                background: `linear-gradient(135deg, ${teamColor} 0%, ${teamColor}dd 100%)`,
+                minWidth: '30px',
+              }}
+              onMouseDown={e => {
+                if (e.button === 2) return;
 
-              const target = e.target as HTMLElement;
-              if (target.closest('button[title="Edit task"]')) {
-                return;
-              }
-              onMouseDown(e, task.taskId, 'move', taskStart, taskEnd);
-            }}
-          >
+                const target = e.target as HTMLElement;
+                if (target.closest('button[title="Edit task"]')) {
+                  return;
+                }
+                onMouseDown(e, task.taskId, 'move', taskStart, taskEnd);
+              }}
+            >
             <div
               className="w-3 h-full bg-white/30 cursor-ew-resize opacity-0 hover:opacity-100 transition-opacity rounded-l-lg flex items-center justify-center"
               onMouseDown={e => {
@@ -162,6 +165,20 @@ const TaskBar = memo(function TaskBar({
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
+    
+    {/* Task labels positioned to the right */}
+    {showLabels && (
+      <div
+        className="absolute top-1/2 -translate-y-1/2 flex items-center gap-2 text-xs whitespace-nowrap pointer-events-none z-30"
+        style={{ left: 'calc(100% + 5px)' }}
+      >
+        <span className="font-medium text-gray-700">{task.name}</span>
+        <span className="text-blue-600">
+          {format(taskStart, 'dd/MM', { locale: es })} - {format(taskEnd, 'dd/MM', { locale: es })}
+        </span>
+      </div>
+    )}
+  </div>
   );
 });
 

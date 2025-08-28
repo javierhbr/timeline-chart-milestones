@@ -230,25 +230,6 @@ const TaskRow = memo(function TaskRow({
                 />
               </TaskContextMenu>
             </div>
-
-            {/* Task name and dates to the right */}
-            <div
-              className="absolute top-1/2 -translate-y-1/2 z-5 flex items-center gap-2 text-xs whitespace-nowrap pointer-events-none"
-              style={{
-                left: `${taskStartDay * zoomLevel + taskDurationDays * zoomLevel + 8}px`,
-              }}
-            >
-              <span className="font-medium text-gray-700">{task.name}</span>
-              <span className="text-blue-600 text-xs">
-                {format(taskStart, 'dd/MM', {
-                  locale: es,
-                })}{' '}
-                -{' '}
-                {format(taskEnd, 'dd/MM', {
-                  locale: es,
-                })}
-              </span>
-            </div>
           </div>
         </div>
       </td>
