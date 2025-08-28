@@ -21,6 +21,8 @@ import {
   hasAnyProjects,
   generateDefaultProjectName,
 } from './utils/projectStorage';
+import { dataProviderManager } from './services/dataProviders';
+import { syncManager } from './services/syncManager';
 import { BarChart3, Calendar, Users, Clock, BarChart, LogOut, User } from 'lucide-react';
 
 // Lazy load heavy components
@@ -29,7 +31,7 @@ const ProjectManager = lazy(() => import('./components/ProjectManager').then(mod
 const ConfirmationDialog = lazy(() => import('./components/ConfirmationDialog').then(module => ({ default: module.ConfirmationDialog })));
 
 export default function App() {
-  const { isAuthenticated, login, logout, loginError } = useAuth();
+  const { isAuthenticated, login, logout, loginError, isGoogleConnected } = useAuth();
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [projectStartDate, setProjectStartDate] = useState<Date>(
     new Date('2024-08-26')
@@ -102,6 +104,9 @@ export default function App() {
           setExpandedMilestones(new Set(project.timelineData.expandedMilestones));
           setMilestoneOrder(project.timelineData.milestoneOrder || []);
           setHasUnsavedChanges(false);
+
+          // Set up sync manager with current project
+          syncManager.setCurrentProject(project.id);
         } else if (!hasAnyProjects()) {
           // Create default project for new users
           const emptyTimelineData: TimelineData = {
@@ -163,7 +168,15 @@ export default function App() {
           expandedMilestones: Array.from(expandedMilestones),
           milestoneOrder,
         };
+
+        // Save to local storage first
         saveProject(currentProject.id, timelineData);
+        
+        // If using Google Sheets, queue the change for sync
+        if (dataProviderManager.isUsingGoogleSheets() && isGoogleConnected) {
+          syncManager.queueChange(currentProject.id, timelineData);
+        }
+        
         setHasUnsavedChanges(false);
       }, 1000); // Debounce for 1 second
     }
@@ -180,6 +193,7 @@ export default function App() {
     expandedMilestones,
     milestoneOrder,
     currentProject,
+    isGoogleConnected,
   ]);
 
   // Track unsaved changes (only set to true when values actually change)
@@ -226,6 +240,12 @@ export default function App() {
     setHasUnsavedChanges(false);
   }, []);
 
+  const handleProjectChange = useCallback((project: Project) => {
+    loadProjectData(project);
+    // Update sync manager with new project
+    syncManager.setCurrentProject(project.id);
+  }, [loadProjectData]);
+
   const handleSelectProject = useCallback(
     (project: Project) => {
       if (
@@ -236,18 +256,18 @@ export default function App() {
         setPendingProject(project);
         setShowUnsavedChangesDialog(true);
       } else {
-        loadProjectData(project);
+        handleProjectChange(project);
       }
     },
-    [loadProjectData, hasUnsavedChanges, currentProject]
+    [handleProjectChange, hasUnsavedChanges, currentProject]
   );
 
   const handleConfirmProjectSwitch = useCallback(() => {
     if (pendingProject) {
-      loadProjectData(pendingProject);
+      handleProjectChange(pendingProject);
       setPendingProject(null);
     }
-  }, [pendingProject, loadProjectData]);
+  }, [pendingProject, handleProjectChange]);
 
   const handleCancelProjectSwitch = useCallback(() => {
     setPendingProject(null);
@@ -463,6 +483,7 @@ export default function App() {
                 onStartDateChange={handleStartDateChange}
                 currentProject={currentProject}
                 onOpenProjectManager={handleOpenProjectManager}
+                onProjectChange={handleProjectChange}
               />
             </Suspense>
           </div>

@@ -21,6 +21,7 @@ import {
   FileText,
   HelpCircle,
 } from 'lucide-react';
+import { GoogleSheetsIntegration } from './GoogleSheetsIntegration';
 import { Milestone, formatDateForExcel, calculateBusinessDaysDuration } from '../utils/dateUtils';
 import {
   Project,
@@ -36,6 +37,7 @@ interface JsonImportExportProps {
   onStartDateChange: (date: Date) => void;
   currentProject: Project | null;
   onOpenProjectManager: () => void;
+  onProjectChange?: (project: Project) => void;
 }
 
 export function JsonImportExport({
@@ -43,8 +45,9 @@ export function JsonImportExport({
   onImport,
   projectStartDate,
   onStartDateChange,
-  currentProject, // eslint-disable-line @typescript-eslint/no-unused-vars
+  currentProject,
   onOpenProjectManager,
+  onProjectChange,
 }: JsonImportExportProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showInstructions, setShowInstructions] = useState(false);
@@ -659,21 +662,28 @@ export function JsonImportExport({
   };
 
   return (
-    <Card className="p-6 mb-6">
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
-        <div className="flex-1">
-          <label htmlFor="startDate" className="block mb-2">
-            <Calendar className="inline w-4 h-4 mr-2" />
-            Project start date
-          </label>
-          <Input
-            id="startDate"
-            type="date"
-            value={projectStartDate.toISOString().split('T')[0]}
-            onChange={e => onStartDateChange(new Date(e.target.value))}
-            className="w-full md:w-auto"
-          />
-        </div>
+    <div className="space-y-6">
+      {/* Google Sheets Integration */}
+      <GoogleSheetsIntegration
+        currentProject={currentProject}
+        onProjectChange={onProjectChange}
+      />
+
+      <Card className="p-6">
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
+          <div className="flex-1">
+            <label htmlFor="startDate" className="block mb-2">
+              <Calendar className="inline w-4 h-4 mr-2" />
+              Project start date
+            </label>
+            <Input
+              id="startDate"
+              type="date"
+              value={projectStartDate.toISOString().split('T')[0]}
+              onChange={e => onStartDateChange(new Date(e.target.value))}
+              className="w-full md:w-auto"
+            />
+          </div>
 
         <div className="flex flex-wrap gap-2">
           {/* Projects Dropdown - Public */}
@@ -1134,7 +1144,8 @@ M3,Testing,T8,Integration,End-to-end testing,QA,Sprint 4,4,T7`}
             </div>
           </div>
         </div>
-      )}
-    </Card>
+        )}
+      </Card>
+    </div>
   );
 }
