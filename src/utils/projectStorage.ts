@@ -313,7 +313,6 @@ export function migrateOldData(): void {
 export function clearAllProjects(): void {
   try {
     localStorage.removeItem(PROJECTS_STORAGE_KEY);
-    console.log('All projects cleared from localStorage');
   } catch (error) {
     console.warn('Failed to clear all projects from localStorage:', error);
   }

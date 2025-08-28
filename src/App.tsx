@@ -111,7 +111,13 @@ export default function App() {
       saveProject(currentProject.id, timelineData);
       setHasUnsavedChanges(false);
     }
-  }, [milestones, projectStartDate, expandedMilestones, milestoneOrder, currentProject]);
+  }, [
+    milestones,
+    projectStartDate,
+    expandedMilestones,
+    milestoneOrder,
+    currentProject,
+  ]);
 
   // Track unsaved changes (only set to true when values actually change)
   const [initialLoad, setInitialLoad] = useState(true);
@@ -252,20 +258,21 @@ export default function App() {
     });
   }, [projectStartDate]);
 
-  const handleUpdateMilestones = useCallback((updatedMilestones: Milestone[]) => {
-    const recalculatedMilestones = calculateProjectDates(
-      updatedMilestones,
-      projectStartDate,
-      false
-    );
-    setMilestones(recalculatedMilestones);
-  }, [projectStartDate]);
+  const handleUpdateMilestones = useCallback(
+    (updatedMilestones: Milestone[]) => {
+      const recalculatedMilestones = calculateProjectDates(
+        updatedMilestones,
+        projectStartDate,
+        false
+      );
+      setMilestones(recalculatedMilestones);
+    },
+    [projectStartDate]
+  );
 
   const handleUpdateMilestoneOrder = useCallback((newOrder: string[]) => {
-    console.log('🔄 UPDATING MILESTONE ORDER:', newOrder);
-    console.log('🔄 OLD ORDER WAS:', milestoneOrder);
     setMilestoneOrder(newOrder);
-  }, [milestoneOrder]);
+  }, []);
 
   const totalTasks = milestones.reduce((acc, m) => acc + m.tasks.length, 0);
   const uniqueTeams = new Set(milestones.flatMap(m => m.tasks.map(t => t.team)))

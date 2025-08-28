@@ -5,7 +5,7 @@ import { Milestone } from './dateUtils';
  */
 export function generateUniqueMilestoneId(milestones: Milestone[]): string {
   const existingIds = new Set<string>();
-  
+
   // Collect all existing milestone IDs
   milestones.forEach(milestone => {
     existingIds.add(milestone.milestoneId);
@@ -14,13 +14,13 @@ export function generateUniqueMilestoneId(milestones: Milestone[]): string {
   // Generate unique ID with format: M{timestamp}_{random}
   let attempts = 0;
   let newId: string;
-  
+
   do {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substr(2, 4);
     newId = `M${timestamp}_${random}`;
     attempts++;
-    
+
     // Fallback in case of collision
     if (attempts > 100) {
       newId = `M${timestamp}_${attempts}`;
@@ -35,8 +35,8 @@ export function generateUniqueMilestoneId(milestones: Milestone[]): string {
  * Creates a new milestone with the given name and default values
  */
 export function createNewMilestone(
-  milestoneName: string, 
-  milestones: Milestone[], 
+  milestoneName: string,
+  milestones: Milestone[],
   _description?: string
 ): Milestone {
   return {
@@ -65,16 +65,17 @@ export function validateMilestone(
   // Check for duplicate names
   const trimmedName = milestoneName.trim();
   const existingMilestone = milestones.find(
-    m => m.milestoneId !== excludeMilestoneId && 
-    m.milestoneName.toLowerCase() === trimmedName.toLowerCase()
+    m =>
+      m.milestoneId !== excludeMilestoneId &&
+      m.milestoneName.toLowerCase() === trimmedName.toLowerCase()
   );
-  
+
   if (existingMilestone) {
     errors.push(`Milestone name "${trimmedName}" already exists`);
   }
 
   return {
     isValid: errors.length === 0,
-    errors
+    errors,
   };
 }

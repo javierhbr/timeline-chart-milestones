@@ -20,7 +20,7 @@ export function ProjectInfo({
   totalDays,
   sortedMilestones,
 }: ProjectInfoProps) {
-  const firstMilestoneDuration = sortedMilestones[0] 
+  const firstMilestoneDuration = sortedMilestones[0]
     ? (() => {
         const dates = calculateMilestoneDates(sortedMilestones[0].milestone);
         return differenceInDays(dates.endDate, dates.startDate);
@@ -40,9 +40,7 @@ export function ProjectInfo({
         </span>
         <span>Total Days: {totalDays}</span>
         <span>Total Milestones: {sortedMilestones.length}</span>
-        <span>
-          First Milestone Duration: {firstMilestoneDuration} days
-        </span>
+        <span>First Milestone Duration: {firstMilestoneDuration} days</span>
       </div>
     </div>
   );

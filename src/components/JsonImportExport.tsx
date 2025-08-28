@@ -58,7 +58,7 @@ export function JsonImportExport({
 
     while (i < line.length) {
       const char = line[i];
-      
+
       if (char === '"') {
         if (inQuotes && line[i + 1] === '"') {
           // Escaped quote
@@ -79,7 +79,7 @@ export function JsonImportExport({
         i++;
       }
     }
-    
+
     // Add the last field
     result.push(current.trim());
     return result;
@@ -227,7 +227,12 @@ export function JsonImportExport({
 
   const escapeCSVField = (field: string): string => {
     // If field contains comma, quote, or newline, wrap in quotes and escape internal quotes
-    if (field.includes(',') || field.includes('"') || field.includes('\n') || field.includes('\r')) {
+    if (
+      field.includes(',') ||
+      field.includes('"') ||
+      field.includes('\n') ||
+      field.includes('\r')
+    ) {
       return `"${field.replace(/"/g, '""')}"`;
     }
     return `"${field}"`;
@@ -248,7 +253,7 @@ export function JsonImportExport({
           escapeCSVField(task.team),
           escapeCSVField(task.sprint || ''),
           task.durationDays.toString(),
-          escapeCSVField(dependsOn)
+          escapeCSVField(dependsOn),
         ].join(',');
       })
     );

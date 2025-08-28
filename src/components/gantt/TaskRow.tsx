@@ -7,12 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
-import {
-  Calendar,
-  Clock,
-  Users,
-  Zap,
-} from 'lucide-react';
+import { Calendar, Clock, Users, Zap } from 'lucide-react';
 import { TaskContextMenu } from '../TaskContextMenu';
 import { TaskBar } from './TaskBar';
 import { format, parseISO, differenceInDays } from 'date-fns';
@@ -124,9 +119,7 @@ export function TaskRow({
             </TooltipTrigger>
             <TooltipContent className="max-w-sm" side="right" align="start">
               <div className="space-y-2">
-                <div className="font-medium">
-                  {task.name}
-                </div>
+                <div className="font-medium">{task.name}</div>
                 <div className="text-sm text-muted-foreground">
                   {task.description}
                 </div>
@@ -145,17 +138,13 @@ export function TaskRow({
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    <span className="text-xs">
-                      {task.durationDays} days
-                    </span>
+                    <span className="text-xs">{task.durationDays} days</span>
                   </div>
                 </div>
                 {task.sprint && (
                   <div className="flex items-center gap-1 text-sm">
                     <Zap className="w-3 h-3" />
-                    <Badge variant="secondary">
-                      {task.sprint}
-                    </Badge>
+                    <Badge variant="secondary">{task.sprint}</Badge>
                   </div>
                 )}
                 <div className="flex items-center gap-1 text-sm">
@@ -204,8 +193,7 @@ export function TaskRow({
               style={{
                 left: `${taskStartDay * zoomLevel + 2}px`,
                 width: `${taskDurationDays * zoomLevel - 4}px`,
-                minWidth:
-                  Math.min(30, zoomLevel) + 'px',
+                minWidth: Math.min(30, zoomLevel) + 'px',
                 height: '28px',
               }}
             >
@@ -217,8 +205,8 @@ export function TaskRow({
                 onDelete={onDelete}
                 onEdit={onEdit}
               >
-                <TaskBar 
-                  task={task} 
+                <TaskBar
+                  task={task}
                   milestones={milestones}
                   onMouseDown={onMouseDown}
                   onEditClick={onEdit}
@@ -233,9 +221,7 @@ export function TaskRow({
                 left: `${taskStartDay * zoomLevel + taskDurationDays * zoomLevel + 8}px`,
               }}
             >
-              <span className="font-medium text-gray-700">
-                {task.name}
-              </span>
+              <span className="font-medium text-gray-700">{task.name}</span>
               <span className="text-blue-600 text-xs">
                 {format(taskStart, 'dd/MM', {
                   locale: es,

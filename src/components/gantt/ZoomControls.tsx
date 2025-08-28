@@ -89,7 +89,7 @@ export function ZoomControls({
           </Button>
         </>
       )}
-      
+
       {/* Create Milestone Control */}
       {onCreateMilestone && (
         <>

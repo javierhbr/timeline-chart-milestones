@@ -55,11 +55,11 @@ export function MilestoneCreateDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (isSubmitting) return;
 
     const validation = validateMilestone(milestoneName, milestones);
-    
+
     if (!validation.isValid) {
       setErrors(validation.errors);
       return;
@@ -68,13 +68,8 @@ export function MilestoneCreateDialog({
     setIsSubmitting(true);
 
     try {
-      console.log('✅ CREATING NEW MILESTONE:', {
-        milestoneName: milestoneName.trim(),
-        description: description.trim() || undefined
-      });
-      
       await onConfirm(milestoneName.trim(), description.trim() || undefined);
-      
+
       // Close dialog on success
       onClose();
     } catch (error) {
@@ -91,10 +86,14 @@ export function MilestoneCreateDialog({
     }
   };
 
-  const canSubmit = milestoneName.trim().length > 0 && errors.length === 0 && !isSubmitting;
+  const canSubmit =
+    milestoneName.trim().length > 0 && errors.length === 0 && !isSubmitting;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open: boolean) => !open && handleClose()}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open: boolean) => !open && handleClose()}
+    >
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -115,9 +114,9 @@ export function MilestoneCreateDialog({
               id="milestone-name"
               placeholder="e.g., Phase 1 - Requirements"
               value={milestoneName}
-              onChange={(e) => setMilestoneName(e.target.value)}
+              onChange={e => setMilestoneName(e.target.value)}
               disabled={isSubmitting}
-              className={errors.length > 0 ? "border-red-500" : ""}
+              className={errors.length > 0 ? 'border-red-500' : ''}
             />
           </div>
 
@@ -129,7 +128,7 @@ export function MilestoneCreateDialog({
               id="milestone-description"
               placeholder="Brief description of this milestone..."
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
               disabled={isSubmitting}
               rows={3}
             />
@@ -158,7 +157,9 @@ export function MilestoneCreateDialog({
                 <p className="font-medium mb-2">New milestone will:</p>
                 <ul className="space-y-1 text-xs">
                   <li>• Start empty with no tasks</li>
-                  <li>• Get automatically positioned by date when tasks are added</li>
+                  <li>
+                    • Get automatically positioned by date when tasks are added
+                  </li>
                   <li>• Be available for task assignment</li>
                 </ul>
               </div>

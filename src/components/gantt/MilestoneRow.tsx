@@ -1,5 +1,10 @@
 import React from 'react';
-import { ChevronDown, ChevronRight, GripVertical, GripHorizontal } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  GripVertical,
+  GripHorizontal,
+} from 'lucide-react';
 import { MilestoneContextMenu } from '../MilestoneContextMenu';
 import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -53,12 +58,15 @@ export function MilestoneRow({
   isDragTarget = false,
 }: MilestoneRowProps) {
   const milestoneDates = calculateMilestoneDates(milestone);
-  const milestoneStartDay = differenceInDays(milestoneDates.startDate, timelineStart);
-  const milestoneDurationDays = differenceInDays(milestoneDates.endDate, milestoneDates.startDate) + 1;
+  const milestoneStartDay = differenceInDays(
+    milestoneDates.startDate,
+    timelineStart
+  );
+  const milestoneDurationDays =
+    differenceInDays(milestoneDates.endDate, milestoneDates.startDate) + 1;
 
   const handleDragStart = (e: React.DragEvent) => {
     if (onDragStart && dragIndex !== undefined) {
-      console.log('🎯 MILESTONE ROW DRAG START:', milestone.milestoneName);
       onDragStart(milestone.milestoneId, dragIndex);
       e.dataTransfer.effectAllowed = 'move';
       // Add some visual feedback
@@ -67,7 +75,6 @@ export function MilestoneRow({
   };
 
   const handleDragEnd = (e: React.DragEvent) => {
-    console.log('🎯 MILESTONE ROW DRAG END:', milestone.milestoneName);
     (e.currentTarget as HTMLElement).style.opacity = '';
     if (onDragEnd) {
       onDragEnd();
@@ -78,26 +85,22 @@ export function MilestoneRow({
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     if (onDragOver && dragIndex !== undefined && !isDragging) {
-      console.log('🎯 MILESTONE ROW DRAG OVER:', milestone.milestoneName, 'dragIndex:', dragIndex);
       onDragOver(dragIndex);
     }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    console.log('🎯 MILESTONE ROW DROP:', milestone.milestoneName);
   };
 
   return (
     <tr
       className={`border-b min-h-[72px] relative transition-all duration-200 ${
         isDragging ? 'opacity-50 bg-primary/5' : ''
-      } ${
-        isDragTarget ? 'border-primary border-2 bg-primary/10' : ''
-      }`}
+      } ${isDragTarget ? 'border-primary border-2 bg-primary/10' : ''}`}
       style={{
-        backgroundColor: isDragging 
-          ? `${milestoneColor.gentle}80` 
+        backgroundColor: isDragging
+          ? `${milestoneColor.gentle}80`
           : milestoneColor.gentle,
         borderLeft: `4px solid ${milestoneColor.main}`,
       }}
@@ -125,19 +128,19 @@ export function MilestoneRow({
                 draggable={true}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
-                onMouseDown={(e) => e.stopPropagation()}
+                onMouseDown={e => e.stopPropagation()}
               >
                 <GripHorizontal className="w-4 h-4 text-muted-foreground" />
               </div>
             )}
-            
+
             <div className="flex-1">
               <MilestoneContextMenu
                 milestone={milestone}
                 isExpanded={isExpanded}
                 onEdit={onEdit}
                 onAddTask={onAddTask}
-                onToggle={(m) => onToggle(m.milestoneId)}
+                onToggle={m => onToggle(m.milestoneId)}
               >
                 <button
                   onClick={() => onToggle(milestone.milestoneId)}

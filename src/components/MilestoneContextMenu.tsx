@@ -6,13 +6,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from './ui/context-menu';
-import {
-  Edit,
-  Plus,
-  Trash2,
-  FolderOpen,
-  FolderClosed,
-} from 'lucide-react';
+import { Edit, Plus, Trash2, FolderOpen, FolderClosed } from 'lucide-react';
 import { Milestone } from '../utils/dateUtils';
 
 interface MilestoneContextMenuProps {
@@ -37,88 +31,41 @@ export function MilestoneContextMenu({
   disabled = false,
 }: MilestoneContextMenuProps) {
   if (disabled) {
-    console.log('🚫 MilestoneContextMenu DISABLED for milestone:', milestone.milestoneName);
     return <>{children}</>;
   }
 
-  console.log('🎯 MilestoneContextMenu RENDERED for milestone:', milestone.milestoneName, {
-    hasEditHandler: !!onEdit,
-    hasAddTaskHandler: !!onAddTask,
-    hasToggleHandler: !!onToggle,
-    hasDeleteHandler: !!onDelete,
-    milestoneId: milestone.milestoneId,
-    taskCount: milestone.tasks.length,
-    isExpanded
-  });
-
   const handleEdit = (e: Event) => {
-    console.log('✏️ EDIT MILESTONE HANDLER TRIGGERED for:', milestone.milestoneName);
     e.preventDefault();
     if (onEdit) {
-      console.log('✅ Calling onEdit handler');
       onEdit(milestone);
-    } else {
-      console.log('❌ No onEdit handler available');
     }
   };
 
   const handleAddTask = (e: Event) => {
-    console.log('➕ ADD TASK HANDLER TRIGGERED for milestone:', milestone.milestoneName);
     e.preventDefault();
     if (onAddTask) {
-      console.log('✅ Calling onAddTask handler');
       onAddTask(milestone);
-    } else {
-      console.log('❌ No onAddTask handler available');
     }
   };
 
   const handleToggle = (e: Event) => {
-    console.log('🔄 TOGGLE MILESTONE HANDLER TRIGGERED for:', milestone.milestoneName);
     e.preventDefault();
     if (onToggle) {
-      console.log('✅ Calling onToggle handler');
       onToggle(milestone);
-    } else {
-      console.log('❌ No onToggle handler available');
     }
   };
 
   const handleDelete = (e: Event) => {
-    console.log('🗑️ DELETE MILESTONE HANDLER TRIGGERED for:', milestone.milestoneName);
     e.preventDefault();
     if (onDelete) {
-      console.log('✅ Calling onDelete handler');
       onDelete(milestone);
-    } else {
-      console.log('❌ No onDelete handler available');
     }
   };
 
   return (
-    <ContextMenu 
-      onOpenChange={(open) => {
-        console.log('🔄 MilestoneContextMenu state changed:', { 
-          open, 
-          milestoneName: milestone.milestoneName,
-          milestoneId: milestone.milestoneId 
-        });
-      }}
-    >
+    <ContextMenu>
       <ContextMenuTrigger asChild>
-        <div 
-          onContextMenu={(e) => {
-            console.log('🖱️ RIGHT-CLICK DETECTED on MilestoneContextMenu wrapper:', milestone.milestoneName, {
-              event: e.type,
-              button: e.button,
-              clientX: e.clientX,
-              clientY: e.clientY,
-              target: (e.target as HTMLElement).tagName,
-              note: 'NOT calling preventDefault - let Radix handle it'
-            });
-            // Don't call e.preventDefault() - let Radix UI handle the context menu
-          }}
-        >
+        <div>
           {children}
         </div>
       </ContextMenuTrigger>
@@ -135,7 +82,7 @@ export function MilestoneContextMenu({
             <ContextMenuSeparator />
           </>
         )}
-        
+
         {onToggle && (
           <ContextMenuItem
             onSelect={handleToggle}
@@ -154,7 +101,7 @@ export function MilestoneContextMenu({
             )}
           </ContextMenuItem>
         )}
-        
+
         {onAddTask && (
           <>
             {onToggle && <ContextMenuSeparator />}
@@ -167,7 +114,7 @@ export function MilestoneContextMenu({
             </ContextMenuItem>
           </>
         )}
-        
+
         {onDelete && milestone.tasks.length === 0 && (
           <>
             <ContextMenuSeparator />
@@ -180,7 +127,7 @@ export function MilestoneContextMenu({
             </ContextMenuItem>
           </>
         )}
-        
+
         {/* Show warning if trying to delete milestone with tasks */}
         {onDelete && milestone.tasks.length > 0 && (
           <>
@@ -190,7 +137,8 @@ export function MilestoneContextMenu({
               className="flex items-center gap-2 text-muted-foreground cursor-not-allowed"
             >
               <Trash2 className="h-4 w-4" />
-              Cannot delete (has {milestone.tasks.length} task{milestone.tasks.length !== 1 ? 's' : ''})
+              Cannot delete (has {milestone.tasks.length} task
+              {milestone.tasks.length !== 1 ? 's' : ''})
             </ContextMenuItem>
           </>
         )}

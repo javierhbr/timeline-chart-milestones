@@ -6,18 +6,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '../ui/tooltip';
-import {
-  Calendar,
-  Clock,
-  Users,
-  Edit,
-  Zap,
-} from 'lucide-react';
-import {
-  Task,
-  teamColors,
-  getTaskDependencyInfo,
-} from '../../utils/dateUtils';
+import { Calendar, Clock, Users, Edit, Zap } from 'lucide-react';
+import { Task, teamColors, getTaskDependencyInfo } from '../../utils/dateUtils';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { Milestone } from '../../utils/dateUtils';
@@ -35,11 +25,11 @@ interface TaskBarProps {
   onEditClick: (task: Task) => void;
 }
 
-export function TaskBar({ 
-  task, 
+export function TaskBar({
+  task,
   milestones,
   onMouseDown,
-  onEditClick
+  onEditClick,
 }: TaskBarProps) {
   if (!task.startDate || !task.endDate) {
     return null;
@@ -68,7 +58,7 @@ export function TaskBar({
             }}
             onMouseDown={e => {
               if (e.button === 2) return;
-              
+
               const target = e.target as HTMLElement;
               if (target.closest('button[title="Edit task"]')) {
                 return;

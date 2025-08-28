@@ -53,14 +53,24 @@ function getAvailableTeams(milestones: Milestone[]): string[] {
       }
     });
   });
-  
+
   const teamsArray = Array.from(teams).sort();
-  
+
   // Add default teams if none exist
   if (teamsArray.length === 0) {
-    return ['Dev', 'QA', 'Design', 'PM', 'UX', 'UI', 'Backend', 'Frontend', 'Marketing'];
+    return [
+      'Dev',
+      'QA',
+      'Design',
+      'PM',
+      'UX',
+      'UI',
+      'Backend',
+      'Frontend',
+      'Marketing',
+    ];
   }
-  
+
   return teamsArray;
 }
 
@@ -73,14 +83,22 @@ function getAvailableSprints(milestones: Milestone[]): string[] {
       }
     });
   });
-  
+
   const sprintsArray = Array.from(sprints).sort();
-  
+
   // Add default sprints if none exist
   if (sprintsArray.length === 0) {
-    return ['Sprint 1', 'Sprint 2', 'Sprint 3', 'Sprint 4', 'Sprint 5', 'Backlog', 'Icebox'];
+    return [
+      'Sprint 1',
+      'Sprint 2',
+      'Sprint 3',
+      'Sprint 4',
+      'Sprint 5',
+      'Backlog',
+      'Icebox',
+    ];
   }
-  
+
   return sprintsArray;
 }
 
@@ -104,23 +122,20 @@ export function TaskEditModal({
   const [dependencyPopoverOpen, setDependencyPopoverOpen] = useState(false);
 
   // Get dynamic teams and sprints from project data - memoize to prevent infinite re-renders
-  const availableTeams = React.useMemo(() => getAvailableTeams(milestones), [milestones]);
-  const availableSprints = React.useMemo(() => getAvailableSprints(milestones), [milestones]);
+  const availableTeams = React.useMemo(
+    () => getAvailableTeams(milestones),
+    [milestones]
+  );
+  const availableSprints = React.useMemo(
+    () => getAvailableSprints(milestones),
+    [milestones]
+  );
 
   // Update form when task changes or modal opens/closes
   useEffect(() => {
-    console.log('🎯 TaskEditModal useEffect triggered:', { 
-      isOpen, 
-      hasTask: !!task, 
-      taskName: task?.name,
-      availableTeamsCount: availableTeams.length,
-      availableSprintsCount: availableSprints.length 
-    });
-    
     if (isOpen) {
       if (task) {
         // Edit mode - populate with existing task data
-        console.log('✏️ EDIT MODE - populating form with task data');
         setFormData({
           name: task.name,
           description: task.description,
@@ -131,10 +146,11 @@ export function TaskEditModal({
         });
       } else {
         // Create mode - use default values
-        const defaultTeam = availableTeams.length > 0 ? availableTeams[0] : 'Dev';
-        const defaultSprint = availableSprints.length > 0 ? availableSprints[0] : '';
-        
-        console.log('➕ CREATE MODE - setting default form values:', { defaultTeam, defaultSprint });
+        const defaultTeam =
+          availableTeams.length > 0 ? availableTeams[0] : 'Dev';
+        const defaultSprint =
+          availableSprints.length > 0 ? availableSprints[0] : '';
+
         setFormData({
           name: '',
           description: '',
@@ -217,12 +233,10 @@ export function TaskEditModal({
   const availableTasks = milestones.flatMap(milestone =>
     milestone.tasks.filter(t => t.taskId !== task?.taskId)
   );
-  
-  
+
   // Debug logging for component state
 
   const handleAddDependency = (taskId: string) => {
-    
     if (!formData.dependsOn.includes(taskId)) {
       setFormData(prev => ({
         ...prev,
@@ -286,10 +300,9 @@ export function TaskEditModal({
               {task ? 'Edit Task' : 'Create New Task'}
             </DialogTitle>
             <DialogDescription>
-              {task 
+              {task
                 ? 'Modify task details, assign teams, set duration, and manage dependencies.'
-                : 'Create a new task with details, team assignment, duration, and dependencies.'
-              }
+                : 'Create a new task with details, team assignment, duration, and dependencies.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -490,12 +503,13 @@ export function TaskEditModal({
                         aria-expanded={dependencyPopoverOpen}
                         className="w-full justify-between h-10 font-normal text-sm"
                       >
-                        Add task dependency... ({availableTasks.length} available)
+                        Add task dependency... ({availableTasks.length}{' '}
+                        available)
                         <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent 
-                      className="w-full p-0" 
+                    <PopoverContent
+                      className="w-full p-0"
                       style={{ zIndex: 10001, maxHeight: '400px' }}
                     >
                       <Command>
@@ -513,7 +527,9 @@ export function TaskEditModal({
                               <CommandItem
                                 key={task.taskId}
                                 value={`${task.name} ${task.taskId} ${task.team}`}
-                                onSelect={() => handleAddDependency(task.taskId)}
+                                onSelect={() =>
+                                  handleAddDependency(task.taskId)
+                                }
                                 className="cursor-pointer"
                               >
                                 <div className="flex items-center justify-between w-full gap-2">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -34,13 +34,13 @@ export function SplitTaskDialog({
   onClose,
   onConfirm,
   task,
-  milestones,
+  _milestones,
 }: SplitTaskDialogProps) {
   const [splitConfig, setSplitConfig] = useState<SplitConfig>({
     splits: [
       { name: '', duration: 1 },
-      { name: '', duration: 1 }
-    ]
+      { name: '', duration: 1 },
+    ],
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
@@ -56,8 +56,8 @@ export function SplitTaskDialog({
       setSplitConfig({
         splits: Array.from({ length: splitCount }, (_, index) => ({
           name: `${task.name} - Part ${index + 1}`,
-          duration: baseDuration + (index < remainder ? 1 : 0)
-        }))
+          duration: baseDuration + (index < remainder ? 1 : 0),
+        })),
       });
       setErrors([]);
     }
@@ -67,7 +67,7 @@ export function SplitTaskDialog({
 
   const validateSplits = (): string[] => {
     const errors: string[] = [];
-    
+
     if (splitConfig.splits.length < 2) {
       errors.push('At least 2 split tasks are required');
     }
@@ -77,13 +77,20 @@ export function SplitTaskDialog({
         errors.push(`Split task ${index + 1} needs a name`);
       }
       if (split.duration < 1) {
-        errors.push(`Split task ${index + 1} must have at least 1 day duration`);
+        errors.push(
+          `Split task ${index + 1} must have at least 1 day duration`
+        );
       }
     });
 
-    const totalDuration = splitConfig.splits.reduce((sum, split) => sum + split.duration, 0);
+    const totalDuration = splitConfig.splits.reduce(
+      (sum, split) => sum + split.duration,
+      0
+    );
     if (totalDuration !== task.durationDays) {
-      errors.push(`Total duration (${totalDuration} days) must equal original task duration (${task.durationDays} days)`);
+      errors.push(
+        `Total duration (${totalDuration} days) must equal original task duration (${task.durationDays} days)`
+      );
     }
 
     return errors;
@@ -114,29 +121,36 @@ export function SplitTaskDialog({
         ...prev.splits,
         {
           name: `${task.name} - Part ${prev.splits.length + 1}`,
-          duration: 1
-        }
-      ]
+          duration: 1,
+        },
+      ],
     }));
   };
 
   const removeSplit = (index: number) => {
     if (splitConfig.splits.length <= 2) return; // Minimum 2 splits
-    
+
     setSplitConfig(prev => ({
-      splits: prev.splits.filter((_, i) => i !== index)
+      splits: prev.splits.filter((_, i) => i !== index),
     }));
   };
 
-  const updateSplit = (index: number, field: 'name' | 'duration', value: string | number) => {
+  const updateSplit = (
+    index: number,
+    field: 'name' | 'duration',
+    value: string | number
+  ) => {
     setSplitConfig(prev => ({
-      splits: prev.splits.map((split, i) => 
+      splits: prev.splits.map((split, i) =>
         i === index ? { ...split, [field]: value } : split
-      )
+      ),
     }));
   };
 
-  const totalDuration = splitConfig.splits.reduce((sum, split) => sum + split.duration, 0);
+  const totalDuration = splitConfig.splits.reduce(
+    (sum, split) => sum + split.duration,
+    0
+  );
   const durationDiff = totalDuration - task.durationDays;
 
   return (
@@ -148,7 +162,8 @@ export function SplitTaskDialog({
             Split Task
           </DialogTitle>
           <DialogDescription>
-            Split "{task.name}" into multiple sequential tasks. Each split will depend on the previous one.
+            Split "{task.name}" into multiple sequential tasks. Each split will
+            depend on the previous one.
           </DialogDescription>
         </DialogHeader>
 
@@ -160,9 +175,8 @@ export function SplitTaskDialog({
               <div className="text-sm">
                 <div className="font-medium">Original Task:</div>
                 <div className="text-muted-foreground mt-1">
-                  • Name: {task.name}
-                  • Duration: {task.durationDays} days
-                  • Team: {task.team}
+                  • Name: {task.name}• Duration: {task.durationDays} days •
+                  Team: {task.team}
                 </div>
               </div>
             </div>
@@ -185,7 +199,10 @@ export function SplitTaskDialog({
             </div>
 
             {splitConfig.splits.map((split, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 border rounded-lg">
+              <div
+                key={index}
+                className="flex items-center gap-3 p-3 border rounded-lg"
+              >
                 <div className="flex-1 space-y-2">
                   <div>
                     <Label htmlFor={`split-name-${index}`} className="text-sm">
@@ -194,12 +211,15 @@ export function SplitTaskDialog({
                     <Input
                       id={`split-name-${index}`}
                       value={split.name}
-                      onChange={(e) => updateSplit(index, 'name', e.target.value)}
+                      onChange={e => updateSplit(index, 'name', e.target.value)}
                       placeholder={`${task.name} - Part ${index + 1}`}
                     />
                   </div>
                   <div className="w-32">
-                    <Label htmlFor={`split-duration-${index}`} className="text-sm">
+                    <Label
+                      htmlFor={`split-duration-${index}`}
+                      className="text-sm"
+                    >
                       Duration (days)
                     </Label>
                     <Input
@@ -207,11 +227,17 @@ export function SplitTaskDialog({
                       type="number"
                       min="1"
                       value={split.duration}
-                      onChange={(e) => updateSplit(index, 'duration', parseInt(e.target.value) || 1)}
+                      onChange={e =>
+                        updateSplit(
+                          index,
+                          'duration',
+                          parseInt(e.target.value) || 1
+                        )
+                      }
                     />
                   </div>
                 </div>
-                
+
                 {splitConfig.splits.length > 2 && (
                   <Button
                     type="button"
@@ -228,9 +254,13 @@ export function SplitTaskDialog({
           </div>
 
           {/* Duration Summary */}
-          <div className={`p-3 rounded-lg border ${
-            durationDiff === 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
-          }`}>
+          <div
+            className={`p-3 rounded-lg border ${
+              durationDiff === 0
+                ? 'bg-green-50 border-green-200'
+                : 'bg-yellow-50 border-yellow-200'
+            }`}
+          >
             <div className="flex items-start gap-2">
               {durationDiff === 0 ? (
                 <CheckCircle className="w-4 h-4 text-green-600 mt-0.5" />
@@ -240,9 +270,10 @@ export function SplitTaskDialog({
               <div className="text-sm">
                 <div className="font-medium">Duration Summary:</div>
                 <div className="mt-1">
-                  • Original: {task.durationDays} days
-                  • Split total: {totalDuration} days
-                  • Difference: {durationDiff > 0 ? '+' : ''}{durationDiff} days
+                  • Original: {task.durationDays} days • Split total:{' '}
+                  {totalDuration} days • Difference:{' '}
+                  {durationDiff > 0 ? '+' : ''}
+                  {durationDiff} days
                 </div>
               </div>
             </div>
@@ -254,7 +285,9 @@ export function SplitTaskDialog({
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-red-600 mt-0.5" />
                 <div className="text-sm text-red-800">
-                  <div className="font-medium">Please fix the following issues:</div>
+                  <div className="font-medium">
+                    Please fix the following issues:
+                  </div>
                   <ul className="mt-1 list-disc list-inside space-y-1">
                     {errors.map((error, index) => (
                       <li key={index}>{error}</li>
@@ -267,11 +300,7 @@ export function SplitTaskDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>

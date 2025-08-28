@@ -11,18 +11,16 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import {
-  Edit,
-  X,
-  CheckCircle,
-  AlertCircle,
-} from 'lucide-react';
+import { Edit, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { Milestone } from '../utils/dateUtils';
 
 interface MilestoneEditDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (milestoneId: string, updates: { milestoneName: string; description?: string }) => void;
+  onConfirm: (
+    milestoneId: string,
+    updates: { milestoneName: string; description?: string }
+  ) => void;
   milestone: Milestone | null;
   milestones: Milestone[]; // For name uniqueness validation
 }
@@ -56,17 +54,19 @@ export function MilestoneEditDialog({
 
   const validateForm = (): string[] => {
     const errors: string[] = [];
-    
+
     if (!formData.milestoneName.trim()) {
       errors.push('Milestone name is required');
     }
 
     // Check for name uniqueness (excluding current milestone)
-    const nameExists = milestones.some(m => 
-      m.milestoneId !== milestone.milestoneId && 
-      m.milestoneName.toLowerCase() === formData.milestoneName.trim().toLowerCase()
+    const nameExists = milestones.some(
+      m =>
+        m.milestoneId !== milestone.milestoneId &&
+        m.milestoneName.toLowerCase() ===
+          formData.milestoneName.trim().toLowerCase()
     );
-    
+
     if (nameExists) {
       errors.push('A milestone with this name already exists');
     }
@@ -104,8 +104,8 @@ export function MilestoneEditDialog({
     }
   };
 
-  const hasChanges = 
-    formData.milestoneName !== milestone.milestoneName || 
+  const hasChanges =
+    formData.milestoneName !== milestone.milestoneName ||
     formData.description !== ((milestone as any).description || '');
 
   return (
@@ -129,8 +129,7 @@ export function MilestoneEditDialog({
               <div className="text-sm">
                 <div className="font-medium">Milestone Details:</div>
                 <div className="text-muted-foreground mt-1">
-                  • Tasks: {milestone.tasks.length}
-                  • ID: {milestone.milestoneId}
+                  • Tasks: {milestone.tasks.length}• ID: {milestone.milestoneId}
                 </div>
               </div>
             </div>
@@ -144,9 +143,11 @@ export function MilestoneEditDialog({
             <Input
               id="milestoneName"
               value={formData.milestoneName}
-              onChange={(e) => handleInputChange('milestoneName', e.target.value)}
+              onChange={e => handleInputChange('milestoneName', e.target.value)}
               placeholder="Enter milestone name"
-              className={errors.some(e => e.includes('name')) ? 'border-red-500' : ''}
+              className={
+                errors.some(e => e.includes('name')) ? 'border-red-500' : ''
+              }
             />
           </div>
 
@@ -156,7 +157,7 @@ export function MilestoneEditDialog({
             <Textarea
               id="description"
               value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
+              onChange={e => handleInputChange('description', e.target.value)}
               placeholder="Enter milestone description..."
               rows={3}
               className="resize-none"
@@ -172,10 +173,17 @@ export function MilestoneEditDialog({
                   <div className="font-medium">Pending Changes:</div>
                   <ul className="mt-1 space-y-1">
                     {formData.milestoneName !== milestone.milestoneName && (
-                      <li className="text-xs">• Name: "{milestone.milestoneName}" → "{formData.milestoneName}"</li>
+                      <li className="text-xs">
+                        • Name: "{milestone.milestoneName}" → "
+                        {formData.milestoneName}"
+                      </li>
                     )}
-                    {formData.description !== ((milestone as any).description || '') && (
-                      <li className="text-xs">• Description: {formData.description ? 'Updated' : 'Removed'}</li>
+                    {formData.description !==
+                      ((milestone as any).description || '') && (
+                      <li className="text-xs">
+                        • Description:{' '}
+                        {formData.description ? 'Updated' : 'Removed'}
+                      </li>
                     )}
                   </ul>
                 </div>
@@ -189,7 +197,9 @@ export function MilestoneEditDialog({
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 text-red-600 mt-0.5" />
                 <div className="text-sm text-red-800">
-                  <div className="font-medium">Please fix the following issues:</div>
+                  <div className="font-medium">
+                    Please fix the following issues:
+                  </div>
                   <ul className="mt-1 list-disc list-inside space-y-1">
                     {errors.map((error, index) => (
                       <li key={index}>{error}</li>
@@ -202,11 +212,7 @@ export function MilestoneEditDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>

@@ -51,9 +51,7 @@ export function TimelineHeader({
           }}
         >
           <div className="p-4 text-left bg-muted/50">
-            <h3 className="text-lg font-semibold">
-              Milestones and Tasks
-            </h3>
+            <h3 className="text-lg font-semibold">Milestones and Tasks</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Project hierarchical organization
             </p>

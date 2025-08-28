@@ -25,15 +25,15 @@ import { MoveTaskDialog } from './MoveTaskDialog';
 import { MilestoneEditDialog } from './MilestoneEditDialog';
 import { MilestoneCreateDialog } from './MilestoneCreateDialog';
 import { format, parseISO, addDays, differenceInDays } from 'date-fns';
-import { 
-  cloneTask, 
-  addClonedTaskToMilestone, 
+import {
+  cloneTask,
+  addClonedTaskToMilestone,
   splitTask,
   moveTaskBetweenMilestones,
   updateDependenciesAfterSplit,
   generateUniqueTaskId,
   CloneOptions,
-  SplitConfig 
+  SplitConfig,
 } from '../utils/taskOperations';
 import { createNewMilestone } from '../utils/milestoneOperations';
 
@@ -73,11 +73,16 @@ export function GanttTimeline({
   const [isSplitDialogOpen, setIsSplitDialogOpen] = useState(false);
   const [moveTaskState, setMoveTaskState] = useState<Task | null>(null);
   const [isMoveDialogOpen, setIsMoveDialogOpen] = useState(false);
-  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(null);
-  const [isMilestoneEditDialogOpen, setIsMilestoneEditDialogOpen] = useState(false);
-  const [creatingTaskForMilestone, setCreatingTaskForMilestone] = useState<Milestone | null>(null);
+  const [editingMilestone, setEditingMilestone] = useState<Milestone | null>(
+    null
+  );
+  const [isMilestoneEditDialogOpen, setIsMilestoneEditDialogOpen] =
+    useState(false);
+  const [creatingTaskForMilestone, setCreatingTaskForMilestone] =
+    useState<Milestone | null>(null);
   const [isTaskCreateDialogOpen, setIsTaskCreateDialogOpen] = useState(false);
-  const [isMilestoneCreateDialogOpen, setIsMilestoneCreateDialogOpen] = useState(false);
+  const [isMilestoneCreateDialogOpen, setIsMilestoneCreateDialogOpen] =
+    useState(false);
   const [currentMilestoneId, setCurrentMilestoneId] = useState<string>('');
   const [zoomLevel, setZoomLevel] = useState<number>(32); // Píxeles por día, default 32px
   const [nameColumnWidth, setNameColumnWidth] = useState<number>(200); // Width in pixels for name column
@@ -111,260 +116,248 @@ export function GanttTimeline({
   const ganttContainerRef = useRef<HTMLDivElement>(null);
 
   // Clone handlers
-  const handleCloneTask = useCallback((task: Task) => {
-    console.log('🔄 CLONE TASK HANDLER CALLED:', {
-      taskName: task.name,
-      taskId: task.taskId
-    });
-    
-    const milestone = milestones.find(m => 
-      m.tasks.some(t => t.taskId === task.taskId)
-    );
-    
-    if (milestone) {
-      console.log('✅ Found milestone for task, opening clone dialog:', milestone.milestoneName);
-      setCurrentMilestoneId(milestone.milestoneId);
-      setCloneTaskState(task);
-      setIsCloneDialogOpen(true);
-    } else {
-      console.log('❌ Could not find milestone for task');
-    }
-  }, [milestones]);
+  const handleCloneTask = useCallback(
+    (task: Task) => {
+      const milestone = milestones.find(m =>
+        m.tasks.some(t => t.taskId === task.taskId)
+      );
 
-  const handleConfirmClone = useCallback(async (options: CloneOptions) => {
-    if (!cloneTaskState || !onUpdateMilestones) return;
-    
-    const clonedTaskResult = cloneTask(cloneTaskState, milestones, options);
-    const updatedMilestones = addClonedTaskToMilestone(
-      milestones, 
-      clonedTaskResult, 
-      options.targetMilestoneId
-    );
-    
-    onUpdateMilestones(updatedMilestones);
-    
-    if (onRecalculateTimeline) {
-      onRecalculateTimeline();
-    }
-  }, [cloneTaskState, milestones, onUpdateMilestones, onRecalculateTimeline]);
+      if (milestone) {
+        setCurrentMilestoneId(milestone.milestoneId);
+        setCloneTaskState(task);
+        setIsCloneDialogOpen(true);
+      } else {
+        console.error('Could not find milestone for task:', task.taskId);
+      }
+    },
+    [milestones]
+  );
 
-  const handleConfirmSplit = useCallback((config: SplitConfig) => {
-    if (!splitTaskState || !onUpdateMilestones) return;
-    
-    console.log('✂️ SPLITTING TASK:', splitTaskState.name, 'into', config.splits.length, 'parts');
-    
-    // Create split tasks
-    const splitTasks = splitTask(splitTaskState, milestones, config);
-    
-    // Remove original task and add split tasks
-    const updatedMilestones = milestones.map(milestone => ({
-      ...milestone,
-      tasks: milestone.tasks
-        .filter(t => t.taskId !== splitTaskState.taskId)
-        .concat(milestone.milestoneId === currentMilestoneId ? splitTasks : [])
-    }));
-    
-    // Update dependencies that pointed to the original task to point to the last split task
-    const finalMilestones = updateDependenciesAfterSplit(
-      updatedMilestones,
-      splitTaskState.taskId,
-      splitTasks
-    );
-    
-    onUpdateMilestones(finalMilestones);
-    
-    if (onRecalculateTimeline) {
-      onRecalculateTimeline();
-    }
-  }, [splitTaskState, milestones, currentMilestoneId, onUpdateMilestones, onRecalculateTimeline]);
+  const handleConfirmClone = useCallback(
+    async (options: CloneOptions) => {
+      if (!cloneTaskState || !onUpdateMilestones) return;
 
-  const handleConfirmMove = useCallback((fromMilestoneId: string, toMilestoneId: string) => {
-    if (!moveTaskState || !onUpdateMilestones) return;
-    
-    console.log('🚚 MOVING TASK:', moveTaskState.name, 'from', fromMilestoneId, 'to', toMilestoneId);
-    
-    const updatedMilestones = moveTaskBetweenMilestones(
+      const clonedTaskResult = cloneTask(cloneTaskState, milestones, options);
+      const updatedMilestones = addClonedTaskToMilestone(
+        milestones,
+        clonedTaskResult,
+        options.targetMilestoneId
+      );
+
+      onUpdateMilestones(updatedMilestones);
+
+      if (onRecalculateTimeline) {
+        onRecalculateTimeline();
+      }
+    },
+    [cloneTaskState, milestones, onUpdateMilestones, onRecalculateTimeline]
+  );
+
+  const handleConfirmSplit = useCallback(
+    (config: SplitConfig) => {
+      if (!splitTaskState || !onUpdateMilestones) return;
+
+      // Create split tasks
+      const splitTasks = splitTask(splitTaskState, milestones, config);
+
+      // Remove original task and add split tasks
+      const updatedMilestones = milestones.map(milestone => ({
+        ...milestone,
+        tasks: milestone.tasks
+          .filter(t => t.taskId !== splitTaskState.taskId)
+          .concat(
+            milestone.milestoneId === currentMilestoneId ? splitTasks : []
+          ),
+      }));
+
+      // Update dependencies that pointed to the original task to point to the last split task
+      const finalMilestones = updateDependenciesAfterSplit(
+        updatedMilestones,
+        splitTaskState.taskId,
+        splitTasks
+      );
+
+      onUpdateMilestones(finalMilestones);
+
+      if (onRecalculateTimeline) {
+        onRecalculateTimeline();
+      }
+    },
+    [
+      splitTaskState,
       milestones,
-      moveTaskState.taskId,
-      fromMilestoneId,
-      toMilestoneId
-    );
-    
-    onUpdateMilestones(updatedMilestones);
-    
-    if (onRecalculateTimeline) {
-      onRecalculateTimeline();
-    }
-  }, [moveTaskState, milestones, onUpdateMilestones, onRecalculateTimeline]);
+      currentMilestoneId,
+      onUpdateMilestones,
+      onRecalculateTimeline,
+    ]
+  );
+
+  const handleConfirmMove = useCallback(
+    (fromMilestoneId: string, toMilestoneId: string) => {
+      if (!moveTaskState || !onUpdateMilestones) return;
+
+      const updatedMilestones = moveTaskBetweenMilestones(
+        milestones,
+        moveTaskState.taskId,
+        fromMilestoneId,
+        toMilestoneId
+      );
+
+      onUpdateMilestones(updatedMilestones);
+
+      if (onRecalculateTimeline) {
+        onRecalculateTimeline();
+      }
+    },
+    [moveTaskState, milestones, onUpdateMilestones, onRecalculateTimeline]
+  );
 
   // Milestone handlers
   const handleEditMilestone = useCallback((milestone: Milestone) => {
-    console.log('✏️ EDIT MILESTONE CLICKED:', {
-      milestoneName: milestone.milestoneName,
-      milestoneId: milestone.milestoneId,
-      taskCount: milestone.tasks.length
-    });
-    
     setEditingMilestone(milestone);
     setIsMilestoneEditDialogOpen(true);
   }, []);
 
-  const handleConfirmMilestoneEdit = useCallback((milestoneId: string, updates: { milestoneName: string; description?: string }) => {
-    if (!onUpdateMilestones) return;
-    
-    console.log('✅ UPDATING MILESTONE:', milestoneId, updates);
-    
-    const updatedMilestones = milestones.map(milestone => 
-      milestone.milestoneId === milestoneId 
-        ? { ...milestone, ...updates }
-        : milestone
-    );
-    
-    onUpdateMilestones(updatedMilestones);
-  }, [milestones, onUpdateMilestones]);
+  const handleConfirmMilestoneEdit = useCallback(
+    (
+      milestoneId: string,
+      updates: { milestoneName: string; description?: string }
+    ) => {
+      if (!onUpdateMilestones) return;
+
+      const updatedMilestones = milestones.map(milestone =>
+        milestone.milestoneId === milestoneId
+          ? { ...milestone, ...updates }
+          : milestone
+      );
+
+      onUpdateMilestones(updatedMilestones);
+    },
+    [milestones, onUpdateMilestones]
+  );
 
   const handleCreateMilestone = useCallback(() => {
-    console.log('➕ CREATE MILESTONE CLICKED');
     setIsMilestoneCreateDialogOpen(true);
   }, []);
 
-  const handleConfirmMilestoneCreate = useCallback((milestoneName: string, description?: string) => {
-    if (!onUpdateMilestones) return;
-    
-    console.log('✅ CREATING NEW MILESTONE:', { milestoneName, description });
-    
-    const newMilestone = createNewMilestone(milestoneName, milestones, description);
-    const updatedMilestones = [...milestones, newMilestone];
-    
-    onUpdateMilestones(updatedMilestones);
-    
-    if (onRecalculateTimeline) {
-      onRecalculateTimeline();
-    }
-  }, [milestones, onUpdateMilestones, onRecalculateTimeline]);
+  const handleConfirmMilestoneCreate = useCallback(
+    (milestoneName: string, description?: string) => {
+      if (!onUpdateMilestones) return;
+
+      const newMilestone = createNewMilestone(
+        milestoneName,
+        milestones,
+        description
+      );
+      const updatedMilestones = [...milestones, newMilestone];
+
+      onUpdateMilestones(updatedMilestones);
+
+      if (onRecalculateTimeline) {
+        onRecalculateTimeline();
+      }
+    },
+    [milestones, onUpdateMilestones, onRecalculateTimeline]
+  );
 
   const handleAddTaskToMilestone = useCallback((milestone: Milestone) => {
-    console.log('➕ ADD TASK TO MILESTONE CLICKED:', {
-      milestoneName: milestone.milestoneName,
-      milestoneId: milestone.milestoneId,
-      currentTaskCount: milestone.tasks.length
-    });
-    
-    console.log('🔧 SETTING DIALOG STATE:', {
-      creatingTaskForMilestone: milestone,
-      isTaskCreateDialogOpen: true,
-      currentMilestoneId: milestone.milestoneId
-    });
-    
     setCreatingTaskForMilestone(milestone);
     setCurrentMilestoneId(milestone.milestoneId);
     setIsTaskCreateDialogOpen(true);
-    
-    // Debug: Check state immediately after
-    setTimeout(() => {
-      console.log('📊 DIALOG STATE CHECK after 100ms');
-    }, 100);
   }, []);
 
-  const handleConfirmTaskCreate = useCallback((taskId: string, updates: Partial<Task>) => {
-    if (!creatingTaskForMilestone || !onUpdateMilestones) return;
-    
-    console.log('✅ CREATING NEW TASK:', updates.name, 'for milestone:', creatingTaskForMilestone.milestoneName);
-    
-    // Generate unique task ID
-    const newTaskId = generateUniqueTaskId(milestones);
-    
-    // Create new task with all required fields
-    const newTask: Task = {
-      taskId: newTaskId,
-      name: updates.name || 'New Task',
-      description: updates.description || '',
-      team: updates.team || 'Dev',
-      sprint: updates.sprint || '',
-      durationDays: updates.durationDays || 1,
-      dependsOn: updates.dependsOn || [],
-      startDate: undefined, // Will be calculated
-      endDate: undefined, // Will be calculated
-    };
-    
-    // Add task to the specific milestone
-    const updatedMilestones = milestones.map(milestone => 
-      milestone.milestoneId === creatingTaskForMilestone.milestoneId
-        ? { ...milestone, tasks: [...milestone.tasks, newTask] }
-        : milestone
-    );
-    
-    onUpdateMilestones(updatedMilestones);
-    
-    if (onRecalculateTimeline) {
-      onRecalculateTimeline();
-    }
-  }, [creatingTaskForMilestone, milestones, onUpdateMilestones, onRecalculateTimeline]);
+  const handleConfirmTaskCreate = useCallback(
+    (taskId: string, updates: Partial<Task>) => {
+      if (!creatingTaskForMilestone || !onUpdateMilestones) return;
 
-  const handleSplitTask = useCallback((task: Task) => {
-    console.log('🔪 SPLIT TASK CLICKED:', {
-      taskName: task.name,
-      taskId: task.taskId,
-      team: task.team,
-      duration: task.durationDays
-    });
-    
-    const milestone = milestones.find(m => 
-      m.tasks.some(t => t.taskId === task.taskId)
-    );
-    
-    if (milestone) {
-      setCurrentMilestoneId(milestone.milestoneId);
-      setSplitTaskState(task);
-      setIsSplitDialogOpen(true);
-    }
-  }, [milestones]);
+      // Generate unique task ID
+      const newTaskId = generateUniqueTaskId(milestones);
 
-  const handleMoveTask = useCallback((task: Task) => {
-    console.log('📦 MOVE TASK CLICKED:', {
-      taskName: task.name,
-      taskId: task.taskId,
-      currentMilestone: milestones.find(m => m.tasks.some(t => t.taskId === task.taskId))?.milestoneName,
-      availableMilestones: milestones.map(m => m.milestoneName)
-    });
-    
-    const milestone = milestones.find(m => 
-      m.tasks.some(t => t.taskId === task.taskId)
-    );
-    
-    if (milestone) {
-      setCurrentMilestoneId(milestone.milestoneId);
-      setMoveTaskState(task);
-      setIsMoveDialogOpen(true);
-    }
-  }, [milestones]);
+      // Create new task with all required fields
+      const newTask: Task = {
+        taskId: newTaskId,
+        name: updates.name || 'New Task',
+        description: updates.description || '',
+        team: updates.team || 'Dev',
+        sprint: updates.sprint || '',
+        durationDays: updates.durationDays || 1,
+        dependsOn: updates.dependsOn || [],
+        startDate: undefined, // Will be calculated
+        endDate: undefined, // Will be calculated
+      };
 
-  const handleDeleteTask = useCallback((task: Task) => {
-    console.log('🗑️ DELETE TASK HANDLER CALLED:', {
-      taskName: task.name,
-      taskId: task.taskId,
-      hasUpdateMilestones: !!onUpdateMilestones
-    });
-    
-    if (!onUpdateMilestones) {
-      console.log('❌ No onUpdateMilestones handler available');
-      return;
-    }
-    
-    // Remove task from milestones
-    const updatedMilestones = milestones.map(milestone => ({
-      ...milestone,
-      tasks: milestone.tasks.filter(t => t.taskId !== task.taskId)
-    }));
-    
-    console.log('✅ Task deleted, updating milestones');
-    onUpdateMilestones(updatedMilestones);
-    
-    if (onRecalculateTimeline) {
-      console.log('✅ Recalculating timeline');
-      onRecalculateTimeline();
-    }
-  }, [milestones, onUpdateMilestones, onRecalculateTimeline]);
+      // Add task to the specific milestone
+      const updatedMilestones = milestones.map(milestone =>
+        milestone.milestoneId === creatingTaskForMilestone.milestoneId
+          ? { ...milestone, tasks: [...milestone.tasks, newTask] }
+          : milestone
+      );
+
+      onUpdateMilestones(updatedMilestones);
+
+      if (onRecalculateTimeline) {
+        onRecalculateTimeline();
+      }
+    },
+    [
+      creatingTaskForMilestone,
+      milestones,
+      onUpdateMilestones,
+      onRecalculateTimeline,
+    ]
+  );
+
+  const handleSplitTask = useCallback(
+    (task: Task) => {
+      const milestone = milestones.find(m =>
+        m.tasks.some(t => t.taskId === task.taskId)
+      );
+
+      if (milestone) {
+        setCurrentMilestoneId(milestone.milestoneId);
+        setSplitTaskState(task);
+        setIsSplitDialogOpen(true);
+      }
+    },
+    [milestones]
+  );
+
+  const handleMoveTask = useCallback(
+    (task: Task) => {
+      const milestone = milestones.find(m =>
+        m.tasks.some(t => t.taskId === task.taskId)
+      );
+
+      if (milestone) {
+        setCurrentMilestoneId(milestone.milestoneId);
+        setMoveTaskState(task);
+        setIsMoveDialogOpen(true);
+      }
+    },
+    [milestones]
+  );
+
+  const handleDeleteTask = useCallback(
+    (task: Task) => {
+      if (!onUpdateMilestones) {
+        console.error('No onUpdateMilestones handler available');
+        return;
+      }
+
+      // Remove task from milestones
+      const updatedMilestones = milestones.map(milestone => ({
+        ...milestone,
+        tasks: milestone.tasks.filter(t => t.taskId !== task.taskId),
+      }));
+
+      onUpdateMilestones(updatedMilestones);
+
+      if (onRecalculateTimeline) {
+        onRecalculateTimeline();
+      }
+    },
+    [milestones, onUpdateMilestones, onRecalculateTimeline]
+  );
 
   // Zoom functions
   const zoomIn = useCallback(() => {
@@ -412,23 +405,25 @@ export function GanttTimeline({
 
   // Sort milestones by custom order if available, otherwise by calculated start dates
   const sortedMilestones = useMemo(() => {
-    const milestonesWithIndex = milestones.map((milestone, originalIndex) => ({ 
-      milestone, 
-      originalIndex 
+    const milestonesWithIndex = milestones.map((milestone, originalIndex) => ({
+      milestone,
+      originalIndex,
     }));
 
     // If custom order is provided and contains milestone IDs, use it
     if (milestoneOrder && milestoneOrder.length > 0) {
       const orderMap = new Map(milestoneOrder.map((id, index) => [id, index]));
-      
+
       return milestonesWithIndex.sort((a, b) => {
-        const aOrder = orderMap.get(a.milestone.milestoneId) ?? Number.MAX_SAFE_INTEGER;
-        const bOrder = orderMap.get(b.milestone.milestoneId) ?? Number.MAX_SAFE_INTEGER;
-        
+        const aOrder =
+          orderMap.get(a.milestone.milestoneId) ?? Number.MAX_SAFE_INTEGER;
+        const bOrder =
+          orderMap.get(b.milestone.milestoneId) ?? Number.MAX_SAFE_INTEGER;
+
         if (aOrder !== bOrder) {
           return aOrder - bOrder;
         }
-        
+
         // Fall back to date sorting for milestones not in custom order
         const aDates = calculateMilestoneDates(a.milestone);
         const bDates = calculateMilestoneDates(b.milestone);
@@ -669,27 +664,35 @@ export function GanttTimeline({
   }, [resizeState, handleResizeMove, handleResizeEnd]);
 
   // Milestone drag and drop handlers
-  const handleMilestoneDragStart = useCallback((milestoneId: string, index: number) => {
-    console.log('🎯 MILESTONE DRAG START:', { milestoneId, index });
-    setMilestoneDragState({
-      draggedMilestoneId: milestoneId,
-      draggedIndex: index,
-      targetIndex: index,
-      isDragging: true,
-    });
-  }, []);
+  const handleMilestoneDragStart = useCallback(
+    (milestoneId: string, index: number) => {
+      setMilestoneDragState({
+        draggedMilestoneId: milestoneId,
+        draggedIndex: index,
+        targetIndex: index,
+        isDragging: true,
+      });
+    },
+    []
+  );
 
-  const handleMilestoneDragOver = useCallback((targetIndex: number) => {
-    if (!milestoneDragState) return;
-    
-    if (milestoneDragState.targetIndex !== targetIndex) {
-      console.log('🎯 MILESTONE DRAG OVER:', { targetIndex });
-      setMilestoneDragState(prev => prev ? {
-        ...prev,
-        targetIndex,
-      } : null);
-    }
-  }, [milestoneDragState]);
+  const handleMilestoneDragOver = useCallback(
+    (targetIndex: number) => {
+      if (!milestoneDragState) return;
+
+      if (milestoneDragState.targetIndex !== targetIndex) {
+        setMilestoneDragState(prev =>
+          prev
+            ? {
+                ...prev,
+                targetIndex,
+              }
+            : null
+        );
+      }
+    },
+    [milestoneDragState]
+  );
 
   const handleMilestoneDragEnd = useCallback(() => {
     if (!milestoneDragState || !onUpdateMilestoneOrder) {
@@ -697,30 +700,25 @@ export function GanttTimeline({
       return;
     }
 
-    console.log('🎯 MILESTONE DRAG END:', milestoneDragState);
-
     // Only reorder if position actually changed
     if (milestoneDragState.draggedIndex !== milestoneDragState.targetIndex) {
       // Always use the current sorted milestones order as the basis
-      const currentOrderedMilestones = sortedMilestones.map(({ milestone }) => milestone.milestoneId);
-      console.log('🔍 CURRENT ORDERED MILESTONES:', currentOrderedMilestones);
-      console.log('🔍 MILESTONE ORDER STATE:', milestoneOrder);
-      
+      const currentOrderedMilestones = sortedMilestones.map(
+        ({ milestone }) => milestone.milestoneId
+      );
       const newOrder = [...currentOrderedMilestones];
-      
+
       // Remove dragged item
       const [draggedId] = newOrder.splice(milestoneDragState.draggedIndex, 1);
-      
+
       // Insert at target position
       newOrder.splice(milestoneDragState.targetIndex, 0, draggedId);
-      
-      console.log('🔄 NEW MILESTONE ORDER:', newOrder);
-      console.log('🔄 DRAGGED ID:', draggedId);
+
       onUpdateMilestoneOrder(newOrder);
     }
 
     setMilestoneDragState(null);
-  }, [milestoneDragState, milestoneOrder, sortedMilestones, onUpdateMilestoneOrder]);
+  }, [milestoneDragState, sortedMilestones, onUpdateMilestoneOrder]);
 
   // Early return if no timeline data
   if (!timelineData) {
@@ -775,7 +773,6 @@ export function GanttTimeline({
     }
   };
 
-
   return (
     <>
       <div className="w-full">
@@ -824,15 +821,20 @@ export function GanttTimeline({
               <tbody ref={timelineRef}>
                 {sortedMilestones.map(({ milestone, originalIndex }, index) => {
                   const milestoneColor = getMilestoneColor(originalIndex);
-                  const isDragging = milestoneDragState?.draggedMilestoneId === milestone.milestoneId;
-                  const isDragTarget = milestoneDragState?.targetIndex === index;
+                  const isDragging =
+                    milestoneDragState?.draggedMilestoneId ===
+                    milestone.milestoneId;
+                  const isDragTarget =
+                    milestoneDragState?.targetIndex === index;
 
                   return (
                     <React.Fragment key={milestone.milestoneId}>
                       <MilestoneRow
                         milestone={milestone}
                         milestoneColor={milestoneColor}
-                        isExpanded={expandedMilestones.has(milestone.milestoneId)}
+                        isExpanded={expandedMilestones.has(
+                          milestone.milestoneId
+                        )}
                         timelineStart={timelineStart}
                         zoomLevel={zoomLevel}
                         dayColumnsLength={dayColumns.length}
@@ -841,14 +843,26 @@ export function GanttTimeline({
                         onEdit={handleEditMilestone}
                         onAddTask={handleAddTaskToMilestone}
                         onResizeStart={handleResizeStart}
-                        onDragStart={onUpdateMilestoneOrder ? handleMilestoneDragStart : undefined}
-                        onDragOver={onUpdateMilestoneOrder ? handleMilestoneDragOver : undefined}
-                        onDragEnd={onUpdateMilestoneOrder ? handleMilestoneDragEnd : undefined}
+                        onDragStart={
+                          onUpdateMilestoneOrder
+                            ? handleMilestoneDragStart
+                            : undefined
+                        }
+                        onDragOver={
+                          onUpdateMilestoneOrder
+                            ? handleMilestoneDragOver
+                            : undefined
+                        }
+                        onDragEnd={
+                          onUpdateMilestoneOrder
+                            ? handleMilestoneDragEnd
+                            : undefined
+                        }
                         dragIndex={index}
                         isDragging={isDragging}
                         isDragTarget={isDragTarget}
                       />
-                      
+
                       {expandedMilestones.has(milestone.milestoneId) &&
                         milestone.tasks
                           .filter(task => task.startDate && task.endDate)
@@ -867,7 +881,7 @@ export function GanttTimeline({
                               onSplit={handleSplitTask}
                               onMove={handleMoveTask}
                               onDelete={handleDeleteTask}
-                              onEdit={(task) => {
+                              onEdit={task => {
                                 setEditingTask(task);
                                 setIsEditModalOpen(true);
                               }}
@@ -902,7 +916,7 @@ export function GanttTimeline({
         }}
         milestones={milestones}
       />
-      
+
       <CloneTaskDialog
         task={cloneTaskState}
         isOpen={isCloneDialogOpen}
@@ -914,7 +928,7 @@ export function GanttTimeline({
         milestones={milestones}
         currentMilestoneId={currentMilestoneId}
       />
-      
+
       <SplitTaskDialog
         task={splitTaskState}
         isOpen={isSplitDialogOpen}
@@ -925,7 +939,7 @@ export function GanttTimeline({
         onConfirm={handleConfirmSplit}
         milestones={milestones}
       />
-      
+
       <MoveTaskDialog
         task={moveTaskState}
         isOpen={isMoveDialogOpen}
@@ -937,7 +951,7 @@ export function GanttTimeline({
         milestones={milestones}
         currentMilestoneId={currentMilestoneId}
       />
-      
+
       <MilestoneEditDialog
         milestone={editingMilestone}
         isOpen={isMilestoneEditDialogOpen}
@@ -948,24 +962,19 @@ export function GanttTimeline({
         onConfirm={handleConfirmMilestoneEdit}
         milestones={milestones}
       />
-      
+
       {/* Task Create Dialog - Uses TaskEditModal in create mode */}
-      {console.log('🖥️ RENDERING TaskEditModal (CREATE MODE):', { 
-        isTaskCreateDialogOpen, 
-        creatingTaskForMilestone: creatingTaskForMilestone?.milestoneName 
-      })}
       <TaskEditModal
         task={null} // null indicates create mode
         isOpen={isTaskCreateDialogOpen}
         onClose={() => {
-          console.log('❌ TASK CREATE DIALOG CLOSED');
           setIsTaskCreateDialogOpen(false);
           setCreatingTaskForMilestone(null);
         }}
         onSave={handleConfirmTaskCreate}
         milestones={milestones}
       />
-      
+
       <MilestoneCreateDialog
         isOpen={isMilestoneCreateDialogOpen}
         onClose={() => setIsMilestoneCreateDialogOpen(false)}

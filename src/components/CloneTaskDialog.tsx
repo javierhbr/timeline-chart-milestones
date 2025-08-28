@@ -18,12 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import {
-  Copy,
-  X,
-  CheckCircle,
-  AlertCircle,
-} from 'lucide-react';
+import { Copy, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { Task, Milestone } from '../utils/dateUtils';
 import { CloneOptions } from '../utils/taskOperations';
 
@@ -67,7 +62,7 @@ export function CloneTaskDialog({
 
   const handleConfirm = async () => {
     setIsLoading(true);
-    
+
     try {
       await onConfirm(cloneOptions);
       onClose();
@@ -79,8 +74,11 @@ export function CloneTaskDialog({
     }
   };
 
-  const targetMilestone = milestones.find(m => m.milestoneId === cloneOptions.targetMilestoneId);
-  const isCloningSameMilestone = cloneOptions.targetMilestoneId === currentMilestoneId;
+  const targetMilestone = milestones.find(
+    m => m.milestoneId === cloneOptions.targetMilestoneId
+  );
+  const isCloningSameMilestone =
+    cloneOptions.targetMilestoneId === currentMilestoneId;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -102,10 +100,12 @@ export function CloneTaskDialog({
             <Input
               id="taskName"
               value={cloneOptions.newTaskName}
-              onChange={(e) => setCloneOptions(prev => ({
-                ...prev,
-                newTaskName: e.target.value
-              }))}
+              onChange={e =>
+                setCloneOptions(prev => ({
+                  ...prev,
+                  newTaskName: e.target.value,
+                }))
+              }
               placeholder="Enter name for cloned task"
             />
           </div>
@@ -115,21 +115,28 @@ export function CloneTaskDialog({
             <Label>Target milestone</Label>
             <Select
               value={cloneOptions.targetMilestoneId}
-              onValueChange={(value) => setCloneOptions(prev => ({
-                ...prev,
-                targetMilestoneId: value
-              }))}
+              onValueChange={value =>
+                setCloneOptions(prev => ({
+                  ...prev,
+                  targetMilestoneId: value,
+                }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select milestone" />
               </SelectTrigger>
               <SelectContent>
                 {milestones.map(milestone => (
-                  <SelectItem key={milestone.milestoneId} value={milestone.milestoneId}>
+                  <SelectItem
+                    key={milestone.milestoneId}
+                    value={milestone.milestoneId}
+                  >
                     <div className="flex items-center justify-between w-full">
                       <span>{milestone.milestoneName}</span>
                       {milestone.milestoneId === currentMilestoneId && (
-                        <span className="text-xs text-muted-foreground ml-2">(current)</span>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          (current)
+                        </span>
                       )}
                     </div>
                   </SelectItem>
@@ -143,12 +150,17 @@ export function CloneTaskDialog({
             <Checkbox
               id="includeDependencies"
               checked={cloneOptions.includeDependencies}
-              onCheckedChange={(checked) => setCloneOptions(prev => ({
-                ...prev,
-                includeDependencies: checked === true
-              }))}
+              onCheckedChange={checked =>
+                setCloneOptions(prev => ({
+                  ...prev,
+                  includeDependencies: checked === true,
+                }))
+              }
             />
-            <Label htmlFor="includeDependencies" className="flex items-center gap-2">
+            <Label
+              htmlFor="includeDependencies"
+              className="flex items-center gap-2"
+            >
               Include dependencies
               <span className="text-xs text-muted-foreground">
                 ({task.dependsOn.length} dependencies)
@@ -167,9 +179,12 @@ export function CloneTaskDialog({
                   <li>• Milestone: {targetMilestone?.milestoneName}</li>
                   <li>• Duration: {task.durationDays} days</li>
                   <li>• Team: {task.team}</li>
-                  <li>• Dependencies: {cloneOptions.includeDependencies 
-                    ? `${task.dependsOn.length} included` 
-                    : 'None (excluded)'}</li>
+                  <li>
+                    • Dependencies:{' '}
+                    {cloneOptions.includeDependencies
+                      ? `${task.dependsOn.length} included`
+                      : 'None (excluded)'}
+                  </li>
                 </ul>
               </div>
             </div>
@@ -183,8 +198,8 @@ export function CloneTaskDialog({
                 <div className="text-sm text-yellow-800">
                   <div className="font-medium">Cross-milestone clone</div>
                   <div className="mt-1">
-                    Cloning to a different milestone may affect dependency relationships. 
-                    Timeline will be recalculated after cloning.
+                    Cloning to a different milestone may affect dependency
+                    relationships. Timeline will be recalculated after cloning.
                   </div>
                 </div>
               </div>
@@ -193,11 +208,7 @@ export function CloneTaskDialog({
         </div>
 
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={onClose}
-            disabled={isLoading}
-          >
+          <Button variant="outline" onClick={onClose} disabled={isLoading}>
             <X className="w-4 h-4 mr-2" />
             Cancel
           </Button>

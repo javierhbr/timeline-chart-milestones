@@ -24,7 +24,7 @@ export interface ValidationResult {
  */
 export function generateUniqueTaskId(milestones: Milestone[]): string {
   const existingIds = new Set<string>();
-  
+
   // Collect all existing task IDs
   milestones.forEach(milestone => {
     milestone.tasks.forEach(task => {
@@ -35,13 +35,13 @@ export function generateUniqueTaskId(milestones: Milestone[]): string {
   // Generate unique ID with format: T{timestamp}_{random}
   let attempts = 0;
   let newId: string;
-  
+
   do {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substr(2, 4);
     newId = `T${timestamp}_${random}`;
     attempts++;
-    
+
     // Fallback in case of collision
     if (attempts > 100) {
       newId = `T${timestamp}_${attempts}`;
@@ -56,13 +56,13 @@ export function generateUniqueTaskId(milestones: Milestone[]): string {
  * Creates a clone of a task with a new unique ID
  */
 export function cloneTask(
-  task: Task, 
-  milestones: Milestone[], 
+  task: Task,
+  milestones: Milestone[],
   options: CloneOptions
 ): Task {
   const newTaskId = generateUniqueTaskId(milestones);
   const taskName = options.newTaskName || `${task.name} (Copy)`;
-  
+
   const clonedTask: Task = {
     ...task,
     taskId: newTaskId,
@@ -80,15 +80,15 @@ export function cloneTask(
  * Adds a cloned task to the specified milestone
  */
 export function addClonedTaskToMilestone(
-  milestones: Milestone[], 
-  clonedTask: Task, 
+  milestones: Milestone[],
+  clonedTask: Task,
   targetMilestoneId: string
 ): Milestone[] {
   return milestones.map(milestone => {
     if (milestone.milestoneId === targetMilestoneId) {
       return {
         ...milestone,
-        tasks: [...milestone.tasks, clonedTask]
+        tasks: [...milestone.tasks, clonedTask],
       };
     }
     return milestone;
@@ -114,7 +114,7 @@ export function splitTask(
     const newTaskId = generateUniqueTaskId([
       ...milestones,
       // Include already created split tasks to avoid ID collisions
-      { milestoneId: 'temp', milestoneName: 'temp', tasks: splitTasks }
+      { milestoneId: 'temp', milestoneName: 'temp', tasks: splitTasks },
     ]);
 
     const splitTask: Task = {
@@ -123,7 +123,12 @@ export function splitTask(
       name: split.name,
       durationDays: split.duration,
       // First split task gets original dependencies
-      dependsOn: index === 0 ? [...task.dependsOn] : (previousTaskId ? [previousTaskId] : []),
+      dependsOn:
+        index === 0
+          ? [...task.dependsOn]
+          : previousTaskId
+            ? [previousTaskId]
+            : [],
       // Reset dates - they'll be recalculated
       startDate: undefined,
       endDate: undefined,
@@ -150,12 +155,14 @@ export function moveTaskBetweenMilestones(
   // Find and remove the task from source milestone
   const milestonesAfterRemoval = milestones.map(milestone => {
     if (milestone.milestoneId === fromMilestoneId) {
-      const taskIndex = milestone.tasks.findIndex(task => task.taskId === taskId);
+      const taskIndex = milestone.tasks.findIndex(
+        task => task.taskId === taskId
+      );
       if (taskIndex !== -1) {
         taskToMove = milestone.tasks[taskIndex];
         return {
           ...milestone,
-          tasks: milestone.tasks.filter(task => task.taskId !== taskId)
+          tasks: milestone.tasks.filter(task => task.taskId !== taskId),
         };
       }
     }
@@ -172,7 +179,7 @@ export function moveTaskBetweenMilestones(
     if (milestone.milestoneId === toMilestoneId) {
       return {
         ...milestone,
-        tasks: [...milestone.tasks, taskToMove!]
+        tasks: [...milestone.tasks, taskToMove!],
       };
     }
     return milestone;
@@ -182,14 +189,16 @@ export function moveTaskBetweenMilestones(
 /**
  * Validates that all task dependencies exist and no circular dependencies exist
  */
-export function validateDependencies(milestones: Milestone[]): ValidationResult {
+export function validateDependencies(
+  milestones: Milestone[]
+): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
-  
+
   // Create a map of all task IDs
   const allTasks = new Map<string, Task>();
   const taskToMilestone = new Map<string, string>();
-  
+
   milestones.forEach(milestone => {
     milestone.tasks.forEach(task => {
       allTasks.set(task.taskId, task);
@@ -226,7 +235,7 @@ export function validateDependencies(milestones: Milestone[]): ValidationResult 
     if (recursionStack.has(taskId)) {
       return true; // Circular dependency found
     }
-    
+
     if (visited.has(taskId)) {
       return false;
     }
@@ -250,9 +259,7 @@ export function validateDependencies(milestones: Milestone[]): ValidationResult 
   // Check for cycles starting from each task
   for (const [taskId] of allTasks) {
     if (!visited.has(taskId) && hasCycle(taskId)) {
-      errors.push(
-        `Circular dependency detected involving task ${taskId}`
-      );
+      errors.push(`Circular dependency detected involving task ${taskId}`);
       break; // One circular dependency error is enough
     }
   }
@@ -260,7 +267,7 @@ export function validateDependencies(milestones: Milestone[]): ValidationResult 
   return {
     isValid: errors.length === 0,
     errors,
-    warnings
+    warnings,
   };
 }
 
@@ -283,9 +290,9 @@ export function updateDependenciesAfterSplit(
     ...milestone,
     tasks: milestone.tasks.map(task => ({
       ...task,
-      dependsOn: task.dependsOn.map(depId => 
+      dependsOn: task.dependsOn.map(depId =>
         depId === originalTaskId ? lastSplitTaskId : depId
-      )
-    }))
+      ),
+    })),
   }));
 }
