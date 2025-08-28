@@ -21,7 +21,7 @@ import {
   FileText,
   HelpCircle,
 } from 'lucide-react';
-import { Milestone } from '../utils/dateUtils';
+import { Milestone, formatDateForExcel, calculateBusinessDaysDuration } from '../utils/dateUtils';
 import {
   Project,
   createProject,
@@ -240,23 +240,46 @@ export function JsonImportExport({
 
   const handleExportCSV = () => {
     const csvHeader =
-      'milestoneId,milestoneName,taskId,taskName,taskDescription,team,sprint,durationDays,dependsOn\n';
-    const csvRows = milestones.flatMap(milestone =>
-      milestone.tasks.map(task => {
+      'milestoneId,milestoneName,milestoneStartDate,milestoneEndDate,taskId,taskName,taskDescription,team,sprint,plannedDurationDays,startDate,endDate,actualDurationDays,dependsOn,dependsOnNames\n';
+    
+    const csvRows = milestones.flatMap(milestone => {
+      // Find dependency names for better readability
+      const findTaskNames = (taskIds: string[]) => {
+        return taskIds.map(depId => {
+          for (const ms of milestones) {
+            const depTask = ms.tasks.find(t => t.taskId === depId);
+            if (depTask) return depTask.name;
+          }
+          return depId; // Fallback to ID if task not found
+        });
+      };
+
+      return milestone.tasks.map(task => {
         const dependsOn = task.dependsOn.join('|');
+        const dependsOnNames = findTaskNames(task.dependsOn).join('|');
+        const actualDuration = task.startDate && task.endDate 
+          ? calculateBusinessDaysDuration(task.startDate, task.endDate)
+          : task.durationDays;
+
         return [
           escapeCSVField(milestone.milestoneId),
           escapeCSVField(milestone.milestoneName),
+          escapeCSVField(milestone.startDate || ''),
+          escapeCSVField(milestone.endDate || ''),
           escapeCSVField(task.taskId),
           escapeCSVField(task.name),
           escapeCSVField(task.description),
           escapeCSVField(task.team),
           escapeCSVField(task.sprint || ''),
           task.durationDays.toString(),
+          escapeCSVField(task.startDate || ''),
+          escapeCSVField(task.endDate || ''),
+          actualDuration.toString(),
           escapeCSVField(dependsOn),
+          escapeCSVField(dependsOnNames),
         ].join(',');
-      })
-    );
+      });
+    });
 
     const csvContent = csvHeader + csvRows.join('\n');
     const dataBlob = new Blob([csvContent], { type: 'text/csv' });
@@ -264,7 +287,226 @@ export function JsonImportExport({
 
     const link = document.createElement('a');
     link.href = url;
-    link.download = `gantt-project-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `gantt-project-details-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportExcelCSV = () => {
+    const csvHeader =
+      'Task Name,Start Date,End Date,Duration (Days),% Complete,Predecessors,Resource Names,Milestone,Notes\n';
+    
+    const csvRows = milestones.flatMap(milestone => {
+      // Find dependency names for Excel predecessors
+      const findPredecessorNames = (taskIds: string[]) => {
+        return taskIds.map(depId => {
+          for (const ms of milestones) {
+            const depTask = ms.tasks.find(t => t.taskId === depId);
+            if (depTask) return depTask.name;
+          }
+          return depId;
+        });
+      };
+
+      return milestone.tasks.map(task => {
+        const predecessors = findPredecessorNames(task.dependsOn).join(';');
+        const startDateFormatted = task.startDate ? formatDateForExcel(task.startDate) : '';
+        const endDateFormatted = task.endDate ? formatDateForExcel(task.endDate) : '';
+        const actualDuration = task.startDate && task.endDate 
+          ? calculateBusinessDaysDuration(task.startDate, task.endDate)
+          : task.durationDays;
+
+        return [
+          escapeCSVField(task.name),
+          escapeCSVField(startDateFormatted),
+          escapeCSVField(endDateFormatted),
+          actualDuration.toString(),
+          '0', // % Complete - default to 0, could be enhanced later
+          escapeCSVField(predecessors),
+          escapeCSVField(task.team),
+          escapeCSVField(milestone.milestoneName),
+          escapeCSVField(task.description),
+        ].join(',');
+      });
+    });
+
+    const csvContent = csvHeader + csvRows.join('\n');
+    const dataBlob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gantt-excel-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportTimelineSummary = () => {
+    const csvHeader =
+      'Milestone Name,Start Date,End Date,Duration (Days),Task Count,Teams Involved,Critical Path,Progress %,Dependencies\n';
+    
+    const csvRows = milestones.map(milestone => {
+      const taskCount = milestone.tasks.length;
+      const teamsInvolved = [...new Set(milestone.tasks.map(task => task.team))].join(';');
+      
+      // Calculate if this milestone is on critical path (simplified: has external dependencies)
+      const hasExternalDeps = milestone.tasks.some(task => 
+        task.dependsOn.some(depId => 
+          !milestone.tasks.some(t => t.taskId === depId)
+        )
+      );
+      
+      const startDateFormatted = milestone.startDate ? 
+        formatDateForExcel(milestone.startDate) : '';
+      const endDateFormatted = milestone.endDate ? 
+        formatDateForExcel(milestone.endDate) : '';
+      
+      const duration = milestone.startDate && milestone.endDate 
+        ? Math.ceil((new Date(milestone.endDate).getTime() - new Date(milestone.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
+        : milestone.tasks.reduce((sum, task) => sum + task.durationDays, 0);
+
+      // Find milestones this one depends on
+      const milestoneDependencies = new Set<string>();
+      milestone.tasks.forEach(task => {
+        task.dependsOn.forEach(depId => {
+          for (const ms of milestones) {
+            if (ms.milestoneId !== milestone.milestoneId && ms.tasks.some(t => t.taskId === depId)) {
+              milestoneDependencies.add(ms.milestoneName);
+            }
+          }
+        });
+      });
+
+      return [
+        escapeCSVField(milestone.milestoneName),
+        escapeCSVField(startDateFormatted),
+        escapeCSVField(endDateFormatted),
+        duration.toString(),
+        taskCount.toString(),
+        escapeCSVField(teamsInvolved),
+        hasExternalDeps ? 'Yes' : 'No',
+        '0', // Progress % - default to 0, could be enhanced later
+        escapeCSVField([...milestoneDependencies].join(';')),
+      ].join(',');
+    });
+
+    const csvContent = csvHeader + csvRows.join('\n');
+    const dataBlob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gantt-timeline-summary-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExportVisualTimeline = () => {
+    if (milestones.length === 0) return;
+
+    // Find the overall project date range
+    const allTasks = milestones.flatMap(m => m.tasks).filter(t => t.startDate && t.endDate);
+    if (allTasks.length === 0) return;
+
+    const allStartDates = allTasks.map(t => new Date(t.startDate!));
+    const allEndDates = allTasks.map(t => new Date(t.endDate!));
+    const projectStart = new Date(Math.min(...allStartDates.map(d => d.getTime())));
+    const projectEnd = new Date(Math.max(...allEndDates.map(d => d.getTime())));
+
+    // Generate weekly date columns from project start to end
+    const weeks: { date: Date; weekLabel: string; monthYear: string }[] = [];
+    const currentDate = new Date(projectStart);
+    // Start from the beginning of the week containing the project start
+    currentDate.setDate(currentDate.getDate() - currentDate.getDay() + 1); // Monday
+
+    while (currentDate <= projectEnd) {
+      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      weeks.push({
+        date: new Date(currentDate),
+        weekLabel: `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}`,
+        monthYear: `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+      });
+      currentDate.setDate(currentDate.getDate() + 7); // Move to next week
+    }
+
+    // Group weeks by month-year for header row
+    const monthGroups = weeks.reduce((groups, week) => {
+      const key = week.monthYear;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(week);
+      return groups;
+    }, {} as Record<string, typeof weeks>);
+
+    // Build CSV content
+    let csvContent = '';
+
+    // Header row 1: Month-Year spans
+    let headerRow1 = 'Task Name,Team,';
+    Object.entries(monthGroups).forEach(([monthYear, monthWeeks]) => {
+      headerRow1 += monthYear;
+      // Add empty cells for the remaining weeks in this month
+      for (let i = 1; i < monthWeeks.length; i++) {
+        headerRow1 += ',';
+      }
+      if (Object.keys(monthGroups).indexOf(monthYear) < Object.keys(monthGroups).length - 1) {
+        headerRow1 += ',';
+      }
+    });
+    csvContent += headerRow1 + '\n';
+
+    // Header row 2: Week dates
+    let headerRow2 = ',,';
+    weeks.forEach((week, index) => {
+      headerRow2 += week.weekLabel;
+      if (index < weeks.length - 1) headerRow2 += ',';
+    });
+    csvContent += headerRow2 + '\n';
+
+    // Data rows: Tasks with visual timeline bars
+    milestones.forEach(milestone => {
+      milestone.tasks.forEach(task => {
+        if (!task.startDate || !task.endDate) return;
+
+        const taskStart = new Date(task.startDate);
+        const taskEnd = new Date(task.endDate);
+
+        let dataRow = `${escapeCSVField(task.name)},${escapeCSVField(task.team)},`;
+
+        // For each week, determine if task is active
+        weeks.forEach((week, index) => {
+          const weekEnd = new Date(week.date);
+          weekEnd.setDate(weekEnd.getDate() + 6); // End of week (Sunday)
+
+          // Check if task overlaps with this week
+          const taskOverlaps = !(taskEnd < week.date || taskStart > weekEnd);
+          
+          if (taskOverlaps) {
+            // Use block characters to represent task duration
+            dataRow += '████';
+          } else {
+            dataRow += '';
+          }
+
+          if (index < weeks.length - 1) dataRow += ',';
+        });
+
+        csvContent += dataRow + '\n';
+      });
+    });
+
+    // Create and download the file
+    const dataBlob = new Blob([csvContent], { type: 'text/csv; charset=utf-8' });
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `gantt-visual-timeline-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -527,7 +769,19 @@ export function JsonImportExport({
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportCSV}>
                 <FileText className="w-4 h-4 mr-2" />
-                CSV
+                CSV (Task Details)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportExcelCSV}>
+                <FileText className="w-4 h-4 mr-2" />
+                CSV (Excel Gantt)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportTimelineSummary}>
+                <FileText className="w-4 h-4 mr-2" />
+                CSV (Timeline Summary)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportVisualTimeline}>
+                <FileText className="w-4 h-4 mr-2" />
+                CSV (Visual Timeline)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
