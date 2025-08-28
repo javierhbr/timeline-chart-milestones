@@ -2,6 +2,9 @@ import React, { useState, useCallback, useEffect, Suspense, lazy, useRef, useMem
 import { GanttTimeline } from './components/GanttTimeline';
 import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
+import { Button } from './components/ui/button';
+import { LoginDialog } from './components/LoginDialog';
+import { useAuth } from './contexts/AuthContext';
 import {
   Milestone,
   Task,
@@ -18,7 +21,7 @@ import {
   hasAnyProjects,
   generateDefaultProjectName,
 } from './utils/projectStorage';
-import { BarChart3, Calendar, Users, Clock, BarChart } from 'lucide-react';
+import { BarChart3, Calendar, Users, Clock, BarChart, LogOut, User } from 'lucide-react';
 
 // Lazy load heavy components
 const JsonImportExport = lazy(() => import('./components/JsonImportExport').then(module => ({ default: module.JsonImportExport })));
@@ -26,6 +29,7 @@ const ProjectManager = lazy(() => import('./components/ProjectManager').then(mod
 const ConfirmationDialog = lazy(() => import('./components/ConfirmationDialog').then(module => ({ default: module.ConfirmationDialog })));
 
 export default function App() {
+  const { isAuthenticated, login, logout, loginError } = useAuth();
   const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [projectStartDate, setProjectStartDate] = useState<Date>(
     new Date('2024-08-26')
@@ -40,66 +44,107 @@ export default function App() {
   const [pendingProject, setPendingProject] = useState<Project | null>(null);
   const [showUnsavedChangesDialog, setShowUnsavedChangesDialog] =
     useState(false);
+  const [showLoginDialog, setShowLoginDialog] = useState(false);
+
+  const handleLogin = useCallback((username: string, password: string) => {
+    const success = login(username, password);
+    if (success) {
+      setShowLoginDialog(false);
+    }
+  }, [login]);
+
+  const handleLogout = useCallback(() => {
+    logout();
+  }, [logout]);
+
+  const handleOpenLogin = useCallback(() => {
+    setShowLoginDialog(true);
+  }, []);
+
+  const handleCloseLogin = useCallback(() => {
+    setShowLoginDialog(false);
+  }, []);
 
   // Initialize app and load current project on component mount
   useEffect(() => {
     const initializeApp = () => {
-      // Migrate old data if necessary
-      migrateOldData();
+      console.log('App: Starting app initialization');
+      console.log('App: isAuthenticated =', isAuthenticated);
+      console.log('App: localStorage keys =', Object.keys(localStorage));
+      
+      // Only load projects if authenticated
+      if (isAuthenticated) {
+        console.log('App: User is authenticated, loading projects');
+        // Migrate old data if necessary
+        migrateOldData();
 
-      // Load current project or show project manager if no projects exist
-      const project = getCurrentProject();
-      if (project) {
-        const projectStartDate = new Date(
-          project.timelineData.projectStartDate
-        );
+        // Load current project or show project manager if no projects exist
+        const project = getCurrentProject();
+        if (project) {
+          const projectStartDate = new Date(
+            project.timelineData.projectStartDate
+          );
 
-        // Ensure milestones have calculated dates
-        const milestonesWithDates =
-          project.timelineData.milestones.length > 0 &&
-          project.timelineData.milestones[0].tasks.length > 0 &&
-          !project.timelineData.milestones[0].tasks[0].startDate
-            ? calculateProjectDates(
-                project.timelineData.milestones,
-                projectStartDate
-              )
-            : project.timelineData.milestones;
+          // Ensure milestones have calculated dates
+          const milestonesWithDates =
+            project.timelineData.milestones.length > 0 &&
+            project.timelineData.milestones[0].tasks.length > 0 &&
+            !project.timelineData.milestones[0].tasks[0].startDate
+              ? calculateProjectDates(
+                  project.timelineData.milestones,
+                  projectStartDate
+                )
+              : project.timelineData.milestones;
 
-        setCurrentProject(project);
-        setMilestones(milestonesWithDates);
-        setProjectStartDate(projectStartDate);
-        setExpandedMilestones(new Set(project.timelineData.expandedMilestones));
-        setMilestoneOrder(project.timelineData.milestoneOrder || []);
-        setHasUnsavedChanges(false);
-      } else if (!hasAnyProjects()) {
-        // Create default project for new users
-        const emptyTimelineData: TimelineData = {
-          milestones: [],
-          projectStartDate: new Date().toISOString(),
-          expandedMilestones: [],
-          milestoneOrder: [],
-        };
-        const newProject = createProject(
-          generateDefaultProjectName(),
-          emptyTimelineData,
-          true
-        );
-        setCurrentProject(newProject);
-        setMilestones(newProject.timelineData.milestones);
-        setProjectStartDate(new Date(newProject.timelineData.projectStartDate));
-        setExpandedMilestones(
-          new Set(newProject.timelineData.expandedMilestones)
-        );
-        setMilestoneOrder(newProject.timelineData.milestoneOrder || []);
-        setHasUnsavedChanges(false);
+          setCurrentProject(project);
+          setMilestones(milestonesWithDates);
+          setProjectStartDate(projectStartDate);
+          setExpandedMilestones(new Set(project.timelineData.expandedMilestones));
+          setMilestoneOrder(project.timelineData.milestoneOrder || []);
+          setHasUnsavedChanges(false);
+        } else if (!hasAnyProjects()) {
+          // Create default project for new users
+          const emptyTimelineData: TimelineData = {
+            milestones: [],
+            projectStartDate: new Date().toISOString(),
+            expandedMilestones: [],
+            milestoneOrder: [],
+          };
+          const newProject = createProject(
+            generateDefaultProjectName(),
+            emptyTimelineData,
+            true
+          );
+          setCurrentProject(newProject);
+          setMilestones(newProject.timelineData.milestones);
+          setProjectStartDate(new Date(newProject.timelineData.projectStartDate));
+          setExpandedMilestones(
+            new Set(newProject.timelineData.expandedMilestones)
+          );
+          setMilestoneOrder(newProject.timelineData.milestoneOrder || []);
+          setHasUnsavedChanges(false);
+        } else {
+          // Has projects but none selected - show project manager
+          setShowProjectManager(true);
+        }
       } else {
-        // Has projects but none selected - show project manager
-        setShowProjectManager(true);
+        console.log('App: User not authenticated, setting empty state');
+        console.log('App: Current localStorage keys before clearing view:', Object.keys(localStorage));
+        
+        // Set empty state for unauthenticated users
+        setMilestones([]);
+        setProjectStartDate(new Date());
+        setExpandedMilestones(new Set());
+        setMilestoneOrder([]);
+        setCurrentProject(null);
+        
+        console.log('App: Set empty state - milestones length:', 0);
+        console.log('App: Empty state set successfully');
       }
     };
 
     initializeApp();
-  }, []);
+  }, [isAuthenticated]);
 
   // Debounced auto-save current project whenever timeline data changes
   const saveTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -334,7 +379,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="w-full pl-[1%] pr-4 py-6">
+      <div className="w-[90%] mx-auto py-6">
         <div className="space-y-6">
           {/* Header */}
           <div
@@ -359,7 +404,7 @@ export default function App() {
               <h1 className="text-lg font-semibold whitespace-nowrap">
                 Timeline Milestones Chart
               </h1>
-              {currentProject && (
+              {isAuthenticated && currentProject && (
                 <span className="text-sm text-muted-foreground">
                   {currentProject.name}
                   {hasUnsavedChanges && (
@@ -367,7 +412,44 @@ export default function App() {
                   )}
                 </span>
               )}
+              {!isAuthenticated && (
+                <span className="text-sm text-muted-foreground">
+                  Public Demo - Login for full features
+                </span>
+              )}
             </div>
+          </div>
+
+          {/* Login/Logout Button */}
+          <div
+            style={{
+              position: 'absolute',
+              right: '20px',
+              top: '20px',
+              zIndex: 10,
+            }}
+          >
+            {isAuthenticated ? (
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
+            ) : (
+              <Button
+                onClick={handleOpenLogin}
+                variant="default"
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <User className="w-4 h-4" />
+                Login
+              </Button>
+            )}
           </div>
 
           <div className="h-5"></div>
@@ -384,6 +466,21 @@ export default function App() {
               />
             </Suspense>
           </div>
+
+          {milestones.length === 0 && (
+            <div className="w-full">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center gap-2 mb-2">
+                  <User className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-sm font-medium text-blue-800">Get Started</h3>
+                </div>
+                <p className="text-sm text-blue-700">
+                  Welcome to the Timeline Milestones Chart! Click "Load Example" to see a demo project, 
+                  or use Import/Projects to create your own timeline.
+                </p>
+              </div>
+            </div>
+          )}
 
           {milestones.length > 0 && (
             <div className="w-full">
@@ -475,18 +572,20 @@ export default function App() {
             </div>
           )}
 
-          <GanttTimeline
-            milestones={milestones}
-            onUpdateTask={handleUpdateTask}
-            onUpdateMilestones={handleUpdateMilestones}
-            onRecalculateTimeline={handleRecalculateTimeline}
-            expandedMilestones={expandedMilestones}
-            onToggleMilestone={handleToggleMilestone}
-            expandAllMilestones={expandAllMilestones}
-            collapseAllMilestones={collapseAllMilestones}
-            milestoneOrder={milestoneOrder}
-            onUpdateMilestoneOrder={handleUpdateMilestoneOrder}
-          />
+          {milestones.length > 0 && (
+            <GanttTimeline
+              milestones={milestones}
+              onUpdateTask={isAuthenticated ? handleUpdateTask : () => {}}
+              onUpdateMilestones={isAuthenticated ? handleUpdateMilestones : () => {}}
+              onRecalculateTimeline={isAuthenticated ? handleRecalculateTimeline : () => {}}
+              expandedMilestones={expandedMilestones}
+              onToggleMilestone={handleToggleMilestone}
+              expandAllMilestones={expandAllMilestones}
+              collapseAllMilestones={collapseAllMilestones}
+              milestoneOrder={milestoneOrder}
+              onUpdateMilestoneOrder={isAuthenticated ? handleUpdateMilestoneOrder : () => {}}
+            />
+          )}
         </div>
 
         <Suspense fallback={<div />}>
@@ -506,6 +605,13 @@ export default function App() {
             confirmLabel="Switch Project"
             cancelLabel="Stay Here"
             variant="destructive"
+          />
+          
+          <LoginDialog
+            isOpen={showLoginDialog}
+            onClose={handleCloseLogin}
+            onLogin={handleLogin}
+            error={loginError || undefined}
           />
         </Suspense>
       </div>

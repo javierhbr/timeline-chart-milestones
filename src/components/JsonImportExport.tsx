@@ -50,6 +50,7 @@ export function JsonImportExport({
   const [showInstructions, setShowInstructions] = useState(false);
   const [showImportOptions, setShowImportOptions] = useState(false);
 
+
   const parseCSVLine = (line: string): string[] => {
     const result: string[] = [];
     let current = '';
@@ -675,7 +676,7 @@ export function JsonImportExport({
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {/* Projects Dropdown */}
+          {/* Projects Dropdown - Public */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="flex items-center gap-2">
@@ -714,7 +715,7 @@ export function JsonImportExport({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Import Dropdown */}
+          {/* Import Dropdown - Public */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="flex items-center gap-2">
@@ -749,7 +750,7 @@ export function JsonImportExport({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Export Dropdown */}
+          {/* Export Dropdown - Public */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -786,12 +787,12 @@ export function JsonImportExport({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Examples Button */}
+          {/* Examples Button - Public */}
           <Button onClick={handleLoadExample} variant="secondary">
             Load Example
           </Button>
 
-          {/* Help Dropdown */}
+          {/* Help Dropdown - Public */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="flex items-center gap-2">
