@@ -13,7 +13,7 @@ interface LoginProps {
 
 const HARDCODED_CREDENTIALS = {
   username: 'admin',
-  password: 'admin123'
+  password: 'admin123',
 };
 
 export function Login({ onLogin, error }: LoginProps) {
@@ -24,10 +24,10 @@ export function Login({ onLogin, error }: LoginProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     // Simulate a small delay for better UX
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     onLogin(username, password);
     setIsLoading(false);
   };
@@ -52,7 +52,7 @@ export function Login({ onLogin, error }: LoginProps) {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            
+
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
               <Input
@@ -60,12 +60,12 @@ export function Login({ onLogin, error }: LoginProps) {
                 type="text"
                 placeholder="Enter username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={e => setUsername(e.target.value)}
                 required
                 disabled={isLoading}
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -73,24 +73,26 @@ export function Login({ onLogin, error }: LoginProps) {
                 type="password"
                 placeholder="Enter password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
               />
             </div>
-            
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoading}
-            >
+
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
-            
+
             <div className="text-xs text-muted-foreground text-center space-y-1">
               <p>Demo credentials:</p>
-              <p>Username: <code className="bg-muted px-1 py-0.5 rounded">admin</code></p>
-              <p>Password: <code className="bg-muted px-1 py-0.5 rounded">admin123</code></p>
+              <p>
+                Username:{' '}
+                <code className="bg-muted px-1 py-0.5 rounded">admin</code>
+              </p>
+              <p>
+                Password:{' '}
+                <code className="bg-muted px-1 py-0.5 rounded">admin123</code>
+              </p>
             </div>
           </form>
         </CardContent>

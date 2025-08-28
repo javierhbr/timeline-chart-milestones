@@ -86,7 +86,8 @@ const TaskRow = memo(function TaskRow({
     return null;
   }
 
-  const { taskStart, taskEnd, taskStartDay, taskDurationDays, teamColor } = taskCalculations;
+  const { taskStart, taskEnd, taskStartDay, taskDurationDays, teamColor } =
+    taskCalculations;
 
   return (
     <tr

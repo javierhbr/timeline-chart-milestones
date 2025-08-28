@@ -34,12 +34,34 @@ import {
 import { createNewMilestone } from '../utils/milestoneOperations';
 
 // Lazy load dialog components
-const TaskEditModal = lazy(() => import('./TaskEditModal').then(module => ({ default: module.TaskEditModal })));
-const CloneTaskDialog = lazy(() => import('./CloneTaskDialog').then(module => ({ default: module.CloneTaskDialog })));
-const SplitTaskDialog = lazy(() => import('./SplitTaskDialog').then(module => ({ default: module.SplitTaskDialog })));
-const MoveTaskDialog = lazy(() => import('./MoveTaskDialog').then(module => ({ default: module.MoveTaskDialog })));
-const MilestoneEditDialog = lazy(() => import('./MilestoneEditDialog').then(module => ({ default: module.MilestoneEditDialog })));
-const MilestoneCreateDialog = lazy(() => import('./MilestoneCreateDialog').then(module => ({ default: module.MilestoneCreateDialog })));
+const TaskEditModal = lazy(() =>
+  import('./TaskEditModal').then(module => ({ default: module.TaskEditModal }))
+);
+const CloneTaskDialog = lazy(() =>
+  import('./CloneTaskDialog').then(module => ({
+    default: module.CloneTaskDialog,
+  }))
+);
+const SplitTaskDialog = lazy(() =>
+  import('./SplitTaskDialog').then(module => ({
+    default: module.SplitTaskDialog,
+  }))
+);
+const MoveTaskDialog = lazy(() =>
+  import('./MoveTaskDialog').then(module => ({
+    default: module.MoveTaskDialog,
+  }))
+);
+const MilestoneEditDialog = lazy(() =>
+  import('./MilestoneEditDialog').then(module => ({
+    default: module.MilestoneEditDialog,
+  }))
+);
+const MilestoneCreateDialog = lazy(() =>
+  import('./MilestoneCreateDialog').then(module => ({
+    default: module.MilestoneCreateDialog,
+  }))
+);
 
 interface GanttTimelineProps {
   milestones: Milestone[];
@@ -379,7 +401,8 @@ export function GanttTimeline({
     setZoomLevel(prev => {
       let newLevel = prev / 1.5;
       // Round to reasonable values with more zoom out levels
-      if (newLevel < 4) newLevel = Math.max(Math.round(newLevel * 2) / 2, 1); // Allow 0.5px increments for extreme zoom
+      if (newLevel < 4)
+        newLevel = Math.max(Math.round(newLevel * 2) / 2, 1); // Allow 0.5px increments for extreme zoom
       else if (newLevel < 10) newLevel = Math.round(newLevel);
       else newLevel = Math.round(newLevel / 2) * 2;
       return Math.max(newLevel, 1); // Minimum 1px per day for extreme zoom out
@@ -740,14 +763,17 @@ export function GanttTimeline({
 
   // Memoized dialog handlers
   const handleEditModalClose = useCallback(() => setIsEditModalOpen(false), []);
-  
-  const handleEditModalSave = useCallback((taskId: string, updates: Partial<Task>) => {
-    onUpdateTask(taskId, updates);
-    // Trigger timeline recalculation when dependencies change
-    if (updates.dependsOn !== undefined && onRecalculateTimeline) {
-      onRecalculateTimeline();
-    }
-  }, [onUpdateTask, onRecalculateTimeline]);
+
+  const handleEditModalSave = useCallback(
+    (taskId: string, updates: Partial<Task>) => {
+      onUpdateTask(taskId, updates);
+      // Trigger timeline recalculation when dependencies change
+      if (updates.dependsOn !== undefined && onRecalculateTimeline) {
+        onRecalculateTimeline();
+      }
+    },
+    [onUpdateTask, onRecalculateTimeline]
+  );
 
   const handleCloneDialogClose = useCallback(() => {
     setIsCloneDialogOpen(false);
@@ -774,7 +800,10 @@ export function GanttTimeline({
     setCreatingTaskForMilestone(null);
   }, []);
 
-  const handleMilestoneCreateDialogClose = useCallback(() => setIsMilestoneCreateDialogOpen(false), []);
+  const handleMilestoneCreateDialogClose = useCallback(
+    () => setIsMilestoneCreateDialogOpen(false),
+    []
+  );
 
   const handleTaskEdit = useCallback((task: Task) => {
     setEditingTask(task);

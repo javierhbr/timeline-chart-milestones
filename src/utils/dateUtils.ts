@@ -378,11 +378,15 @@ export const getTaskDependencyInfo = (
 };
 
 // Excel-compatible date formatting utilities
-export function formatDateForExcel(dateString: string, formatType: 'US' | 'ISO' | 'Excel' = 'Excel'): string {
+export function formatDateForExcel(
+  dateString: string,
+  formatType: 'US' | 'ISO' | 'Excel' = 'Excel'
+): string {
   if (!dateString) return '';
-  
-  const date = typeof dateString === 'string' ? parseISO(dateString) : dateString;
-  
+
+  const date =
+    typeof dateString === 'string' ? parseISO(dateString) : dateString;
+
   switch (formatType) {
     case 'US':
       return format(date, 'MM/dd/yyyy');
@@ -396,9 +400,12 @@ export function formatDateForExcel(dateString: string, formatType: 'US' | 'ISO' 
   }
 }
 
-export function calculateBusinessDaysDuration(startDate: string, endDate: string): number {
+export function calculateBusinessDaysDuration(
+  startDate: string,
+  endDate: string
+): number {
   if (!startDate || !endDate) return 0;
-  
+
   const start = parseISO(startDate);
   const end = parseISO(endDate);
   let businessDays = 0;

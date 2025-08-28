@@ -51,8 +51,7 @@ const TimelineHeader = memo(function TimelineHeader({
     dayColumns.forEach((day, index) => {
       if (day.isNewMonth || index === 0) {
         if (currentMonth && groups.length > 0) {
-          groups[groups.length - 1].width =
-            (index - startIndex) * zoomLevel;
+          groups[groups.length - 1].width = (index - startIndex) * zoomLevel;
         }
         currentMonth = day.monthName;
         currentYear = day.year;
@@ -66,8 +65,7 @@ const TimelineHeader = memo(function TimelineHeader({
       }
 
       if (index === dayColumns.length - 1) {
-        groups[groups.length - 1].width =
-          (index - startIndex + 1) * zoomLevel;
+        groups[groups.length - 1].width = (index - startIndex + 1) * zoomLevel;
       }
     });
 
@@ -77,7 +75,7 @@ const TimelineHeader = memo(function TimelineHeader({
   // Memoize deliverable markers by day for better performance
   const deliverablesByDay = useMemo(() => {
     const markersByDay = new Map<number, DeliverableMarker[]>();
-    
+
     deliverableMarkers.forEach(marker => {
       const markerDay = differenceInDays(marker.date, timelineStart);
       if (!markersByDay.has(markerDay)) {
@@ -85,7 +83,7 @@ const TimelineHeader = memo(function TimelineHeader({
       }
       markersByDay.get(markerDay)!.push(marker);
     });
-    
+
     return markersByDay;
   }, [deliverableMarkers, timelineStart]);
 
@@ -156,7 +154,7 @@ const TimelineHeader = memo(function TimelineHeader({
             <div className="flex">
               {dayColumns.map((day, index) => {
                 const dayMarkers = deliverablesByDay.get(index) || [];
-                
+
                 return (
                   <div
                     key={`day-${day.date.getTime()}-${index}`}

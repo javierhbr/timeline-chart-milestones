@@ -19,7 +19,12 @@ interface LoginDialogProps {
   error?: string;
 }
 
-export function LoginDialog({ isOpen, onClose, onLogin, error }: LoginDialogProps) {
+export function LoginDialog({
+  isOpen,
+  onClose,
+  onLogin,
+  error,
+}: LoginDialogProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -27,10 +32,10 @@ export function LoginDialog({ isOpen, onClose, onLogin, error }: LoginDialogProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     // Simulate a small delay for better UX
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     onLogin(username, password);
     setIsLoading(false);
   };
@@ -54,14 +59,14 @@ export function LoginDialog({ isOpen, onClose, onLogin, error }: LoginDialogProp
             Enter your credentials to access advanced features
           </DialogDescription>
         </DialogHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-          
+
           <div className="space-y-2">
             <Label htmlFor="username">Username</Label>
             <Input
@@ -69,12 +74,12 @@ export function LoginDialog({ isOpen, onClose, onLogin, error }: LoginDialogProp
               type="text"
               placeholder="Enter username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChange={e => setUsername(e.target.value)}
               required
               disabled={isLoading}
             />
           </div>
-          
+
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input
@@ -82,35 +87,37 @@ export function LoginDialog({ isOpen, onClose, onLogin, error }: LoginDialogProp
               type="password"
               placeholder="Enter password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={e => setPassword(e.target.value)}
               required
               disabled={isLoading}
             />
           </div>
-          
+
           <div className="flex gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="flex-1" 
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1"
               onClick={handleClose}
               disabled={isLoading}
             >
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              className="flex-1" 
-              disabled={isLoading}
-            >
+            <Button type="submit" className="flex-1" disabled={isLoading}>
               {isLoading ? 'Signing in...' : 'Sign In'}
             </Button>
           </div>
-          
+
           <div className="text-xs text-muted-foreground text-center space-y-1 pt-2 border-t">
             <p>Demo credentials:</p>
-            <p>Username: <code className="bg-muted px-1 py-0.5 rounded">admin</code></p>
-            <p>Password: <code className="bg-muted px-1 py-0.5 rounded">admin123</code></p>
+            <p>
+              Username:{' '}
+              <code className="bg-muted px-1 py-0.5 rounded">admin</code>
+            </p>
+            <p>
+              Password:{' '}
+              <code className="bg-muted px-1 py-0.5 rounded">admin123</code>
+            </p>
           </div>
         </form>
       </DialogContent>

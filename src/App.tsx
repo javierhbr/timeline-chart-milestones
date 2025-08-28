@@ -1,4 +1,12 @@
-import React, { useState, useCallback, useEffect, Suspense, lazy, useRef, useMemo } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  Suspense,
+  lazy,
+  useRef,
+  useMemo,
+} from 'react';
 import { GanttTimeline } from './components/GanttTimeline';
 import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
@@ -21,12 +29,32 @@ import {
   hasAnyProjects,
   generateDefaultProjectName,
 } from './utils/projectStorage';
-import { BarChart3, Calendar, Users, Clock, BarChart, LogOut, User } from 'lucide-react';
+import {
+  BarChart3,
+  Calendar,
+  Users,
+  Clock,
+  BarChart,
+  LogOut,
+  User,
+} from 'lucide-react';
 
 // Lazy load heavy components
-const JsonImportExport = lazy(() => import('./components/JsonImportExport').then(module => ({ default: module.JsonImportExport })));
-const ProjectManager = lazy(() => import('./components/ProjectManager').then(module => ({ default: module.ProjectManager })));
-const ConfirmationDialog = lazy(() => import('./components/ConfirmationDialog').then(module => ({ default: module.ConfirmationDialog })));
+const JsonImportExport = lazy(() =>
+  import('./components/JsonImportExport').then(module => ({
+    default: module.JsonImportExport,
+  }))
+);
+const ProjectManager = lazy(() =>
+  import('./components/ProjectManager').then(module => ({
+    default: module.ProjectManager,
+  }))
+);
+const ConfirmationDialog = lazy(() =>
+  import('./components/ConfirmationDialog').then(module => ({
+    default: module.ConfirmationDialog,
+  }))
+);
 
 export default function App() {
   const { isAuthenticated, login, logout, loginError } = useAuth();
@@ -46,12 +74,15 @@ export default function App() {
     useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
 
-  const handleLogin = useCallback((username: string, password: string) => {
-    const success = login(username, password);
-    if (success) {
-      setShowLoginDialog(false);
-    }
-  }, [login]);
+  const handleLogin = useCallback(
+    (username: string, password: string) => {
+      const success = login(username, password);
+      if (success) {
+        setShowLoginDialog(false);
+      }
+    },
+    [login]
+  );
 
   const handleLogout = useCallback(() => {
     logout();
@@ -71,7 +102,7 @@ export default function App() {
       console.log('App: Starting app initialization');
       console.log('App: isAuthenticated =', isAuthenticated);
       console.log('App: localStorage keys =', Object.keys(localStorage));
-      
+
       // Only load projects if authenticated
       if (isAuthenticated) {
         console.log('App: User is authenticated, loading projects');
@@ -99,7 +130,9 @@ export default function App() {
           setCurrentProject(project);
           setMilestones(milestonesWithDates);
           setProjectStartDate(projectStartDate);
-          setExpandedMilestones(new Set(project.timelineData.expandedMilestones));
+          setExpandedMilestones(
+            new Set(project.timelineData.expandedMilestones)
+          );
           setMilestoneOrder(project.timelineData.milestoneOrder || []);
           setHasUnsavedChanges(false);
         } else if (!hasAnyProjects()) {
@@ -117,7 +150,9 @@ export default function App() {
           );
           setCurrentProject(newProject);
           setMilestones(newProject.timelineData.milestones);
-          setProjectStartDate(new Date(newProject.timelineData.projectStartDate));
+          setProjectStartDate(
+            new Date(newProject.timelineData.projectStartDate)
+          );
           setExpandedMilestones(
             new Set(newProject.timelineData.expandedMilestones)
           );
@@ -129,15 +164,18 @@ export default function App() {
         }
       } else {
         console.log('App: User not authenticated, setting empty state');
-        console.log('App: Current localStorage keys before clearing view:', Object.keys(localStorage));
-        
+        console.log(
+          'App: Current localStorage keys before clearing view:',
+          Object.keys(localStorage)
+        );
+
         // Set empty state for unauthenticated users
         setMilestones([]);
         setProjectStartDate(new Date());
         setExpandedMilestones(new Set());
         setMilestoneOrder([]);
         setCurrentProject(null);
-        
+
         console.log('App: Set empty state - milestones length:', 0);
         console.log('App: Empty state set successfully');
       }
@@ -154,7 +192,7 @@ export default function App() {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      
+
       // Set new timeout for debounced save
       saveTimeoutRef.current = setTimeout(() => {
         const timelineData: TimelineData = {
@@ -340,12 +378,14 @@ export default function App() {
   // Memoize expensive project statistics calculations
   const projectStats = useMemo(() => {
     const totalTasks = milestones.reduce((acc, m) => acc + m.tasks.length, 0);
-    const uniqueTeams = new Set(milestones.flatMap(m => m.tasks.map(t => t.team))).size;
+    const uniqueTeams = new Set(
+      milestones.flatMap(m => m.tasks.map(t => t.team))
+    ).size;
     const totalDuration = milestones.reduce(
       (acc, m) => acc + Math.max(...m.tasks.map(t => t.durationDays), 0),
       0
     );
-    
+
     return { totalTasks, uniqueTeams, totalDuration };
   }, [milestones]);
 
@@ -353,7 +393,9 @@ export default function App() {
 
   // Memoize team list for badges
   const teamList = useMemo(() => {
-    return Array.from(new Set(milestones.flatMap(m => m.tasks.map(t => t.team))));
+    return Array.from(
+      new Set(milestones.flatMap(m => m.tasks.map(t => t.team)))
+    );
   }, [milestones]);
 
   const expandAllMilestones = useCallback(() => {
@@ -365,20 +407,29 @@ export default function App() {
     setExpandedMilestones(new Set());
   }, []);
 
-  const handleToggleMilestone = useCallback((milestoneId: string) => {
-    const newExpanded = new Set(expandedMilestones);
-    if (newExpanded.has(milestoneId)) {
-      newExpanded.delete(milestoneId);
-    } else {
-      newExpanded.add(milestoneId);
-    }
-    setExpandedMilestones(newExpanded);
-  }, [expandedMilestones]);
+  const handleToggleMilestone = useCallback(
+    (milestoneId: string) => {
+      const newExpanded = new Set(expandedMilestones);
+      if (newExpanded.has(milestoneId)) {
+        newExpanded.delete(milestoneId);
+      } else {
+        newExpanded.add(milestoneId);
+      }
+      setExpandedMilestones(newExpanded);
+    },
+    [expandedMilestones]
+  );
 
-  const handleOpenProjectManager = useCallback(() => setShowProjectManager(true), []);
+  const handleOpenProjectManager = useCallback(
+    () => setShowProjectManager(true),
+    []
+  );
 
   return (
-    <div className="min-h-screen bg-background" style={{ paddingLeft: '10px', paddingRight: '10px' }}>
+    <div
+      className="min-h-screen bg-background"
+      style={{ paddingLeft: '10px', paddingRight: '10px' }}
+    >
       <div className="w-full py-6">
         <div className="space-y-6">
           {/* Header */}
@@ -472,11 +523,14 @@ export default function App() {
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <div className="flex items-center gap-2 mb-2">
                   <User className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-sm font-medium text-blue-800">Get Started</h3>
+                  <h3 className="text-sm font-medium text-blue-800">
+                    Get Started
+                  </h3>
                 </div>
                 <p className="text-sm text-blue-700">
-                  Welcome to the Timeline Milestones Chart! Click "Load Example" to see a demo project, 
-                  or use Import/Projects to create your own timeline.
+                  Welcome to the Timeline Milestones Chart! Click "Load Example"
+                  to see a demo project, or use Import/Projects to create your
+                  own timeline.
                 </p>
               </div>
             </div>
@@ -576,14 +630,20 @@ export default function App() {
             <GanttTimeline
               milestones={milestones}
               onUpdateTask={isAuthenticated ? handleUpdateTask : () => {}}
-              onUpdateMilestones={isAuthenticated ? handleUpdateMilestones : () => {}}
-              onRecalculateTimeline={isAuthenticated ? handleRecalculateTimeline : () => {}}
+              onUpdateMilestones={
+                isAuthenticated ? handleUpdateMilestones : () => {}
+              }
+              onRecalculateTimeline={
+                isAuthenticated ? handleRecalculateTimeline : () => {}
+              }
               expandedMilestones={expandedMilestones}
               onToggleMilestone={handleToggleMilestone}
               expandAllMilestones={expandAllMilestones}
               collapseAllMilestones={collapseAllMilestones}
               milestoneOrder={milestoneOrder}
-              onUpdateMilestoneOrder={isAuthenticated ? handleUpdateMilestoneOrder : () => {}}
+              onUpdateMilestoneOrder={
+                isAuthenticated ? handleUpdateMilestoneOrder : () => {}
+              }
             />
           )}
         </div>
@@ -606,7 +666,7 @@ export default function App() {
             cancelLabel="Stay Here"
             variant="destructive"
           />
-          
+
           <LoginDialog
             isOpen={showLoginDialog}
             onClose={handleCloseLogin}

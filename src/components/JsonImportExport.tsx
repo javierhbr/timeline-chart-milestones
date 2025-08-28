@@ -21,13 +21,18 @@ import {
   FileText,
   HelpCircle,
 } from 'lucide-react';
-import { Milestone, formatDateForExcel, calculateBusinessDaysDuration } from '../utils/dateUtils';
+import {
+  Milestone,
+  formatDateForExcel,
+  calculateBusinessDaysDuration,
+} from '../utils/dateUtils';
 import {
   Project,
   createProject,
   TimelineData,
   generateDefaultProjectName,
 } from '../utils/projectStorage';
+import { MarkdownExportDialog } from './MarkdownExportDialog';
 
 interface JsonImportExportProps {
   milestones: Milestone[];
@@ -43,13 +48,14 @@ export function JsonImportExport({
   onImport,
   projectStartDate,
   onStartDateChange,
-  currentProject, // eslint-disable-line @typescript-eslint/no-unused-vars
+  currentProject,
   onOpenProjectManager,
 }: JsonImportExportProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showInstructions, setShowInstructions] = useState(false);
   const [showImportOptions, setShowImportOptions] = useState(false);
-
+  const [showMarkdownExportDialog, setShowMarkdownExportDialog] =
+    useState(false);
 
   const parseCSVLine = (line: string): string[] => {
     const result: string[] = [];
@@ -284,10 +290,65 @@ export function JsonImportExport({
     return value.toString();
   };
 
+  const generateMarkdown = (
+    includeMilestones: boolean,
+    includeTasks: boolean
+  ): string => {
+    const projectName = currentProject?.name || generateDefaultProjectName();
+    let markdown = `# ${projectName}\n\n`;
+
+    milestones.forEach(milestone => {
+      if (includeMilestones) {
+        markdown += `## ${milestone.milestoneName}\n`;
+        markdown += `- Goal: ${milestone.milestoneName}\n`;
+
+        // Generate deliverable goals from tasks
+        const deliverables = milestone.tasks.map(task => task.name).join(', ');
+        markdown += `- Deliverable goals: ${deliverables || 'Project milestone completion'}\n\n`;
+      }
+
+      if (includeTasks && milestone.tasks.length > 0) {
+        // If not including milestones but including tasks, still show milestone as context
+        if (!includeMilestones) {
+          markdown += `## ${milestone.milestoneName}\n\n`;
+        }
+
+        milestone.tasks.forEach(task => {
+          markdown += `### ${task.name}\n`;
+          markdown += `- Duration: ${task.durationDays} days\n`;
+          markdown += `- Task Goal: ${task.name}\n`;
+          markdown += `- Deliverable: ${task.description || 'Task completion'}\n\n`;
+        });
+      }
+    });
+
+    return markdown;
+  };
+
+  const handleMarkdownExport = (
+    includeMilestones: boolean,
+    includeTasks: boolean
+  ) => {
+    const markdown = generateMarkdown(includeMilestones, includeTasks);
+    const projectName = currentProject?.name || generateDefaultProjectName();
+    const fileName = `${projectName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}-export-${new Date().toISOString().split('T')[0]}.md`;
+
+    const dataBlob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(dataBlob);
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleExportCSV = () => {
     const csvHeader =
       'milestoneId,milestoneName,milestoneStartDate,milestoneEndDate,taskId,taskName,taskDescription,team,sprint,plannedDurationDays,startDate,endDate,actualDurationDays,dependsOn,dependsOnNames\n';
-    
+
     const csvRows = milestones.flatMap(milestone => {
       // Find dependency names for better readability
       const findTaskNames = (taskIds: string[]) => {
@@ -303,9 +364,10 @@ export function JsonImportExport({
       return milestone.tasks.map(task => {
         const dependsOn = task.dependsOn.join('|');
         const dependsOnNames = findTaskNames(task.dependsOn).join('|');
-        const actualDuration = task.startDate && task.endDate 
-          ? calculateBusinessDaysDuration(task.startDate, task.endDate)
-          : task.durationDays;
+        const actualDuration =
+          task.startDate && task.endDate
+            ? calculateBusinessDaysDuration(task.startDate, task.endDate)
+            : task.durationDays;
 
         return [
           escapeCSVField(milestone.milestoneId),
@@ -343,7 +405,7 @@ export function JsonImportExport({
   const handleExportExcelCSV = () => {
     const csvHeader =
       'Task Name,Start Date,End Date,Duration (Days),% Complete,Predecessors,Resource Names,Milestone,Notes\n';
-    
+
     const csvRows = milestones.flatMap(milestone => {
       // Find dependency names for Excel predecessors
       const findPredecessorNames = (taskIds: string[]) => {
@@ -358,11 +420,16 @@ export function JsonImportExport({
 
       return milestone.tasks.map(task => {
         const predecessors = findPredecessorNames(task.dependsOn).join(';');
-        const startDateFormatted = task.startDate ? formatDateForExcel(task.startDate) : '';
-        const endDateFormatted = task.endDate ? formatDateForExcel(task.endDate) : '';
-        const actualDuration = task.startDate && task.endDate 
-          ? calculateBusinessDaysDuration(task.startDate, task.endDate)
-          : task.durationDays;
+        const startDateFormatted = task.startDate
+          ? formatDateForExcel(task.startDate)
+          : '';
+        const endDateFormatted = task.endDate
+          ? formatDateForExcel(task.endDate)
+          : '';
+        const actualDuration =
+          task.startDate && task.endDate
+            ? calculateBusinessDaysDuration(task.startDate, task.endDate)
+            : task.durationDays;
 
         return [
           escapeCSVField(task.name),
@@ -394,33 +461,45 @@ export function JsonImportExport({
   const handleExportTimelineSummary = () => {
     const csvHeader =
       'Milestone Name,Start Date,End Date,Duration (Days),Task Count,Teams Involved,Critical Path,Progress %,Dependencies\n';
-    
+
     const csvRows = milestones.map(milestone => {
       const taskCount = milestone.tasks.length;
-      const teamsInvolved = [...new Set(milestone.tasks.map(task => task.team))].join(';');
-      
+      const teamsInvolved = [
+        ...new Set(milestone.tasks.map(task => task.team)),
+      ].join(';');
+
       // Calculate if this milestone is on critical path (simplified: has external dependencies)
-      const hasExternalDeps = milestone.tasks.some(task => 
-        task.dependsOn.some(depId => 
-          !milestone.tasks.some(t => t.taskId === depId)
+      const hasExternalDeps = milestone.tasks.some(task =>
+        task.dependsOn.some(
+          depId => !milestone.tasks.some(t => t.taskId === depId)
         )
       );
-      
-      const startDateFormatted = milestone.startDate ? 
-        formatDateForExcel(milestone.startDate) : '';
-      const endDateFormatted = milestone.endDate ? 
-        formatDateForExcel(milestone.endDate) : '';
-      
-      const duration = milestone.startDate && milestone.endDate 
-        ? Math.ceil((new Date(milestone.endDate).getTime() - new Date(milestone.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1
-        : milestone.tasks.reduce((sum, task) => sum + task.durationDays, 0);
+
+      const startDateFormatted = milestone.startDate
+        ? formatDateForExcel(milestone.startDate)
+        : '';
+      const endDateFormatted = milestone.endDate
+        ? formatDateForExcel(milestone.endDate)
+        : '';
+
+      const duration =
+        milestone.startDate && milestone.endDate
+          ? Math.ceil(
+              (new Date(milestone.endDate).getTime() -
+                new Date(milestone.startDate).getTime()) /
+                (1000 * 60 * 60 * 24)
+            ) + 1
+          : milestone.tasks.reduce((sum, task) => sum + task.durationDays, 0);
 
       // Find milestones this one depends on
       const milestoneDependencies = new Set<string>();
       milestone.tasks.forEach(task => {
         task.dependsOn.forEach(depId => {
           for (const ms of milestones) {
-            if (ms.milestoneId !== milestone.milestoneId && ms.tasks.some(t => t.taskId === depId)) {
+            if (
+              ms.milestoneId !== milestone.milestoneId &&
+              ms.tasks.some(t => t.taskId === depId)
+            ) {
               milestoneDependencies.add(ms.milestoneName);
             }
           }
@@ -457,12 +536,16 @@ export function JsonImportExport({
     if (milestones.length === 0) return;
 
     // Find the overall project date range
-    const allTasks = milestones.flatMap(m => m.tasks).filter(t => t.startDate && t.endDate);
+    const allTasks = milestones
+      .flatMap(m => m.tasks)
+      .filter(t => t.startDate && t.endDate);
     if (allTasks.length === 0) return;
 
     const allStartDates = allTasks.map(t => new Date(t.startDate!));
     const allEndDates = allTasks.map(t => new Date(t.endDate!));
-    const projectStart = new Date(Math.min(...allStartDates.map(d => d.getTime())));
+    const projectStart = new Date(
+      Math.min(...allStartDates.map(d => d.getTime()))
+    );
     const projectEnd = new Date(Math.max(...allEndDates.map(d => d.getTime())));
 
     // Generate weekly date columns from project start to end
@@ -472,22 +555,38 @@ export function JsonImportExport({
     currentDate.setDate(currentDate.getDate() - currentDate.getDay() + 1); // Monday
 
     while (currentDate <= projectEnd) {
-      const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const monthNames = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
       weeks.push({
         date: new Date(currentDate),
         weekLabel: `${String(currentDate.getDate()).padStart(2, '0')}/${String(currentDate.getMonth() + 1).padStart(2, '0')}`,
-        monthYear: `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`
+        monthYear: `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`,
       });
       currentDate.setDate(currentDate.getDate() + 7); // Move to next week
     }
 
     // Group weeks by month-year for header row
-    const monthGroups = weeks.reduce((groups, week) => {
-      const key = week.monthYear;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(week);
-      return groups;
-    }, {} as Record<string, typeof weeks>);
+    const monthGroups = weeks.reduce(
+      (groups, week) => {
+        const key = week.monthYear;
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(week);
+        return groups;
+      },
+      {} as Record<string, typeof weeks>
+    );
 
     // Build CSV content
     let csvContent = '';
@@ -500,7 +599,10 @@ export function JsonImportExport({
       for (let i = 1; i < monthWeeks.length; i++) {
         headerRow1 += ',';
       }
-      if (Object.keys(monthGroups).indexOf(monthYear) < Object.keys(monthGroups).length - 1) {
+      if (
+        Object.keys(monthGroups).indexOf(monthYear) <
+        Object.keys(monthGroups).length - 1
+      ) {
         headerRow1 += ',';
       }
     });
@@ -531,7 +633,7 @@ export function JsonImportExport({
 
           // Check if task overlaps with this week
           const taskOverlaps = !(taskEnd < week.date || taskStart > weekEnd);
-          
+
           if (taskOverlaps) {
             // Use block characters to represent task duration
             dataRow += '████';
@@ -547,7 +649,9 @@ export function JsonImportExport({
     });
 
     // Create and download the file
-    const dataBlob = new Blob([csvContent], { type: 'text/csv; charset=utf-8' });
+    const dataBlob = new Blob([csvContent], {
+      type: 'text/csv; charset=utf-8',
+    });
     const url = URL.createObjectURL(dataBlob);
 
     const link = document.createElement('a');
@@ -812,6 +916,12 @@ export function JsonImportExport({
               <DropdownMenuItem onClick={handleExport}>
                 <FileText className="w-4 h-4 mr-2" />
                 JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setShowMarkdownExportDialog(true)}
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Markdown
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleExportCSV}>
                 <FileText className="w-4 h-4 mr-2" />
@@ -1180,6 +1290,12 @@ M3,Testing,T8,Integration,End-to-end testing,QA,Sprint 4,4,T7`}
           </div>
         </div>
       )}
+
+      <MarkdownExportDialog
+        open={showMarkdownExportDialog}
+        onClose={() => setShowMarkdownExportDialog(false)}
+        onExport={handleMarkdownExport}
+      />
     </Card>
   );
 }

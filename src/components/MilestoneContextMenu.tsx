@@ -65,9 +65,7 @@ export function MilestoneContextMenu({
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <div>
-          {children}
-        </div>
+        <div>{children}</div>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-64">
         {onEdit && (

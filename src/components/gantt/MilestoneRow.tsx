@@ -66,7 +66,7 @@ const MilestoneRow = memo(function MilestoneRow({
     );
     const milestoneDurationDays =
       differenceInDays(milestoneDates.endDate, milestoneDates.startDate) + 1;
-    
+
     return {
       milestoneDates,
       milestoneStartDay,
@@ -74,35 +74,45 @@ const MilestoneRow = memo(function MilestoneRow({
     };
   }, [milestone, timelineStart]);
 
-  const handleDragStart = useCallback((e: React.DragEvent) => {
-    if (onDragStart && dragIndex !== undefined) {
-      onDragStart(milestone.milestoneId, dragIndex);
-      e.dataTransfer.effectAllowed = 'move';
-      // Add some visual feedback
-      (e.currentTarget as HTMLElement).style.opacity = '0.5';
-    }
-  }, [onDragStart, milestone.milestoneId, dragIndex]);
+  const handleDragStart = useCallback(
+    (e: React.DragEvent) => {
+      if (onDragStart && dragIndex !== undefined) {
+        onDragStart(milestone.milestoneId, dragIndex);
+        e.dataTransfer.effectAllowed = 'move';
+        // Add some visual feedback
+        (e.currentTarget as HTMLElement).style.opacity = '0.5';
+      }
+    },
+    [onDragStart, milestone.milestoneId, dragIndex]
+  );
 
-  const handleDragEnd = useCallback((e: React.DragEvent) => {
-    (e.currentTarget as HTMLElement).style.opacity = '';
-    if (onDragEnd) {
-      onDragEnd();
-    }
-  }, [onDragEnd]);
+  const handleDragEnd = useCallback(
+    (e: React.DragEvent) => {
+      (e.currentTarget as HTMLElement).style.opacity = '';
+      if (onDragEnd) {
+        onDragEnd();
+      }
+    },
+    [onDragEnd]
+  );
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    if (onDragOver && dragIndex !== undefined && !isDragging) {
-      onDragOver(dragIndex);
-    }
-  }, [onDragOver, dragIndex, isDragging]);
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (onDragOver && dragIndex !== undefined && !isDragging) {
+        onDragOver(dragIndex);
+      }
+    },
+    [onDragOver, dragIndex, isDragging]
+  );
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
   }, []);
 
-  const { milestoneDates, milestoneStartDay, milestoneDurationDays } = milestoneCalculations;
+  const { milestoneDates, milestoneStartDay, milestoneDurationDays } =
+    milestoneCalculations;
 
   return (
     <tr
