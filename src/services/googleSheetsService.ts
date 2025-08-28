@@ -35,7 +35,9 @@ export class GoogleSheetsService {
     logger.info('Initializing Google Sheets service', { 
       module: 'GoogleSheets', 
       action: 'initialize',
-      clientId: clientId.substring(0, 20) + '...' // Partial client ID for logging
+      clientId: clientId.substring(0, 20) + '...', // Partial client ID for logging
+      currentOrigin: window.location.origin,
+      currentHref: window.location.href
     });
 
     try {
@@ -61,7 +63,7 @@ export class GoogleSheetsService {
         })
       );
 
-      // Initialize Google client
+      // Initialize Google client with better configuration
       await logger.logApiCall('gapi.client.init', () => 
         gapi.client.init({
           clientId: clientId,
@@ -69,7 +71,15 @@ export class GoogleSheetsService {
             'https://sheets.googleapis.com/$discovery/rest?version=v4',
             'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
           ],
-          scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file'
+          scope: [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive.file',
+            'openid',
+            'profile',
+            'email'
+          ].join(' '),
+          // Add plugin name for better OAuth tracking
+          plugin_name: 'timeline-milestones'
         })
       );
 

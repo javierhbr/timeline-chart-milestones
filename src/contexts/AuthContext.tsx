@@ -26,7 +26,7 @@ const AUTH_STORAGE_KEY = 'timeline-auth-state';
 // 2. Create a project or select existing one
 // 3. Enable Google Sheets API and Google Drive API
 // 4. Create OAuth 2.0 credentials (Web application)
-// 5. Add authorized redirect URI: http://localhost:5173 (adjust for production)
+// 5. Add authorized redirect URI: http://localhost:3300/timeline-chart-milestones/ (adjust for production)
 // 6. Copy Client ID to .env file
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 

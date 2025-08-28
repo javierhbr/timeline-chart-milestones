@@ -50,12 +50,21 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  build: {
-    target: 'esnext',
-    outDir: 'dist',
-  },
   server: {
     port: 3300,
     open: true,
+    // Ensure we use http for development OAuth
+    https: false,
+    host: 'localhost',
+    // Allow iframe for Google OAuth
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+      'Cross-Origin-Embedder-Policy': 'credentialless',
+    },
+  },
+  build: {
+    target: 'esnext',
+    outDir: 'dist',
+    sourcemap: true,
   },
 });
