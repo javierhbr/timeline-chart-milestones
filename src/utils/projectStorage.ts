@@ -1,9 +1,13 @@
 import { Milestone } from './dateUtils';
+import { ChangeHistoryEntry } from './changeHistory';
 
 export interface TimelineData {
   milestones: Milestone[];
   projectStartDate: string;
   expandedMilestones: string[];
+  milestoneOrder?: string[];
+  taskOrders?: Record<string, string[]>;
+  changeHistory?: ChangeHistoryEntry[];
 }
 
 export interface Project {
@@ -293,6 +297,9 @@ export function migrateOldData(): void {
       milestones: oldTimelineData.milestones,
       projectStartDate: oldTimelineData.projectStartDate,
       expandedMilestones: oldTimelineData.expandedMilestones,
+      milestoneOrder: oldTimelineData.milestoneOrder || [],
+      taskOrders: {},
+      changeHistory: [],
     };
 
     // Create default project from old data
@@ -309,10 +316,87 @@ export function migrateOldData(): void {
   }
 }
 
+/**
+ * Migrates existing projects to include changeHistory field if missing
+ */
+export function migrateProjectsToIncludeChangeHistory(): void {
+  try {
+    const storage = getProjectsStorage();
+    let migrationNeeded = false;
+
+    // Check if any projects are missing changeHistory
+    for (const projectId in storage.projects) {
+      const project = storage.projects[projectId];
+      if (!project.timelineData.changeHistory) {
+        migrationNeeded = true;
+        project.timelineData.changeHistory = [];
+        console.log(
+          `Migrated project "${project.name}" to include empty change history`
+        );
+      }
+    }
+
+    // Save updated storage if migration was needed
+    if (migrationNeeded) {
+      saveProjectsStorage(storage);
+      console.log(
+        'Successfully migrated existing projects to include change history support'
+      );
+    }
+  } catch (error) {
+    console.warn('Failed to migrate projects for change history:', error);
+  }
+}
+
+/**
+ * Migrates existing projects to include taskOrders field if missing
+ */
+export function migrateProjectsToIncludeTaskOrders(): void {
+  try {
+    const storage = getProjectsStorage();
+    let migrationNeeded = false;
+
+    // Check if any projects are missing taskOrders
+    for (const projectId in storage.projects) {
+      const project = storage.projects[projectId];
+      if (!project.timelineData.taskOrders) {
+        migrationNeeded = true;
+        project.timelineData.taskOrders = {};
+        console.log(
+          `Migrated project "${project.name}" to include empty task orders`
+        );
+      }
+    }
+
+    // Save updated storage if migration was needed
+    if (migrationNeeded) {
+      saveProjectsStorage(storage);
+      console.log(
+        'Successfully migrated existing projects to include task orders support'
+      );
+    }
+  } catch (error) {
+    console.warn('Failed to migrate projects for task orders:', error);
+  }
+}
+
+/**
+ * Runs all necessary migrations in the correct order
+ */
+export function runAllMigrations(): void {
+  // First migrate old data format
+  migrateOldData();
+
+  // Then migrate existing projects to include change history
+  migrateProjectsToIncludeChangeHistory();
+
+  // Finally migrate existing projects to include task orders
+  migrateProjectsToIncludeTaskOrders();
+}
+
 export function clearAllProjects(): void {
   try {
     localStorage.removeItem(PROJECTS_STORAGE_KEY);
-    console.log('All projects cleared from localStorage');
   } catch (error) {
     console.warn('Failed to clear all projects from localStorage:', error);
   }
