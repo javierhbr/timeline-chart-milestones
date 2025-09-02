@@ -111,7 +111,8 @@ export function MilestoneEditDialog({
 
   const hasChanges =
     formData.milestoneName !== milestone.milestoneName ||
-    formData.description !== ((milestone as MilestoneWithDescription).description || '');
+    formData.description !==
+      ((milestone as MilestoneWithDescription).description || '');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -184,7 +185,8 @@ export function MilestoneEditDialog({
                       </li>
                     )}
                     {formData.description !==
-                      ((milestone as MilestoneWithDescription).description || '') && (
+                      ((milestone as MilestoneWithDescription).description ||
+                        '') && (
                       <li className="text-xs">
                         • Description:{' '}
                         {formData.description ? 'Updated' : 'Removed'}

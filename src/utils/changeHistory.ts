@@ -117,8 +117,12 @@ export function generateChangeDescription(entry: ChangeHistoryEntry): string {
       return `${entityType === 'task' ? 'Task' : 'Milestone'} "${oldValue}" renamed to "${newValue}"`;
 
     case 'description': {
-      const oldDesc = oldValue ? `"${String(oldValue).substring(0, 30)}..."` : 'empty';
-      const newDesc = newValue ? `"${String(newValue).substring(0, 30)}..."` : 'empty';
+      const oldDesc = oldValue
+        ? `"${String(oldValue).substring(0, 30)}..."`
+        : 'empty';
+      const newDesc = newValue
+        ? `"${String(newValue).substring(0, 30)}..."`
+        : 'empty';
       return `Task "${entityName}" description changed from ${oldDesc} to ${newDesc}`;
     }
 
@@ -218,7 +222,9 @@ function applyChangeToState(
         return milestones.map(milestone => ({
           ...milestone,
           tasks: milestone.tasks.map(task =>
-            task.taskId === entityId ? { ...task, name: newValue as string } : task
+            task.taskId === entityId
+              ? { ...task, name: newValue as string }
+              : task
           ),
         }));
       }
@@ -239,7 +245,9 @@ function applyChangeToState(
         return milestones.map(milestone => ({
           ...milestone,
           tasks: milestone.tasks.map(task =>
-            task.taskId === entityId ? { ...task, description: newValue as string } : task
+            task.taskId === entityId
+              ? { ...task, description: newValue as string }
+              : task
           ),
         }));
       }
@@ -263,7 +271,9 @@ function applyChangeToState(
         return milestones.map(milestone => ({
           ...milestone,
           tasks: milestone.tasks.map(task =>
-            task.taskId === entityId ? { ...task, team: newValue as string } : task
+            task.taskId === entityId
+              ? { ...task, team: newValue as string }
+              : task
           ),
         }));
       }
@@ -274,7 +284,9 @@ function applyChangeToState(
         return milestones.map(milestone => ({
           ...milestone,
           tasks: milestone.tasks.map(task =>
-            task.taskId === entityId ? { ...task, dependsOn: newValue as string[] } : task
+            task.taskId === entityId
+              ? { ...task, dependsOn: newValue as string[] }
+              : task
           ),
         }));
       }

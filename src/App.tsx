@@ -599,7 +599,12 @@ export default function App() {
       setMilestones(recalculatedMilestones);
       setHasUnsavedChanges(true);
     },
-    [projectStartDate, milestones, detectMilestoneArrayChanges, changeHistory.length]
+    [
+      projectStartDate,
+      milestones,
+      detectMilestoneArrayChanges,
+      changeHistory.length,
+    ]
   );
 
   // Rollback function

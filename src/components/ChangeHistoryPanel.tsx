@@ -1,8 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import {
-  Card,
-  CardContent,
-} from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
@@ -182,7 +179,9 @@ export function ChangeHistoryPanel({
                 <span className="text-sm font-medium">Entity:</span>
                 <Select
                   value={filterEntityType}
-                  onValueChange={(value: EntityType | 'all') => setFilterEntityType(value)}
+                  onValueChange={(value: EntityType | 'all') =>
+                    setFilterEntityType(value)
+                  }
                 >
                   <SelectTrigger className="w-32">
                     <SelectValue />
@@ -198,7 +197,9 @@ export function ChangeHistoryPanel({
                 <span className="text-sm font-medium">Change:</span>
                 <Select
                   value={filterChangeType}
-                  onValueChange={(value: ChangeType | 'all') => setFilterChangeType(value)}
+                  onValueChange={(value: ChangeType | 'all') =>
+                    setFilterChangeType(value)
+                  }
                 >
                   <SelectTrigger className="w-40">
                     <SelectValue />
@@ -242,7 +243,7 @@ export function ChangeHistoryPanel({
                         <div className="space-y-2 ml-6">
                           {entries
                             .sort((a, b) => b.timestamp - a.timestamp)
-                            .map((entry) => {
+                            .map(entry => {
                               const actualIndex = changeHistory.findIndex(
                                 e => e.entryId === entry.entryId
                               );
