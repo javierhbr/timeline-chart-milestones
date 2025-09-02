@@ -266,7 +266,23 @@ export function JsonImportExport({
   };
 
   const handleExport = () => {
-    const dataStr = JSON.stringify(milestones, null, 2);
+    // Clean export: remove calculated startDate/endDate from tasks
+    const cleanMilestones = milestones.map(milestone => ({
+      milestoneId: milestone.milestoneId,
+      milestoneName: milestone.milestoneName,
+      tasks: milestone.tasks.map(task => ({
+        taskId: task.taskId,
+        name: task.name,
+        description: task.description,
+        team: task.team,
+        sprint: task.sprint,
+        durationDays: task.durationDays,
+        dependsOn: task.dependsOn,
+        // Exclude startDate and endDate - they should be calculated
+      }))
+    }));
+    
+    const dataStr = JSON.stringify(cleanMilestones, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
 

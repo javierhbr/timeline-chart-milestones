@@ -1,0 +1,106 @@
+[
+  {
+    "milestoneId": "M1",
+    "milestoneName": "UI Design",
+    "tasks": [
+      {
+        "taskId": "T1",
+        "name": "Wireframes",
+        "description": "Create initial wireframes",
+        "team": "UX",
+        "sprint": "Sprint 1",
+        "durationDays": 4,
+        "dependsOn": []
+      },
+      {
+        "taskId": "T2",
+        "name": "Mockups",
+        "description": "Mockups in Figma",
+        "team": "UI",
+        "sprint": "Sprint 1",
+        "durationDays": 1,
+        "dependsOn": [
+          "T1"
+        ]
+      },
+      {
+        "taskId": "T3",
+        "name": "Client Review",
+        "description": "Client feedback",
+        "team": "PM",
+        "sprint": "Sprint 2",
+        "durationDays": 3,
+        "dependsOn": [
+          "T1"
+        ]
+      }
+    ]
+  },
+  {
+    "milestoneId": "M2",
+    "milestoneName": "Frontend Development",
+    "tasks": [
+      {
+        "taskId": "T4",
+        "name": "Project Setup",
+        "description": "Initial React configuration",
+        "team": "Frontend",
+        "sprint": "Sprint 2",
+        "durationDays": 2,
+        "dependsOn": [
+          "T2"
+        ]
+      },
+      {
+        "taskId": "T5",
+        "name": "UI Components",
+        "description": "Component development",
+        "team": "Frontend",
+        "sprint": "Sprint 3",
+        "durationDays": 1,
+        "dependsOn": [
+          "T4"
+        ]
+      },
+      {
+        "taskId": "T6",
+        "name": "API Integration",
+        "description": "Connect with backend",
+        "team": "Frontend",
+        "sprint": "Sprint 4",
+        "durationDays": 5,
+        "dependsOn": [
+          "T5"
+        ]
+      }
+    ]
+  },
+  {
+    "milestoneId": "M3",
+    "milestoneName": "Testing",
+    "tasks": [
+      {
+        "taskId": "T7",
+        "name": "Unit Tests",
+        "description": "Automated tests",
+        "team": "QA",
+        "sprint": "Sprint 4",
+        "durationDays": 1,
+        "dependsOn": [
+          "T6"
+        ]
+      },
+      {
+        "taskId": "T8",
+        "name": "Integration Tests",
+        "description": "End-to-end testing",
+        "team": "QA",
+        "sprint": "Sprint 5",
+        "durationDays": 3,
+        "dependsOn": [
+          "T7"
+        ]
+      }
+    ]
+  }
+]

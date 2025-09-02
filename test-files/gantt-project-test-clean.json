@@ -1,0 +1,110 @@
+[
+  {
+    "milestoneId": "M1",
+    "milestoneName": "Gap Analysis Report for OCP Test Scenarios",
+    "tasks": [
+      {
+        "taskId": "T1",
+        "name": "Review of existing OCP test scenarios to assess compatibility with updated workflows and tools",
+        "description": "Analysis",
+        "team": "Platform Team",
+        "sprint": "Sprint 1",
+        "durationDays": 5,
+        "dependsOn": []
+      },
+      {
+        "taskId": "T2",
+        "name": "Collaborate with OCP Team to identify gaps",
+        "description": "Work with the OCP team to identify gaps inefficiencies and areas for improvement in the current test scenarios",
+        "team": "Platform Team",
+        "sprint": "Sprint 1",
+        "durationDays": 3,
+        "dependsOn": ["T1"]
+      },
+      {
+        "taskId": "T3",
+        "name": "Propose actionable solutions to identified gaps",
+        "description": "Propose actionable solutions to address identified gaps including updates to workflows tools and test data requirements",
+        "team": "Platform Team",
+        "sprint": "Sprint 2",
+        "durationDays": 7,
+        "dependsOn": ["T2"]
+      },
+      {
+        "taskId": "T4",
+        "name": "Document the proposed solutions and their impact",
+        "description": "Document the proposed solutions including their expected impact on test efficiency and effectiveness",
+        "team": "Platform Team",
+        "sprint": "Sprint 2",
+        "durationDays": 3,
+        "dependsOn": ["T3"]
+      }
+    ]
+  },
+  {
+    "milestoneId": "M2",
+    "milestoneName": "PoC Simulation Proof of Concept (PoC) for Mobile One",
+    "tasks": [
+      {
+        "taskId": "T5",
+        "name": "Develop OCP Simulation PoC",
+        "description": "Develop a proof of concept for OCP simulation tailored to Mobile One's requirements",
+        "team": "Platform Team",
+        "sprint": "Sprint 3",
+        "durationDays": 10,
+        "dependsOn": ["T4"]
+      },
+      {
+        "taskId": "T6",
+        "name": "Document Test Data Conditioning Process",
+        "description": "Document the end-to-end process for test data conditioning including data preparation updates and validation",
+        "team": "Platform Team",
+        "sprint": "Sprint 3",
+        "durationDays": 5,
+        "dependsOn": ["T5"]
+      },
+      {
+        "taskId": "T7",
+        "name": "Automate Test Data Preparation",
+        "description": "Automate test data preparation using TDM tools to streamline the simulation process",
+        "team": "Platform Team",
+        "sprint": "Sprint 4",
+        "durationDays": 8,
+        "dependsOn": ["T6"]
+      },
+      {
+        "taskId": "T8",
+        "name": "Validate OCP Simulation PoC",
+        "description": "Validate the PoC by running a subset of Mobile One test cases and comparing results with expected outcomes",
+        "team": "Platform Team",
+        "sprint": "Sprint 4",
+        "durationDays": 1,
+        "dependsOn": ["T7"]
+      }
+    ]
+  },
+  {
+    "milestoneId": "M5",
+    "milestoneName": "Mobile One Testing Studio for Quality Assurance (Live Service)",
+    "tasks": [
+      {
+        "taskId": "T16",
+        "name": "Execute QA Test Runs",
+        "description": "Execute QA test runs for Mobile One test cases ensuring they meet quality standards and functional requirements",
+        "team": "Platform Team",
+        "sprint": "Sprint 6",
+        "durationDays": 10,
+        "dependsOn": ["T8"]
+      },
+      {
+        "taskId": "T17",
+        "name": "Deploy Mobile One Test Cases to Production",
+        "description": "Deploy Mobile One test cases to production supported by detailed validation reports",
+        "team": "Platform Team",
+        "sprint": "Sprint 6",
+        "durationDays": 5,
+        "dependsOn": ["T16"]
+      }
+    ]
+  }
+]

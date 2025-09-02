@@ -429,3 +429,22 @@ export function calculateBusinessDaysDuration(
 
   return businessDays;
 }
+
+// Format date range with better UX for same-day tasks
+export function formatTaskDateRange(
+  startDate: Date | string,
+  endDate: Date | string,
+  formatString: string = 'dd/MM/yyyy',
+  options: { locale?: any } = {}
+): string {
+  const start = typeof startDate === 'string' ? parseISO(startDate) : startDate;
+  const end = typeof endDate === 'string' ? parseISO(endDate) : endDate;
+  
+  // If start and end dates are the same, show only one date
+  if (format(start, 'yyyy-MM-dd') === format(end, 'yyyy-MM-dd')) {
+    return format(start, formatString, options);
+  }
+  
+  // Otherwise show the range
+  return `${format(start, formatString, options)} - ${format(end, formatString, options)}`;
+}

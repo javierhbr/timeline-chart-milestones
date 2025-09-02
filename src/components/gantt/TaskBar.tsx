@@ -10,6 +10,7 @@ import { Calendar, Clock, Users, Edit, Zap } from 'lucide-react';
 import { Task, teamColors, getTaskDependencyInfo } from '../../utils/dateUtils';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatTaskDateRange } from '../../utils/dateUtils';
 import type { Milestone } from '../../utils/dateUtils';
 
 interface TaskBarProps {
@@ -24,6 +25,7 @@ interface TaskBarProps {
   ) => void;
   onEditClick: (task: Task) => void;
   showLabels?: boolean;
+  width?: number; // Explicit width in pixels
 }
 
 const TaskBar = memo(function TaskBar({
@@ -32,6 +34,7 @@ const TaskBar = memo(function TaskBar({
   onMouseDown,
   onEditClick,
   showLabels = true,
+  width,
 }: TaskBarProps) {
   // Memoize expensive calculations
   const taskData = useMemo(() => {
@@ -73,10 +76,11 @@ const TaskBar = memo(function TaskBar({
         <Tooltip>
           <TooltipTrigger asChild>
             <div
-              className="w-full h-6 rounded-lg cursor-move flex items-center justify-between shadow-sm border border-white/20 group"
+              className="h-6 rounded-lg cursor-move flex items-center justify-between shadow-sm border border-white/20 group"
               style={{
                 background: `linear-gradient(135deg, ${teamColor} 0%, ${teamColor}dd 100%)`,
-                minWidth: '30px',
+                width: width ? `${width}px` : '100%', // Use explicit width if provided
+                minWidth: '4px', // Allow proper proportional sizing
               }}
               onMouseDown={e => {
                 if (e.button === 2) return;
@@ -167,8 +171,7 @@ const TaskBar = memo(function TaskBar({
               )}
               <div className="flex items-center gap-1 text-sm">
                 <Calendar className="w-3 h-3" />
-                {format(taskStart, 'dd/MM/yyyy', { locale: es })} -{' '}
-                {format(taskEnd, 'dd/MM/yyyy', { locale: es })}
+                {formatTaskDateRange(taskStart, taskEnd, 'dd/MM/yyyy', { locale: es })}
               </div>
             </div>
           </TooltipContent>
@@ -183,8 +186,7 @@ const TaskBar = memo(function TaskBar({
         >
           <span className="font-medium text-gray-700">{task.name}</span>
           <span className="text-blue-600">
-            {format(taskStart, 'dd/MM', { locale: es })} -{' '}
-            {format(taskEnd, 'dd/MM', { locale: es })}
+            {formatTaskDateRange(taskStart, taskEnd, 'dd/MM', { locale: es })}
           </span>
         </div>
       )}

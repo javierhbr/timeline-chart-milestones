@@ -8,7 +8,7 @@ import {
 import { MilestoneContextMenu } from '../MilestoneContextMenu';
 import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { calculateMilestoneDates } from '../../utils/dateUtils';
+import { calculateMilestoneDates, formatTaskDateRange } from '../../utils/dateUtils';
 import type { Milestone } from '../../utils/dateUtils';
 
 interface MilestoneColor {
@@ -177,13 +177,7 @@ const MilestoneRow = memo(function MilestoneRow({
                       {milestone.milestoneName}
                     </div>
                     <div className="text-sm text-muted-foreground mt-1">
-                      {format(milestoneDates.startDate, 'dd/MM', {
-                        locale: es,
-                      })}{' '}
-                      -{' '}
-                      {format(milestoneDates.endDate, 'dd/MM', {
-                        locale: es,
-                      })}{' '}
+                      {formatTaskDateRange(milestoneDates.startDate, milestoneDates.endDate, 'dd/MM', { locale: es })}{' '}
                       • {milestone.tasks.length} task
                       {milestone.tasks.length !== 1 ? 's' : ''}
                     </div>

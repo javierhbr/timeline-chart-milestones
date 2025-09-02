@@ -34,6 +34,7 @@ import {
 import { Task, Milestone, teamColors } from '../utils/dateUtils';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatTaskDateRange } from '../utils/dateUtils';
 
 interface TaskEditModalProps {
   task: Task | null;
@@ -335,13 +336,12 @@ export function TaskEditModal({
                     Project dates
                   </div>
                   <div className="text-sm">
-                    {format(parseISO(task.startDate), 'dd/MM/yyyy', {
-                      locale: es,
-                    })}{' '}
-                    -{' '}
-                    {format(parseISO(task.endDate), 'dd/MM/yyyy', {
-                      locale: es,
-                    })}
+                    {formatTaskDateRange(
+                      task.startDate,
+                      task.endDate,
+                      'dd/MM/yyyy',
+                      { locale: es }
+                    )}
                   </div>
                 </div>
               )}

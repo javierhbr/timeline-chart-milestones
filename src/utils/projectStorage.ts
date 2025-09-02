@@ -416,7 +416,22 @@ export function exportProjectAsJSON(projectId: string): string | null {
     return null;
   }
 
-  return JSON.stringify(project.timelineData.milestones, null, 2);
+  // Clean export: remove calculated startDate/endDate from tasks
+  const cleanMilestones = project.timelineData.milestones.map(milestone => ({
+    ...milestone,
+    tasks: milestone.tasks.map(task => ({
+      taskId: task.taskId,
+      name: task.name,
+      description: task.description,
+      team: task.team,
+      sprint: task.sprint,
+      durationDays: task.durationDays,
+      dependsOn: task.dependsOn,
+      // Exclude startDate and endDate - they should be calculated
+    }))
+  }));
+
+  return JSON.stringify(cleanMilestones, null, 2);
 }
 
 export function exportAllProjectsAsJSON(): string {

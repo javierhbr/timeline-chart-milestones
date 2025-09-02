@@ -12,7 +12,7 @@ import { TaskContextMenu } from '../TaskContextMenu';
 import { TaskBar } from './TaskBar';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { teamColors } from '../../utils/dateUtils';
+import { teamColors, formatTaskDateRange } from '../../utils/dateUtils';
 import type { Task, Milestone } from '../../utils/dateUtils';
 
 interface MilestoneColor {
@@ -252,13 +252,7 @@ const TaskRow = memo(function TaskRow({
                 )}
                 <div className="flex items-center gap-1 text-sm">
                   <Calendar className="w-3 h-3" />
-                  {format(taskStart, 'dd/MM/yyyy', {
-                    locale: es,
-                  })}{' '}
-                  -{' '}
-                  {format(taskEnd, 'dd/MM/yyyy', {
-                    locale: es,
-                  })}
+                  {formatTaskDateRange(taskStart, taskEnd, 'dd/MM/yyyy', { locale: es })}
                 </div>
               </div>
             </TooltipContent>
@@ -296,7 +290,7 @@ const TaskRow = memo(function TaskRow({
               style={{
                 left: `${taskStartDay * zoomLevel + 2}px`,
                 width: `${taskDurationDays * zoomLevel - 4}px`,
-                minWidth: Math.min(30, zoomLevel) + 'px',
+                minWidth: '4px', // Very small minimum to ensure visibility but allow proportional sizing
                 height: '28px',
               }}
             >
@@ -313,6 +307,7 @@ const TaskRow = memo(function TaskRow({
                   milestones={milestones}
                   onMouseDown={onMouseDown}
                   onEditClick={onEdit}
+                  width={taskDurationDays * zoomLevel - 4}
                 />
               </TaskContextMenu>
             </div>
