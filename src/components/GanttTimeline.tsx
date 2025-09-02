@@ -631,7 +631,12 @@ export function GanttTimeline({
       taskStart: Date,
       taskEnd: Date
     ) => {
-      console.log('🎯 handleMouseDown called:', { taskId, mode, taskStart, taskEnd });
+      console.log('🎯 handleMouseDown called:', {
+        taskId,
+        mode,
+        taskStart,
+        taskEnd,
+      });
       e.preventDefault();
       setDragState({
         taskId,
@@ -693,11 +698,11 @@ export function GanttTimeline({
       }
 
       const newDuration = differenceInDays(newEnd, newStart) + 1;
-      console.log('🎯 Final values:', { 
+      console.log('🎯 Final values:', {
         taskId: dragState.taskId,
         newStart: format(newStart, 'yyyy-MM-dd'),
         newEnd: format(newEnd, 'yyyy-MM-dd'),
-        newDuration 
+        newDuration,
       });
 
       console.log('🎯 Calling onUpdateTask...');
@@ -831,12 +836,15 @@ export function GanttTimeline({
     // Only reorder if position actually changed
     if (taskDragState.draggedIndex !== taskDragState.targetIndex) {
       // Get the current task order for the milestone
-      const milestone = milestones.find(m => m.milestoneId === taskDragState.sourceMilestoneId);
+      const milestone = milestones.find(
+        m => m.milestoneId === taskDragState.sourceMilestoneId
+      );
       if (milestone) {
         // Get current order (use custom order if available, otherwise task order)
-        const currentOrder = taskOrders?.get(taskDragState.sourceMilestoneId) || 
-                            milestone.tasks.map(t => t.taskId);
-        
+        const currentOrder =
+          taskOrders?.get(taskDragState.sourceMilestoneId) ||
+          milestone.tasks.map(t => t.taskId);
+
         const newOrder = [...currentOrder];
         // Remove dragged item
         const [draggedId] = newOrder.splice(taskDragState.draggedIndex, 1);
@@ -904,7 +912,9 @@ export function GanttTimeline({
     if (editingTask) {
       // Find the updated task in the current milestones
       for (const milestone of milestones) {
-        const updatedTask = milestone.tasks.find(t => t.taskId === editingTask.taskId);
+        const updatedTask = milestone.tasks.find(
+          t => t.taskId === editingTask.taskId
+        );
         if (updatedTask) {
           setEditingTask(updatedTask);
           break;
@@ -1059,48 +1069,80 @@ export function GanttTimeline({
                       {expandedMilestones.has(milestone.milestoneId) &&
                         (() => {
                           // Sort tasks by custom order if available
-                          const tasksWithValidDates = milestone.tasks.filter(task => task.startDate && task.endDate);
-                          const customOrder = taskOrders?.get(milestone.milestoneId);
-                          
-                          const sortedTasks = customOrder && customOrder.length > 0
-                            ? customOrder
-                                .map(taskId => tasksWithValidDates.find(t => t.taskId === taskId))
-                                .filter((task): task is Task => task !== undefined)
-                                .concat(tasksWithValidDates.filter(t => !customOrder.includes(t.taskId)))
-                            : tasksWithValidDates;
+                          const tasksWithValidDates = milestone.tasks.filter(
+                            task => task.startDate && task.endDate
+                          );
+                          const customOrder = taskOrders?.get(
+                            milestone.milestoneId
+                          );
 
-                          return sortedTasks.map((task: Task, taskIndex: number) => {
-                            const isDragging = taskDragState?.draggedTaskId === task.taskId;
-                            const isDragTarget = taskDragState?.targetIndex === taskIndex && 
-                                                taskDragState?.sourceMilestoneId === milestone.milestoneId;
+                          const sortedTasks =
+                            customOrder && customOrder.length > 0
+                              ? customOrder
+                                  .map(taskId =>
+                                    tasksWithValidDates.find(
+                                      t => t.taskId === taskId
+                                    )
+                                  )
+                                  .filter(
+                                    (task): task is Task => task !== undefined
+                                  )
+                                  .concat(
+                                    tasksWithValidDates.filter(
+                                      t => !customOrder.includes(t.taskId)
+                                    )
+                                  )
+                              : tasksWithValidDates;
 
-                            return (
-                              <TaskRow
-                                key={task.taskId}
-                                task={task}
-                                milestones={milestones}
-                                milestoneColor={milestoneColor}
-                                timelineStart={timelineStart}
-                                zoomLevel={zoomLevel}
-                                dayColumnsLength={dayColumns.length}
-                                gridNameColumns={gridNameColumns}
-                                onMouseDown={handleMouseDown}
-                                onClone={handleCloneTask}
-                                onSplit={handleSplitTask}
-                                onMove={handleMoveTask}
-                                onDelete={handleDeleteTask}
-                                onEdit={handleTaskEdit}
-                                onResizeStart={handleResizeStart}
-                                onTaskDragStart={onUpdateTaskOrders ? handleTaskDragStart : undefined}
-                                onTaskDragOver={onUpdateTaskOrders ? handleTaskDragOver : undefined}
-                                onTaskDragEnd={onUpdateTaskOrders ? handleTaskDragEnd : undefined}
-                                taskDragIndex={taskIndex}
-                                milestoneId={milestone.milestoneId}
-                                isDragging={isDragging}
-                                isDragTarget={isDragTarget}
-                              />
-                            );
-                          });
+                          return sortedTasks.map(
+                            (task: Task, taskIndex: number) => {
+                              const isDragging =
+                                taskDragState?.draggedTaskId === task.taskId;
+                              const isDragTarget =
+                                taskDragState?.targetIndex === taskIndex &&
+                                taskDragState?.sourceMilestoneId ===
+                                  milestone.milestoneId;
+
+                              return (
+                                <TaskRow
+                                  key={task.taskId}
+                                  task={task}
+                                  milestones={milestones}
+                                  milestoneColor={milestoneColor}
+                                  timelineStart={timelineStart}
+                                  zoomLevel={zoomLevel}
+                                  dayColumnsLength={dayColumns.length}
+                                  gridNameColumns={gridNameColumns}
+                                  onMouseDown={handleMouseDown}
+                                  onClone={handleCloneTask}
+                                  onSplit={handleSplitTask}
+                                  onMove={handleMoveTask}
+                                  onDelete={handleDeleteTask}
+                                  onEdit={handleTaskEdit}
+                                  onResizeStart={handleResizeStart}
+                                  onTaskDragStart={
+                                    onUpdateTaskOrders
+                                      ? handleTaskDragStart
+                                      : undefined
+                                  }
+                                  onTaskDragOver={
+                                    onUpdateTaskOrders
+                                      ? handleTaskDragOver
+                                      : undefined
+                                  }
+                                  onTaskDragEnd={
+                                    onUpdateTaskOrders
+                                      ? handleTaskDragEnd
+                                      : undefined
+                                  }
+                                  taskDragIndex={taskIndex}
+                                  milestoneId={milestone.milestoneId}
+                                  isDragging={isDragging}
+                                  isDragTarget={isDragTarget}
+                                />
+                              );
+                            }
+                          );
                         })()}
                     </React.Fragment>
                   );

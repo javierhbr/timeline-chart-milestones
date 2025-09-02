@@ -1,10 +1,10 @@
 import { Milestone } from './dateUtils';
-import { 
-  ChangeHistoryEntry, 
+import {
+  ChangeHistoryEntry,
   ChangeHistoryOptions,
   logMilestoneAddition,
   logMilestoneRemoval,
-  detectMilestoneChanges
+  detectMilestoneChanges,
 } from './changeHistory';
 
 /**
@@ -106,13 +106,17 @@ export function createMilestoneWithTracking(
   description?: string,
   historyOptions: ChangeHistoryOptions = {}
 ): MilestoneOperationResult {
-  const newMilestone = createNewMilestone(milestoneName, milestones, description);
-  
+  const newMilestone = createNewMilestone(
+    milestoneName,
+    milestones,
+    description
+  );
+
   const newMilestones = [...milestones, newMilestone];
-  
+
   const changes: ChangeHistoryEntry[] = [];
   changes.push(logMilestoneAddition(newMilestone, historyOptions));
-  
+
   return {
     milestones: newMilestones,
     changes,
@@ -128,16 +132,16 @@ export function removeMilestoneWithTracking(
   historyOptions: ChangeHistoryOptions = {}
 ): MilestoneOperationResult {
   const milestoneToRemove = milestones.find(m => m.milestoneId === milestoneId);
-  
+
   if (!milestoneToRemove) {
     return { milestones, changes: [] };
   }
-  
+
   const newMilestones = milestones.filter(m => m.milestoneId !== milestoneId);
-  
+
   const changes: ChangeHistoryEntry[] = [];
   changes.push(logMilestoneRemoval(milestoneToRemove, historyOptions));
-  
+
   return {
     milestones: newMilestones,
     changes,
@@ -154,23 +158,23 @@ export function updateMilestoneWithTracking(
   historyOptions: ChangeHistoryOptions = {}
 ): MilestoneOperationResult {
   const originalMilestone = milestones.find(m => m.milestoneId === milestoneId);
-  
+
   if (!originalMilestone) {
     return { milestones, changes: [] };
   }
-  
+
   const updatedMilestone = { ...originalMilestone, ...updates };
-  
+
   const newMilestones = milestones.map(m =>
     m.milestoneId === milestoneId ? updatedMilestone : m
   );
-  
+
   const changes = detectMilestoneChanges(
     originalMilestone,
     updatedMilestone,
     historyOptions
   );
-  
+
   return {
     milestones: newMilestones,
     changes,
@@ -184,22 +188,24 @@ export function updateMilestoneWithTracking(
 export function reorderMilestonesWithTracking(
   milestones: Milestone[],
   newOrder: string[],
-  historyOptions: ChangeHistoryOptions = {}
+  _historyOptions: ChangeHistoryOptions = {}
 ): MilestoneOperationResult {
   // Reorder milestones based on the new order array
   const reorderedMilestones = newOrder
     .map(id => milestones.find(m => m.milestoneId === id))
     .filter((m): m is Milestone => m !== undefined);
-  
+
   // Add any milestones that weren't in the new order (safety check)
   const includedIds = new Set(newOrder);
-  const remainingMilestones = milestones.filter(m => !includedIds.has(m.milestoneId));
-  
+  const remainingMilestones = milestones.filter(
+    m => !includedIds.has(m.milestoneId)
+  );
+
   const finalMilestones = [...reorderedMilestones, ...remainingMilestones];
-  
+
   // For now, we don't track reordering in history as it's just a display preference
   // If you want to track this in the future, you can add change logging here
-  
+
   return {
     milestones: finalMilestones,
     changes: [], // No changes logged for reordering

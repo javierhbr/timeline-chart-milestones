@@ -1,5 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import {
+  Card,
+  CardContent,
+} from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
@@ -18,12 +21,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from './ui/select';
-import { 
-  History, 
-  RotateCcw, 
-  Clock, 
-  Filter, 
-  User, 
+import {
+  History,
+  RotateCcw,
+  Clock,
+  Filter,
+  User,
   AlertTriangle,
   FileText,
   GitBranch,
@@ -52,13 +55,20 @@ export function ChangeHistoryPanel({
   isOpen,
   onClose,
 }: ChangeHistoryPanelProps) {
-  const [filterEntityType, setFilterEntityType] = useState<EntityType | 'all'>('all');
-  const [filterChangeType, setFilterChangeType] = useState<ChangeType | 'all'>('all');
-  const [rollbackEntry, setRollbackEntry] = useState<{ entry: ChangeHistoryEntry; index: number } | null>(null);
+  const [filterEntityType, setFilterEntityType] = useState<EntityType | 'all'>(
+    'all'
+  );
+  const [filterChangeType, setFilterChangeType] = useState<ChangeType | 'all'>(
+    'all'
+  );
+  const [rollbackEntry, setRollbackEntry] = useState<{
+    entry: ChangeHistoryEntry;
+    index: number;
+  } | null>(null);
 
   // Filter and group history entries
   const filteredHistory = useMemo(() => {
-    const filters: any = {};
+    const filters: Record<string, EntityType | ChangeType> = {};
     if (filterEntityType !== 'all') {
       filters.entityType = filterEntityType;
     }
@@ -79,7 +89,9 @@ export function ChangeHistoryPanel({
   const handleConfirmRollback = () => {
     if (rollbackEntry) {
       // Find the actual index in the full changeHistory array
-      const actualIndex = changeHistory.findIndex(e => e.entryId === rollbackEntry.entry.entryId);
+      const actualIndex = changeHistory.findIndex(
+        e => e.entryId === rollbackEntry.entry.entryId
+      );
       if (actualIndex !== -1) {
         onRollback(actualIndex);
       }
@@ -157,8 +169,8 @@ export function ChangeHistoryPanel({
               Change History
             </DialogTitle>
             <DialogDescription>
-              View and manage the complete history of changes to your project timeline.
-              You can rollback to any previous state.
+              View and manage the complete history of changes to your project
+              timeline. You can rollback to any previous state.
             </DialogDescription>
           </DialogHeader>
 
@@ -168,7 +180,10 @@ export function ChangeHistoryPanel({
               <Filter className="h-4 w-4 text-gray-500" />
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Entity:</span>
-                <Select value={filterEntityType} onValueChange={(value: any) => setFilterEntityType(value)}>
+                <Select
+                  value={filterEntityType}
+                  onValueChange={(value: EntityType | 'all') => setFilterEntityType(value)}
+                >
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
@@ -181,7 +196,10 @@ export function ChangeHistoryPanel({
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium">Change:</span>
-                <Select value={filterChangeType} onValueChange={(value: any) => setFilterChangeType(value)}>
+                <Select
+                  value={filterChangeType}
+                  onValueChange={(value: ChangeType | 'all') => setFilterChangeType(value)}
+                >
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
@@ -205,11 +223,16 @@ export function ChangeHistoryPanel({
                   <div className="text-center py-8">
                     <History className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <p className="text-gray-500">No change history available</p>
-                    <p className="text-sm text-gray-400">Changes will appear here as you modify your timeline</p>
+                    <p className="text-sm text-gray-400">
+                      Changes will appear here as you modify your timeline
+                    </p>
                   </div>
                 ) : (
                   Object.entries(groupedHistory)
-                    .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+                    .sort(
+                      ([a], [b]) =>
+                        new Date(b).getTime() - new Date(a).getTime()
+                    )
                     .map(([date, entries]) => (
                       <div key={date} className="space-y-2">
                         <h3 className="text-sm font-semibold text-gray-600 flex items-center gap-2">
@@ -219,10 +242,15 @@ export function ChangeHistoryPanel({
                         <div className="space-y-2 ml-6">
                           {entries
                             .sort((a, b) => b.timestamp - a.timestamp)
-                            .map((entry, index) => {
-                              const actualIndex = changeHistory.findIndex(e => e.entryId === entry.entryId);
+                            .map((entry) => {
+                              const actualIndex = changeHistory.findIndex(
+                                e => e.entryId === entry.entryId
+                              );
                               return (
-                                <Card key={entry.entryId} className="border-l-4 border-l-gray-200">
+                                <Card
+                                  key={entry.entryId}
+                                  className="border-l-4 border-l-gray-200"
+                                >
                                   <CardContent className="p-3">
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-3 flex-1">
@@ -232,7 +260,9 @@ export function ChangeHistoryPanel({
                                             variant="outline"
                                             className={`text-xs ${getChangeTypeColor(entry.changeType)}`}
                                           >
-                                            {getChangeTypeLabel(entry.changeType)}
+                                            {getChangeTypeLabel(
+                                              entry.changeType
+                                            )}
                                           </Badge>
                                         </div>
                                         <div className="flex-1 min-w-0">
@@ -240,7 +270,10 @@ export function ChangeHistoryPanel({
                                             {generateChangeDescription(entry)}
                                           </p>
                                           <p className="text-xs text-gray-500">
-                                            {formatDistanceToNow(new Date(entry.timestamp), { addSuffix: true })}
+                                            {formatDistanceToNow(
+                                              new Date(entry.timestamp),
+                                              { addSuffix: true }
+                                            )}
                                             {entry.user && (
                                               <span className="inline-flex items-center gap-1 ml-2">
                                                 <User className="h-3 w-3" />
@@ -254,9 +287,17 @@ export function ChangeHistoryPanel({
                                         <Button
                                           size="sm"
                                           variant="outline"
-                                          onClick={() => handleRollbackClick(entry, actualIndex)}
+                                          onClick={() =>
+                                            handleRollbackClick(
+                                              entry,
+                                              actualIndex
+                                            )
+                                          }
                                           className="h-8 px-2 text-xs"
-                                          disabled={actualIndex === changeHistory.length - 1}
+                                          disabled={
+                                            actualIndex ===
+                                            changeHistory.length - 1
+                                          }
                                         >
                                           <RotateCcw className="h-3 w-3 mr-1" />
                                           Rollback
@@ -279,7 +320,8 @@ export function ChangeHistoryPanel({
               <div className="flex items-center gap-2 text-sm text-blue-700">
                 <GitBranch className="h-4 w-4" />
                 <span>
-                  {filteredHistory.length} of {changeHistory.length} changes shown
+                  {filteredHistory.length} of {changeHistory.length} changes
+                  shown
                 </span>
               </div>
               <div className="text-xs text-blue-600">
@@ -326,7 +368,10 @@ export function ChangeHistoryPanel({
                     {generateChangeDescription(rollbackEntry.entry)}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {formatDistanceToNow(new Date(rollbackEntry.entry.timestamp), { addSuffix: true })}
+                    {formatDistanceToNow(
+                      new Date(rollbackEntry.entry.timestamp),
+                      { addSuffix: true }
+                    )}
                   </p>
                 </CardContent>
               </Card>
@@ -337,8 +382,9 @@ export function ChangeHistoryPanel({
                   <div className="text-sm text-orange-700">
                     <p className="font-medium">Warning:</p>
                     <p>
-                      All changes made after "{generateChangeDescription(rollbackEntry.entry)}" will be permanently deleted. 
-                      This action cannot be undone.
+                      All changes made after "
+                      {generateChangeDescription(rollbackEntry.entry)}" will be
+                      permanently deleted. This action cannot be undone.
                     </p>
                   </div>
                 </div>

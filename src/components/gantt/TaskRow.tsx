@@ -43,7 +43,11 @@ interface TaskRowProps {
   onDelete: (task: Task) => void;
   onEdit: (task: Task) => void;
   onResizeStart: (e: React.MouseEvent) => void;
-  onTaskDragStart?: (taskId: string, milestoneId: string, index: number) => void;
+  onTaskDragStart?: (
+    taskId: string,
+    milestoneId: string,
+    index: number
+  ) => void;
   onTaskDragOver?: (index: number) => void;
   onTaskDragEnd?: () => void;
   taskDragIndex?: number;
@@ -87,11 +91,13 @@ const TaskRow = memo(function TaskRow({
     // Use task.durationDays directly instead of recalculating to avoid timing issues
     const taskDurationDays = task.durationDays;
     const teamColor = teamColors[task.team] || teamColors.Default;
-    
+
     // Debug logging for task width calculation - check task data vs calculation
     const calculatedFromDates = differenceInDays(taskEnd, taskStart) + 1;
     const calculatedWidth = taskDurationDays * zoomLevel - 4;
-    console.log(`📏 Task "${task.name}": task.durationDays=${taskDurationDays}, calculatedFromDates=${calculatedFromDates}, dates=${task.startDate} to ${task.endDate}, zoomLevel=${zoomLevel}, calculatedWidth=${calculatedWidth}px`);
+    console.log(
+      `📏 Task "${task.name}": task.durationDays=${taskDurationDays}, calculatedFromDates=${calculatedFromDates}, dates=${task.startDate} to ${task.endDate}, zoomLevel=${zoomLevel}, calculatedWidth=${calculatedWidth}px`
+    );
 
     return {
       taskStart,
@@ -100,7 +106,15 @@ const TaskRow = memo(function TaskRow({
       taskDurationDays,
       teamColor,
     };
-  }, [task.startDate, task.endDate, task.durationDays, task.team, task.name, timelineStart, zoomLevel]);
+  }, [
+    task.startDate,
+    task.endDate,
+    task.durationDays,
+    task.team,
+    task.name,
+    timelineStart,
+    zoomLevel,
+  ]);
 
   const handleDragStart = useCallback(
     (e: React.DragEvent) => {
@@ -190,7 +204,7 @@ const TaskRow = memo(function TaskRow({
                       <GripHorizontal className="w-3 h-3 text-muted-foreground" />
                     </div>
                   )}
-                  
+
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <div className="font-medium text-sm truncate flex-1 min-w-0">
                       {task.name}

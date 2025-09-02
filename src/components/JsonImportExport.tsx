@@ -461,13 +461,14 @@ export function JsonImportExport({
   const handleExportImportableCSV = () => {
     // CSV format compatible for re-importing into the timeline
     // Header matches exactly what the import function expects
-    const csvHeader = 'milestoneId,milestoneName,taskId,taskName,taskDescription,team,sprint,durationDays,dependsOn\n';
-    
+    const csvHeader =
+      'milestoneId,milestoneName,taskId,taskName,taskDescription,team,sprint,durationDays,dependsOn\n';
+
     const csvRows = milestones.flatMap(milestone => {
       return milestone.tasks.map(task => {
         // Format dependencies as pipe-separated string (as expected by import)
         const dependsOn = task.dependsOn.join('|');
-        
+
         return [
           escapeCSVField(milestone.milestoneId),
           escapeCSVField(milestone.milestoneName),

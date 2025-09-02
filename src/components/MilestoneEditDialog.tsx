@@ -14,6 +14,11 @@ import { Textarea } from './ui/textarea';
 import { Edit, X, CheckCircle, AlertCircle } from 'lucide-react';
 import { Milestone } from '../utils/dateUtils';
 
+// Extended milestone type that might include description
+type MilestoneWithDescription = Milestone & {
+  description?: string;
+};
+
 interface MilestoneEditDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -44,7 +49,7 @@ export function MilestoneEditDialog({
     if (milestone && isOpen) {
       setFormData({
         milestoneName: milestone.milestoneName,
-        description: (milestone as any).description || '', // Description might not exist yet
+        description: (milestone as MilestoneWithDescription).description || '',
       });
       setErrors([]);
     }
@@ -106,7 +111,7 @@ export function MilestoneEditDialog({
 
   const hasChanges =
     formData.milestoneName !== milestone.milestoneName ||
-    formData.description !== ((milestone as any).description || '');
+    formData.description !== ((milestone as MilestoneWithDescription).description || '');
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -179,7 +184,7 @@ export function MilestoneEditDialog({
                       </li>
                     )}
                     {formData.description !==
-                      ((milestone as any).description || '') && (
+                      ((milestone as MilestoneWithDescription).description || '') && (
                       <li className="text-xs">
                         • Description:{' '}
                         {formData.description ? 'Updated' : 'Removed'}

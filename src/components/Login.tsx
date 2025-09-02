@@ -101,4 +101,5 @@ export function Login({ onLogin, error }: LoginProps) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { HARDCODED_CREDENTIALS };

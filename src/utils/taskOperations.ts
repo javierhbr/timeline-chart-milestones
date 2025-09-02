@@ -1,11 +1,11 @@
 import { Milestone, Task } from './dateUtils';
-import { 
-  ChangeHistoryEntry, 
+import {
+  ChangeHistoryEntry,
   ChangeHistoryOptions,
   logTaskAddition,
   logTaskRemoval,
   logTaskMove,
-  detectTaskChanges
+  detectTaskChanges,
 } from './changeHistory';
 
 export interface CloneOptions {
@@ -329,22 +329,28 @@ export function cloneTaskWithTracking(
     cloneTask(task, milestones, options),
     options.targetMilestoneId
   );
-  
-  const targetMilestone = milestones.find(m => m.milestoneId === options.targetMilestoneId);
+
+  const targetMilestone = milestones.find(
+    m => m.milestoneId === options.targetMilestoneId
+  );
   const clonedTask = newMilestones
     .find(m => m.milestoneId === options.targetMilestoneId)
-    ?.tasks.find(t => t.name === (options.newTaskName || `${task.name} (Copy)`));
-  
+    ?.tasks.find(
+      t => t.name === (options.newTaskName || `${task.name} (Copy)`)
+    );
+
   const changes: ChangeHistoryEntry[] = [];
   if (clonedTask && targetMilestone) {
-    changes.push(logTaskAddition(
-      clonedTask,
-      options.targetMilestoneId,
-      targetMilestone.milestoneName,
-      historyOptions
-    ));
+    changes.push(
+      logTaskAddition(
+        clonedTask,
+        options.targetMilestoneId,
+        targetMilestone.milestoneName,
+        historyOptions
+      )
+    );
   }
-  
+
   return {
     milestones: newMilestones,
     changes,
@@ -361,7 +367,7 @@ export function splitTaskWithTracking(
   historyOptions: ChangeHistoryOptions = {}
 ): TaskOperationResult {
   const splitTasks = splitTask(task, milestones, splitConfig);
-  
+
   // Find which milestone the original task belongs to
   let originalMilestone: Milestone | undefined;
   for (const milestone of milestones) {
@@ -370,11 +376,11 @@ export function splitTaskWithTracking(
       break;
     }
   }
-  
+
   if (!originalMilestone) {
     return { milestones, changes: [] };
   }
-  
+
   // Remove original task and add split tasks
   let newMilestones = milestones.map(milestone => {
     if (milestone.milestoneId === originalMilestone!.milestoneId) {
@@ -382,37 +388,45 @@ export function splitTaskWithTracking(
         ...milestone,
         tasks: [
           ...milestone.tasks.filter(t => t.taskId !== task.taskId),
-          ...splitTasks
+          ...splitTasks,
         ],
       };
     }
     return milestone;
   });
-  
+
   // Update dependencies
-  newMilestones = updateDependenciesAfterSplit(newMilestones, task.taskId, splitTasks);
-  
+  newMilestones = updateDependenciesAfterSplit(
+    newMilestones,
+    task.taskId,
+    splitTasks
+  );
+
   // Log changes
   const changes: ChangeHistoryEntry[] = [];
-  
+
   // Log removal of original task
-  changes.push(logTaskRemoval(
-    task,
-    originalMilestone.milestoneId,
-    originalMilestone.milestoneName,
-    historyOptions
-  ));
-  
+  changes.push(
+    logTaskRemoval(
+      task,
+      originalMilestone.milestoneId,
+      originalMilestone.milestoneName,
+      historyOptions
+    )
+  );
+
   // Log addition of split tasks
   splitTasks.forEach(splitTask => {
-    changes.push(logTaskAddition(
-      splitTask,
-      originalMilestone!.milestoneId,
-      originalMilestone!.milestoneName,
-      historyOptions
-    ));
+    changes.push(
+      logTaskAddition(
+        splitTask,
+        originalMilestone!.milestoneId,
+        originalMilestone!.milestoneName,
+        historyOptions
+      )
+    );
   });
-  
+
   return {
     milestones: newMilestones,
     changes,
@@ -432,28 +446,30 @@ export function moveTaskBetweenMilestonesWithTracking(
   const fromMilestone = milestones.find(m => m.milestoneId === fromMilestoneId);
   const toMilestone = milestones.find(m => m.milestoneId === toMilestoneId);
   const taskToMove = fromMilestone?.tasks.find(t => t.taskId === taskId);
-  
+
   if (!taskToMove || !fromMilestone || !toMilestone) {
     return { milestones, changes: [] };
   }
-  
+
   const newMilestones = moveTaskBetweenMilestones(
     milestones,
     taskId,
     fromMilestoneId,
     toMilestoneId
   );
-  
+
   const changes: ChangeHistoryEntry[] = [];
-  changes.push(logTaskMove(
-    taskToMove,
-    fromMilestoneId,
-    fromMilestone.milestoneName,
-    toMilestoneId,
-    toMilestone.milestoneName,
-    historyOptions
-  ));
-  
+  changes.push(
+    logTaskMove(
+      taskToMove,
+      fromMilestoneId,
+      fromMilestone.milestoneName,
+      toMilestoneId,
+      toMilestone.milestoneName,
+      historyOptions
+    )
+  );
+
   return {
     milestones: newMilestones,
     changes,
@@ -471,28 +487,31 @@ export function updateTaskWithTracking(
 ): TaskOperationResult {
   console.log('⚙️ updateTaskWithTracking called:', { taskId, updates });
   console.log('⚙️ Milestones received:', milestones.length);
-  
+
   let originalTask: Task | undefined;
   let milestoneId: string | undefined;
-  
+
   // Find the original task and its milestone
   for (const milestone of milestones) {
     const task = milestone.tasks.find(t => t.taskId === taskId);
     if (task) {
       originalTask = task;
       milestoneId = milestone.milestoneId;
-      console.log('⚙️ Found original task in milestone:', milestone.milestoneName);
+      console.log(
+        '⚙️ Found original task in milestone:',
+        milestone.milestoneName
+      );
       break;
     }
   }
-  
+
   if (!originalTask || !milestoneId) {
     console.log('⚙️ Task not found or no milestone ID');
     return { milestones, changes: [] };
   }
-  
+
   const updatedTask = { ...originalTask, ...updates };
-  
+
   // Update milestones
   const newMilestones = milestones.map(milestone => {
     if (milestone.milestoneId === milestoneId) {
@@ -506,7 +525,7 @@ export function updateTaskWithTracking(
     return milestone;
   });
   console.log('⚙️ Updated milestones length:', newMilestones.length);
-  
+
   // Detect changes
   const changes = detectTaskChanges(
     originalTask,
@@ -515,8 +534,11 @@ export function updateTaskWithTracking(
     historyOptions
   );
   console.log('⚙️ Detected changes:', changes.length);
-  console.log('⚙️ Change types:', changes.map(c => c.changeType));
-  
+  console.log(
+    '⚙️ Change types:',
+    changes.map(c => c.changeType)
+  );
+
   return {
     milestones: newMilestones,
     changes,
@@ -536,7 +558,7 @@ export function addTaskWithTracking(
   if (!milestone) {
     return { milestones, changes: [] };
   }
-  
+
   const newMilestones = milestones.map(m => {
     if (m.milestoneId === milestoneId) {
       return {
@@ -546,15 +568,12 @@ export function addTaskWithTracking(
     }
     return m;
   });
-  
+
   const changes: ChangeHistoryEntry[] = [];
-  changes.push(logTaskAddition(
-    task,
-    milestoneId,
-    milestone.milestoneName,
-    historyOptions
-  ));
-  
+  changes.push(
+    logTaskAddition(task, milestoneId, milestone.milestoneName, historyOptions)
+  );
+
   return {
     milestones: newMilestones,
     changes,
@@ -571,7 +590,7 @@ export function removeTaskWithTracking(
 ): TaskOperationResult {
   let taskToRemove: Task | undefined;
   let sourceMilestone: Milestone | undefined;
-  
+
   // Find the task and its milestone
   for (const milestone of milestones) {
     const task = milestone.tasks.find(t => t.taskId === taskId);
@@ -581,11 +600,11 @@ export function removeTaskWithTracking(
       break;
     }
   }
-  
+
   if (!taskToRemove || !sourceMilestone) {
     return { milestones, changes: [] };
   }
-  
+
   const newMilestones = milestones.map(milestone => {
     if (milestone.milestoneId === sourceMilestone!.milestoneId) {
       return {
@@ -595,15 +614,17 @@ export function removeTaskWithTracking(
     }
     return milestone;
   });
-  
+
   const changes: ChangeHistoryEntry[] = [];
-  changes.push(logTaskRemoval(
-    taskToRemove,
-    sourceMilestone.milestoneId,
-    sourceMilestone.milestoneName,
-    historyOptions
-  ));
-  
+  changes.push(
+    logTaskRemoval(
+      taskToRemove,
+      sourceMilestone.milestoneId,
+      sourceMilestone.milestoneName,
+      historyOptions
+    )
+  );
+
   return {
     milestones: newMilestones,
     changes,

@@ -1,13 +1,13 @@
 import { Milestone, Task } from './dateUtils';
 
-export type ChangeType = 
-  | 'name' 
-  | 'duration' 
-  | 'dependency' 
-  | 'add' 
-  | 'remove' 
-  | 'description' 
-  | 'team' 
+export type ChangeType =
+  | 'name'
+  | 'duration'
+  | 'dependency'
+  | 'add'
+  | 'remove'
+  | 'description'
+  | 'team'
   | 'status'
   | 'milestone_name'
   | 'task_move';
@@ -20,8 +20,8 @@ export interface ChangeHistoryEntry {
   entityType: EntityType;
   entityId: string;
   changeType: ChangeType;
-  oldValue: any;
-  newValue: any;
+  oldValue: unknown;
+  newValue: unknown;
   user?: string;
   // Additional context for complex operations
   context?: {
@@ -42,7 +42,7 @@ export interface ChangeHistoryOptions {
  */
 export function generateChangeEntryId(): string {
   const timestamp = Date.now();
-  const random = Math.random().toString(36).substr(2, 6);
+  const random = Math.random().toString(36).substring(2, 8);
   return `CH${timestamp}_${random}`;
 }
 
@@ -53,8 +53,8 @@ export function createChangeEntry(
   entityType: EntityType,
   entityId: string,
   changeType: ChangeType,
-  oldValue: any,
-  newValue: any,
+  oldValue: unknown,
+  newValue: unknown,
   options: ChangeHistoryOptions = {}
 ): ChangeHistoryEntry {
   return {
@@ -78,8 +78,8 @@ export function logChange(
   entityType: EntityType,
   entityId: string,
   changeType: ChangeType,
-  oldValue: any,
-  newValue: any,
+  oldValue: unknown,
+  newValue: unknown,
   options: ChangeHistoryOptions = {}
 ): ChangeHistoryEntry[] {
   const entry = createChangeEntry(
@@ -99,36 +99,42 @@ export function logChange(
  */
 export function generateChangeDescription(entry: ChangeHistoryEntry): string {
   const { entityType, changeType, oldValue, newValue, context } = entry;
-  
-  const entityName = context?.taskName || context?.milestoneName || `${entityType} ${entry.entityId}`;
-  
+
+  const entityName =
+    context?.taskName ||
+    context?.milestoneName ||
+    `${entityType} ${entry.entityId}`;
+
   switch (changeType) {
     case 'add':
       return `Added ${entityType} "${entityName}"`;
-    
+
     case 'remove':
       return `Removed ${entityType} "${entityName}"`;
-    
+
     case 'name':
     case 'milestone_name':
       return `${entityType === 'task' ? 'Task' : 'Milestone'} "${oldValue}" renamed to "${newValue}"`;
-    
-    case 'description':
-      const oldDesc = oldValue ? `"${oldValue.substring(0, 30)}..."` : 'empty';
-      const newDesc = newValue ? `"${newValue.substring(0, 30)}..."` : 'empty';
+
+    case 'description': {
+      const oldDesc = oldValue ? `"${String(oldValue).substring(0, 30)}..."` : 'empty';
+      const newDesc = newValue ? `"${String(newValue).substring(0, 30)}..."` : 'empty';
       return `Task "${entityName}" description changed from ${oldDesc} to ${newDesc}`;
-    
+    }
+
     case 'duration':
       return `Task "${entityName}" duration changed from ${oldValue} to ${newValue} days`;
-    
+
     case 'team':
       return `Task "${entityName}" team changed from "${oldValue}" to "${newValue}"`;
-    
+
     case 'dependency':
       if (Array.isArray(oldValue) && Array.isArray(newValue)) {
         const added = newValue.filter((dep: string) => !oldValue.includes(dep));
-        const removed = oldValue.filter((dep: string) => !newValue.includes(dep));
-        
+        const removed = oldValue.filter(
+          (dep: string) => !newValue.includes(dep)
+        );
+
         if (added.length > 0 && removed.length > 0) {
           return `Task "${entityName}" dependencies modified`;
         } else if (added.length > 0) {
@@ -138,15 +144,16 @@ export function generateChangeDescription(entry: ChangeHistoryEntry): string {
         }
       }
       return `Task "${entityName}" dependencies modified`;
-    
-    case 'task_move':
+
+    case 'task_move': {
       const fromMilestone = context?.milestoneName || 'unknown milestone';
-      const toMilestone = newValue || 'unknown milestone';
+      const toMilestone = String(newValue) || 'unknown milestone';
       return `Task "${entityName}" moved from "${fromMilestone}" to "${toMilestone}"`;
-    
+    }
+
     case 'status':
       return `Task "${entityName}" status changed from "${oldValue}" to "${newValue}"`;
-    
+
     default:
       return `${entityType} "${entityName}" ${changeType} changed`;
   }
@@ -156,18 +163,18 @@ export function generateChangeDescription(entry: ChangeHistoryEntry): string {
  * Reconstructs the project state at a specific point in history
  */
 export function reconstructStateAtChange(
-  initialMilestones: Milestone[],
+  _initialMilestones: Milestone[],
   history: ChangeHistoryEntry[],
   targetChangeIndex: number
 ): Milestone[] {
   // Start with initial empty state and apply changes up to target index
   let currentState: Milestone[] = [];
-  
+
   for (let i = 0; i <= targetChangeIndex; i++) {
     const change = history[i];
     currentState = applyChangeToState(currentState, change);
   }
-  
+
   return currentState;
 }
 
@@ -179,113 +186,119 @@ function applyChangeToState(
   change: ChangeHistoryEntry
 ): Milestone[] {
   const { entityType, entityId, changeType, newValue, context } = change;
-  
+
   switch (changeType) {
     case 'add':
       if (entityType === 'milestone') {
         return [...milestones, newValue as Milestone];
       } else if (entityType === 'task' && context?.milestoneId) {
-        return milestones.map(milestone => 
+        return milestones.map(milestone =>
           milestone.milestoneId === context.milestoneId
             ? { ...milestone, tasks: [...milestone.tasks, newValue as Task] }
             : milestone
         );
       }
       break;
-    
+
     case 'remove':
       if (entityType === 'milestone') {
-        return milestones.filter(milestone => milestone.milestoneId !== entityId);
+        return milestones.filter(
+          milestone => milestone.milestoneId !== entityId
+        );
       } else if (entityType === 'task') {
         return milestones.map(milestone => ({
           ...milestone,
-          tasks: milestone.tasks.filter(task => task.taskId !== entityId)
+          tasks: milestone.tasks.filter(task => task.taskId !== entityId),
         }));
       }
       break;
-    
+
     case 'name':
       if (entityType === 'task') {
         return milestones.map(milestone => ({
           ...milestone,
           tasks: milestone.tasks.map(task =>
-            task.taskId === entityId ? { ...task, name: newValue } : task
-          )
+            task.taskId === entityId ? { ...task, name: newValue as string } : task
+          ),
         }));
       }
       break;
-    
+
     case 'milestone_name':
       if (entityType === 'milestone') {
         return milestones.map(milestone =>
           milestone.milestoneId === entityId
-            ? { ...milestone, milestoneName: newValue }
+            ? { ...milestone, milestoneName: newValue as string }
             : milestone
         );
       }
       break;
-    
+
     case 'description':
       if (entityType === 'task') {
         return milestones.map(milestone => ({
           ...milestone,
           tasks: milestone.tasks.map(task =>
-            task.taskId === entityId ? { ...task, description: newValue } : task
-          )
+            task.taskId === entityId ? { ...task, description: newValue as string } : task
+          ),
         }));
       }
       break;
-    
+
     case 'duration':
       if (entityType === 'task') {
         return milestones.map(milestone => ({
           ...milestone,
           tasks: milestone.tasks.map(task =>
-            task.taskId === entityId ? { ...task, durationDays: newValue } : task
-          )
+            task.taskId === entityId
+              ? { ...task, durationDays: newValue as number }
+              : task
+          ),
         }));
       }
       break;
-    
+
     case 'team':
       if (entityType === 'task') {
         return milestones.map(milestone => ({
           ...milestone,
           tasks: milestone.tasks.map(task =>
-            task.taskId === entityId ? { ...task, team: newValue } : task
-          )
+            task.taskId === entityId ? { ...task, team: newValue as string } : task
+          ),
         }));
       }
       break;
-    
+
     case 'dependency':
       if (entityType === 'task') {
         return milestones.map(milestone => ({
           ...milestone,
           tasks: milestone.tasks.map(task =>
-            task.taskId === entityId ? { ...task, dependsOn: newValue } : task
-          )
+            task.taskId === entityId ? { ...task, dependsOn: newValue as string[] } : task
+          ),
         }));
       }
       break;
-    
+
     case 'task_move':
       if (entityType === 'task' && context?.targetMilestoneId) {
         let taskToMove: Task | null = null;
-        
+
         // Remove task from old milestone
         const milestonesAfterRemoval = milestones.map(milestone => {
-          const taskIndex = milestone.tasks.findIndex(task => task.taskId === entityId);
+          const taskIndex = milestone.tasks.findIndex(
+            task => task.taskId === entityId
+          );
           if (taskIndex !== -1) {
             taskToMove = milestone.tasks[taskIndex];
             return {
               ...milestone,
-              tasks: milestone.tasks.filter(task => task.taskId !== entityId)
+              tasks: milestone.tasks.filter(task => task.taskId !== entityId),
             };
           }
           return milestone;
         });
-        
+
         // Add task to new milestone
         if (taskToMove) {
           return milestonesAfterRemoval.map(milestone =>
@@ -297,7 +310,7 @@ function applyChangeToState(
       }
       break;
   }
-  
+
   return milestones;
 }
 
@@ -305,7 +318,7 @@ function applyChangeToState(
  * Rolls back the project state to a specific change entry index
  */
 export function rollbackToChange(
-  currentMilestones: Milestone[],
+  _currentMilestones: Milestone[],
   history: ChangeHistoryEntry[],
   targetChangeIndex: number
 ): {
@@ -318,10 +331,10 @@ export function rollbackToChange(
     history,
     targetChangeIndex
   );
-  
+
   // Truncate history to target index
   const newHistory = history.slice(0, targetChangeIndex + 1);
-  
+
   return {
     newMilestones,
     newHistory,
@@ -353,9 +366,11 @@ export function getEntityDisplayName(
 /**
  * Groups history entries by date for better display
  */
-export function groupHistoryByDate(history: ChangeHistoryEntry[]): { [date: string]: ChangeHistoryEntry[] } {
+export function groupHistoryByDate(history: ChangeHistoryEntry[]): {
+  [date: string]: ChangeHistoryEntry[];
+} {
   const groups: { [date: string]: ChangeHistoryEntry[] } = {};
-  
+
   history.forEach(entry => {
     const date = new Date(entry.timestamp).toDateString();
     if (!groups[date]) {
@@ -363,7 +378,7 @@ export function groupHistoryByDate(history: ChangeHistoryEntry[]): { [date: stri
     }
     groups[date].push(entry);
   });
-  
+
   return groups;
 }
 
@@ -395,7 +410,7 @@ export function getFilteredHistory(
 /**
  * Higher-order function that wraps milestone state updates with change tracking
  */
-export function withChangeTracking<T extends any[]>(
+export function withChangeTracking<T extends unknown[]>(
   updateFunction: (milestones: Milestone[], ...args: T) => Milestone[],
   changeDetector: (
     oldMilestones: Milestone[],
@@ -411,7 +426,7 @@ export function withChangeTracking<T extends any[]>(
     const oldMilestones = milestones;
     const newMilestones = updateFunction(oldMilestones, ...args);
     const changes = changeDetector(oldMilestones, newMilestones, ...args);
-    
+
     return {
       milestones: newMilestones,
       history: [...currentHistory, ...changes],
@@ -429,101 +444,111 @@ export function detectTaskChanges(
   options: ChangeHistoryOptions = {}
 ): ChangeHistoryEntry[] {
   const changes: ChangeHistoryEntry[] = [];
-  
+
   if (oldTask.name !== newTask.name) {
-    changes.push(createChangeEntry(
-      'task',
-      oldTask.taskId,
-      'name',
-      oldTask.name,
-      newTask.name,
-      {
-        ...options,
-        context: {
-          ...options.context,
-          milestoneId,
-          taskName: newTask.name,
-        },
-      }
-    ));
+    changes.push(
+      createChangeEntry(
+        'task',
+        oldTask.taskId,
+        'name',
+        oldTask.name,
+        newTask.name,
+        {
+          ...options,
+          context: {
+            ...options.context,
+            milestoneId,
+            taskName: newTask.name,
+          },
+        }
+      )
+    );
   }
-  
+
   if (oldTask.description !== newTask.description) {
-    changes.push(createChangeEntry(
-      'task',
-      oldTask.taskId,
-      'description',
-      oldTask.description,
-      newTask.description,
-      {
-        ...options,
-        context: {
-          ...options.context,
-          milestoneId,
-          taskName: newTask.name,
-        },
-      }
-    ));
+    changes.push(
+      createChangeEntry(
+        'task',
+        oldTask.taskId,
+        'description',
+        oldTask.description,
+        newTask.description,
+        {
+          ...options,
+          context: {
+            ...options.context,
+            milestoneId,
+            taskName: newTask.name,
+          },
+        }
+      )
+    );
   }
-  
+
   if (oldTask.team !== newTask.team) {
-    changes.push(createChangeEntry(
-      'task',
-      oldTask.taskId,
-      'team',
-      oldTask.team,
-      newTask.team,
-      {
-        ...options,
-        context: {
-          ...options.context,
-          milestoneId,
-          taskName: newTask.name,
-        },
-      }
-    ));
+    changes.push(
+      createChangeEntry(
+        'task',
+        oldTask.taskId,
+        'team',
+        oldTask.team,
+        newTask.team,
+        {
+          ...options,
+          context: {
+            ...options.context,
+            milestoneId,
+            taskName: newTask.name,
+          },
+        }
+      )
+    );
   }
-  
+
   if (oldTask.durationDays !== newTask.durationDays) {
-    changes.push(createChangeEntry(
-      'task',
-      oldTask.taskId,
-      'duration',
-      oldTask.durationDays,
-      newTask.durationDays,
-      {
-        ...options,
-        context: {
-          ...options.context,
-          milestoneId,
-          taskName: newTask.name,
-        },
-      }
-    ));
+    changes.push(
+      createChangeEntry(
+        'task',
+        oldTask.taskId,
+        'duration',
+        oldTask.durationDays,
+        newTask.durationDays,
+        {
+          ...options,
+          context: {
+            ...options.context,
+            milestoneId,
+            taskName: newTask.name,
+          },
+        }
+      )
+    );
   }
-  
+
   // Check if dependencies changed
   const oldDeps = [...(oldTask.dependsOn || [])].sort();
   const newDeps = [...(newTask.dependsOn || [])].sort();
-  
+
   if (JSON.stringify(oldDeps) !== JSON.stringify(newDeps)) {
-    changes.push(createChangeEntry(
-      'task',
-      oldTask.taskId,
-      'dependency',
-      oldTask.dependsOn || [],
-      newTask.dependsOn || [],
-      {
-        ...options,
-        context: {
-          ...options.context,
-          milestoneId,
-          taskName: newTask.name,
-        },
-      }
-    ));
+    changes.push(
+      createChangeEntry(
+        'task',
+        oldTask.taskId,
+        'dependency',
+        oldTask.dependsOn || [],
+        newTask.dependsOn || [],
+        {
+          ...options,
+          context: {
+            ...options.context,
+            milestoneId,
+            taskName: newTask.name,
+          },
+        }
+      )
+    );
   }
-  
+
   return changes;
 }
 
@@ -536,24 +561,26 @@ export function detectMilestoneChanges(
   options: ChangeHistoryOptions = {}
 ): ChangeHistoryEntry[] {
   const changes: ChangeHistoryEntry[] = [];
-  
+
   if (oldMilestone.milestoneName !== newMilestone.milestoneName) {
-    changes.push(createChangeEntry(
-      'milestone',
-      oldMilestone.milestoneId,
-      'milestone_name',
-      oldMilestone.milestoneName,
-      newMilestone.milestoneName,
-      {
-        ...options,
-        context: {
-          ...options.context,
-          milestoneName: newMilestone.milestoneName,
-        },
-      }
-    ));
+    changes.push(
+      createChangeEntry(
+        'milestone',
+        oldMilestone.milestoneId,
+        'milestone_name',
+        oldMilestone.milestoneName,
+        newMilestone.milestoneName,
+        {
+          ...options,
+          context: {
+            ...options.context,
+            milestoneName: newMilestone.milestoneName,
+          },
+        }
+      )
+    );
   }
-  
+
   return changes;
 }
 
@@ -566,22 +593,15 @@ export function logTaskAddition(
   milestoneName: string,
   options: ChangeHistoryOptions = {}
 ): ChangeHistoryEntry {
-  return createChangeEntry(
-    'task',
-    task.taskId,
-    'add',
-    null,
-    task,
-    {
-      ...options,
-      context: {
-        ...options.context,
-        milestoneId,
-        milestoneName,
-        taskName: task.name,
-      },
-    }
-  );
+  return createChangeEntry('task', task.taskId, 'add', null, task, {
+    ...options,
+    context: {
+      ...options.context,
+      milestoneId,
+      milestoneName,
+      taskName: task.name,
+    },
+  });
 }
 
 /**
@@ -593,22 +613,15 @@ export function logTaskRemoval(
   milestoneName: string,
   options: ChangeHistoryOptions = {}
 ): ChangeHistoryEntry {
-  return createChangeEntry(
-    'task',
-    task.taskId,
-    'remove',
-    task,
-    null,
-    {
-      ...options,
-      context: {
-        ...options.context,
-        milestoneId,
-        milestoneName,
-        taskName: task.name,
-      },
-    }
-  );
+  return createChangeEntry('task', task.taskId, 'remove', task, null, {
+    ...options,
+    context: {
+      ...options.context,
+      milestoneId,
+      milestoneName,
+      taskName: task.name,
+    },
+  });
 }
 
 /**

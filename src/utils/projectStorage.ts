@@ -330,14 +330,18 @@ export function migrateProjectsToIncludeChangeHistory(): void {
       if (!project.timelineData.changeHistory) {
         migrationNeeded = true;
         project.timelineData.changeHistory = [];
-        console.log(`Migrated project "${project.name}" to include empty change history`);
+        console.log(
+          `Migrated project "${project.name}" to include empty change history`
+        );
       }
     }
 
     // Save updated storage if migration was needed
     if (migrationNeeded) {
       saveProjectsStorage(storage);
-      console.log('Successfully migrated existing projects to include change history support');
+      console.log(
+        'Successfully migrated existing projects to include change history support'
+      );
     }
   } catch (error) {
     console.warn('Failed to migrate projects for change history:', error);
@@ -358,14 +362,18 @@ export function migrateProjectsToIncludeTaskOrders(): void {
       if (!project.timelineData.taskOrders) {
         migrationNeeded = true;
         project.timelineData.taskOrders = {};
-        console.log(`Migrated project "${project.name}" to include empty task orders`);
+        console.log(
+          `Migrated project "${project.name}" to include empty task orders`
+        );
       }
     }
 
     // Save updated storage if migration was needed
     if (migrationNeeded) {
       saveProjectsStorage(storage);
-      console.log('Successfully migrated existing projects to include task orders support');
+      console.log(
+        'Successfully migrated existing projects to include task orders support'
+      );
     }
   } catch (error) {
     console.warn('Failed to migrate projects for task orders:', error);
@@ -378,10 +386,10 @@ export function migrateProjectsToIncludeTaskOrders(): void {
 export function runAllMigrations(): void {
   // First migrate old data format
   migrateOldData();
-  
+
   // Then migrate existing projects to include change history
   migrateProjectsToIncludeChangeHistory();
-  
+
   // Finally migrate existing projects to include task orders
   migrateProjectsToIncludeTaskOrders();
 }
