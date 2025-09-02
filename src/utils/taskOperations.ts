@@ -485,8 +485,6 @@ export function updateTaskWithTracking(
   updates: Partial<Task>,
   historyOptions: ChangeHistoryOptions = {}
 ): TaskOperationResult {
-  console.log('⚙️ updateTaskWithTracking called:', { taskId, updates });
-  console.log('⚙️ Milestones received:', milestones.length);
 
   let originalTask: Task | undefined;
   let milestoneId: string | undefined;
@@ -497,16 +495,11 @@ export function updateTaskWithTracking(
     if (task) {
       originalTask = task;
       milestoneId = milestone.milestoneId;
-      console.log(
-        '⚙️ Found original task in milestone:',
-        milestone.milestoneName
-      );
       break;
     }
   }
 
   if (!originalTask || !milestoneId) {
-    console.log('⚙️ Task not found or no milestone ID');
     return { milestones, changes: [] };
   }
 
@@ -524,7 +517,6 @@ export function updateTaskWithTracking(
     }
     return milestone;
   });
-  console.log('⚙️ Updated milestones length:', newMilestones.length);
 
   // Detect changes
   const changes = detectTaskChanges(
@@ -532,11 +524,6 @@ export function updateTaskWithTracking(
     updatedTask,
     milestoneId,
     historyOptions
-  );
-  console.log('⚙️ Detected changes:', changes.length);
-  console.log(
-    '⚙️ Change types:',
-    changes.map(c => c.changeType)
   );
 
   return {

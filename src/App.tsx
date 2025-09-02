@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import { GanttTimeline } from './components/GanttTimeline';
 import { ChangeHistoryPanel } from './components/ChangeHistoryPanel';
+import { Footer } from './components/Footer';
 import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
@@ -118,13 +119,8 @@ export default function App() {
   // Initialize app and load current project on component mount
   useEffect(() => {
     const initializeApp = () => {
-      console.log('App: Starting app initialization');
-      console.log('App: isAuthenticated =', isAuthenticated);
-      console.log('App: localStorage keys =', Object.keys(localStorage));
-
       // Only load projects if authenticated
       if (isAuthenticated) {
-        console.log('App: User is authenticated, loading projects');
         // Run all necessary migrations
         runAllMigrations();
 
@@ -192,11 +188,6 @@ export default function App() {
           setShowProjectManager(true);
         }
       } else {
-        console.log('App: User not authenticated, setting empty state');
-        console.log(
-          'App: Current localStorage keys before clearing view:',
-          Object.keys(localStorage)
-        );
 
         // Set empty state for unauthenticated users
         setMilestones([]);
@@ -206,9 +197,6 @@ export default function App() {
         setMilestoneOrder([]);
         setTaskOrders(new Map());
         setCurrentProject(null);
-
-        console.log('App: Set empty state - milestones length:', 0);
-        console.log('App: Empty state set successfully');
       }
     };
 
@@ -363,42 +351,30 @@ export default function App() {
 
   const handleUpdateTask = useCallback(
     (taskId: string, updates: Partial<Task>) => {
-      console.log('🔵 handleUpdateTask called:', { taskId, updates });
-      console.log('🔵 Current milestones length:', milestones.length);
-      console.log('🔵 Current change history length:', changeHistory.length);
-
       setMilestones(prevMilestones => {
-        console.log(
-          '🔵 Inside setMilestones, prevMilestones length:',
-          prevMilestones.length
-        );
+
+        // Find the original task to compare dependencies
+        let originalTask: Task | undefined;
+        let wasFirstTaskOfMilestone = false;
+        
+        for (const milestone of prevMilestones) {
+          const taskIndex = milestone.tasks.findIndex(t => t.taskId === taskId);
+          if (taskIndex !== -1) {
+            originalTask = milestone.tasks[taskIndex];
+            wasFirstTaskOfMilestone = taskIndex === 0;
+            break;
+          }
+        }
 
         // Use change tracking for the task update
         const result = updateTaskWithTracking(prevMilestones, taskId, updates);
-        console.log('🔵 updateTaskWithTracking result:', {
-          milestonesLength: result.milestones.length,
-          changesLength: result.changes.length,
-        });
-        console.log(
-          '🔵 Changes detected:',
-          result.changes.map(c => c.changeType)
-        );
 
         // Update change history
-        setChangeHistory(prevHistory => {
-          console.log(
-            '🔵 Updating change history, previous length:',
-            prevHistory.length
-          );
-          const newHistory = [...prevHistory, ...result.changes];
-          console.log('🔵 New history length:', newHistory.length);
-          return newHistory;
-        });
+        setChangeHistory(prevHistory => [...prevHistory, ...result.changes]);
 
         let finalMilestones = result.milestones;
 
         if (updates.startDate || updates.endDate) {
-          console.log('🔵 Recalculating dates (preserve manual dates)');
           finalMilestones = calculateProjectDates(
             finalMilestones,
             projectStartDate,
@@ -407,19 +383,33 @@ export default function App() {
         }
 
         if (updates.durationDays || updates.dependsOn !== undefined) {
-          console.log('🔵 Recalculating dates (normal calculation)');
+          // Detect if dependencies were explicitly removed from a first task
+          const tasksWithExplicitlyRemovedDeps = new Set<string>();
+          
+          if (updates.dependsOn !== undefined && originalTask && wasFirstTaskOfMilestone) {
+            const originalDeps = originalTask.dependsOn || [];
+            const newDeps = updates.dependsOn || [];
+            
+            // If dependencies were removed (new has fewer than original)
+            if (newDeps.length < originalDeps.length) {
+              tasksWithExplicitlyRemovedDeps.add(taskId);
+            }
+          }
+
+          // Skip auto-milestone dependencies when explicitly updating dependencies
+          const skipAutoMilestone = updates.dependsOn !== undefined;
           finalMilestones = calculateProjectDates(
             finalMilestones,
             projectStartDate,
-            false
+            false,
+            skipAutoMilestone,
+            tasksWithExplicitlyRemovedDeps
           );
         }
 
-        console.log('🔵 Final milestones length:', finalMilestones.length);
         return finalMilestones;
       });
 
-      console.log('🔵 Setting hasUnsavedChanges to true');
       setHasUnsavedChanges(true);
     },
     [projectStartDate, milestones.length, changeHistory.length]
@@ -437,10 +427,6 @@ export default function App() {
       oldMilestones: Milestone[],
       newMilestones: Milestone[]
     ): ChangeHistoryEntry[] => {
-      console.log('🔍 detectMilestoneArrayChanges called');
-      console.log('🔍 Old milestones:', oldMilestones.length);
-      console.log('🔍 New milestones:', newMilestones.length);
-
       const changes: ChangeHistoryEntry[] = [];
 
       // Create maps for easy lookup
@@ -450,9 +436,6 @@ export default function App() {
       const newMilestoneMap = new Map(
         newMilestones.map(m => [m.milestoneId, m])
       );
-
-      console.log('🔍 Old milestone IDs:', Array.from(oldMilestoneMap.keys()));
-      console.log('🔍 New milestone IDs:', Array.from(newMilestoneMap.keys()));
 
       const oldTaskMap = new Map();
       const newTaskMap = new Map();
@@ -545,11 +528,6 @@ export default function App() {
         }
       }
 
-      console.log('🔍 Final detected changes count:', changes.length);
-      console.log(
-        '🔍 Change summaries:',
-        changes.map(c => `${c.entityType}-${c.changeType}`)
-      );
 
       return changes;
     },
@@ -558,44 +536,23 @@ export default function App() {
 
   const handleUpdateMilestones = useCallback(
     (updatedMilestones: Milestone[]) => {
-      console.log('🟡 handleUpdateMilestones called');
-      console.log('🟡 Current milestones length:', milestones.length);
-      console.log('🟡 Updated milestones length:', updatedMilestones.length);
-      console.log('🟡 Current change history length:', changeHistory.length);
 
       // Detect changes before recalculating dates
       const changes = detectMilestoneArrayChanges(
         milestones,
         updatedMilestones
       );
-      console.log('🟡 Detected changes:', changes.length);
-      console.log(
-        '🟡 Change types:',
-        changes.map(c => c.changeType)
-      );
 
       // Add changes to history if any were detected
       if (changes.length > 0) {
-        console.log('🟡 Adding changes to history');
-        setChangeHistory(prevHistory => {
-          const newHistory = [...prevHistory, ...changes];
-          console.log('🟡 New history length:', newHistory.length);
-          return newHistory;
-        });
+        setChangeHistory(prevHistory => [...prevHistory, ...changes]);
       }
 
-      console.log('🟡 Recalculating project dates');
       const recalculatedMilestones = calculateProjectDates(
         updatedMilestones,
         projectStartDate,
         false
       );
-      console.log(
-        '🟡 Recalculated milestones length:',
-        recalculatedMilestones.length
-      );
-
-      console.log('🟡 Setting milestones and hasUnsavedChanges');
       setMilestones(recalculatedMilestones);
       setHasUnsavedChanges(true);
     },
@@ -914,41 +871,23 @@ export default function App() {
 
           {milestones.length > 0 &&
             (() => {
-              console.log(
-                '🔐 Rendering GanttTimeline, isAuthenticated:',
-                isAuthenticated
-              );
-              console.log('🔐 Milestones count:', milestones.length);
-              console.log('🔐 Change history count:', changeHistory.length);
               return (
                 <GanttTimeline
                   milestones={milestones}
                   onUpdateTask={
                     isAuthenticated
                       ? handleUpdateTask
-                      : () => {
-                          console.log(
-                            '❌ onUpdateTask called but user not authenticated!'
-                          );
-                        }
+                      : () => {}
                   }
                   onUpdateMilestones={
                     isAuthenticated
                       ? handleUpdateMilestones
-                      : () => {
-                          console.log(
-                            '❌ onUpdateMilestones called but user not authenticated!'
-                          );
-                        }
+                      : () => {}
                   }
                   onRecalculateTimeline={
                     isAuthenticated
                       ? handleRecalculateTimeline
-                      : () => {
-                          console.log(
-                            '❌ onRecalculateTimeline called but user not authenticated!'
-                          );
-                        }
+                      : () => {}
                   }
                   expandedMilestones={expandedMilestones}
                   onToggleMilestone={handleToggleMilestone}
@@ -1000,6 +939,8 @@ export default function App() {
             onClose={() => setShowHistoryPanel(false)}
           />
         </Suspense>
+
+        <Footer />
       </div>
     </div>
   );

@@ -164,6 +164,24 @@ export function TaskEditModal({
     }
   }, [task, isOpen, availableTeams, availableSprints]);
 
+  // Additional effect to sync form data when task dependencies change
+  useEffect(() => {
+    if (isOpen && task) {
+      // Update form data if the task dependencies have changed
+      const newDependsOn = task.dependsOn || [];
+      setFormData(prev => {
+        // Only update if dependencies have actually changed
+        if (JSON.stringify(prev.dependsOn) !== JSON.stringify(newDependsOn)) {
+          return {
+            ...prev,
+            dependsOn: newDependsOn,
+          };
+        }
+        return prev;
+      });
+    }
+  }, [isOpen, task?.dependsOn]);
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -199,6 +217,7 @@ export function TaskEditModal({
       durationDays: formData.durationDays,
       dependsOn: formData.dependsOn,
     };
+
 
     // In create mode, task is null, so we pass a placeholder taskId that will be replaced
     const taskId = task ? task.taskId : 'new-task-placeholder';

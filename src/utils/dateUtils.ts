@@ -67,51 +67,60 @@ export function addBusinessDays(startDate: Date, businessDays: number): Date {
 export function calculateProjectDates(
   milestones: Milestone[],
   projectStartDate: Date,
-  preserveManualDates: boolean = false
+  preserveManualDates: boolean = false,
+  skipAutoMilestoneDependencies: boolean = false,
+  tasksWithExplicitlyRemovedDeps?: Set<string>
 ): Milestone[] {
+
   const updatedMilestones = JSON.parse(
     JSON.stringify(milestones)
   ) as Milestone[];
   const taskDateMap = new Map<string, { start: Date; end: Date }>();
 
-  // Auto-create inter-milestone dependencies for sequential execution
-  // Sort milestones by their ID to ensure consistent ordering
-  const sortedMilestones = [...updatedMilestones].sort((a, b) =>
-    a.milestoneId.localeCompare(b.milestoneId)
-  );
+  // Auto-create inter-milestone dependencies for sequential execution (unless skipped)
+  if (!skipAutoMilestoneDependencies) {
+    // Sort milestones by their ID to ensure consistent ordering
+    const sortedMilestones = [...updatedMilestones].sort((a, b) =>
+      a.milestoneId.localeCompare(b.milestoneId)
+    );
 
-  // Add dependencies between milestones: each milestone's first task depends on previous milestone's last task
-  for (let i = 1; i < sortedMilestones.length; i++) {
-    const currentMilestone = sortedMilestones[i];
-    const previousMilestone = sortedMilestones[i - 1];
+    // Add dependencies between milestones: each milestone's first task depends on previous milestone's last task
+    for (let i = 1; i < sortedMilestones.length; i++) {
+      const currentMilestone = sortedMilestones[i];
+      const previousMilestone = sortedMilestones[i - 1];
 
-    if (
-      currentMilestone.tasks.length > 0 &&
-      previousMilestone.tasks.length > 0
-    ) {
-      const firstTaskOfCurrent = currentMilestone.tasks[0];
-      const lastTaskOfPrevious =
-        previousMilestone.tasks[previousMilestone.tasks.length - 1];
+      if (
+        currentMilestone.tasks.length > 0 &&
+        previousMilestone.tasks.length > 0
+      ) {
+        const firstTaskOfCurrent = currentMilestone.tasks[0];
+        const lastTaskOfPrevious =
+          previousMilestone.tasks[previousMilestone.tasks.length - 1];
 
-      // Only add dependency if the first task doesn't already have dependencies to previous milestones
-      const hasInterMilestoneDependency = firstTaskOfCurrent.dependsOn.some(
-        depId =>
-          updatedMilestones.some(
-            m =>
-              m.milestoneId !== currentMilestone.milestoneId &&
-              m.tasks.some(t => t.taskId === depId)
-          )
-      );
-
-      if (!hasInterMilestoneDependency) {
-        // Find the actual task object in the updatedMilestones array and update it
-        const milestoneInUpdated = updatedMilestones.find(
-          m => m.milestoneId === currentMilestone.milestoneId
+        // Only add dependency if the first task doesn't already have dependencies to previous milestones
+        const hasInterMilestoneDependency = firstTaskOfCurrent.dependsOn.some(
+          depId =>
+            updatedMilestones.some(
+              m =>
+                m.milestoneId !== currentMilestone.milestoneId &&
+                m.tasks.some(t => t.taskId === depId)
+            )
         );
-        if (milestoneInUpdated && milestoneInUpdated.tasks.length > 0) {
-          const taskToUpdate = milestoneInUpdated.tasks[0];
-          if (!taskToUpdate.dependsOn.includes(lastTaskOfPrevious.taskId)) {
-            taskToUpdate.dependsOn.push(lastTaskOfPrevious.taskId);
+
+        if (!hasInterMilestoneDependency) {
+          // Find the actual task object in the updatedMilestones array and update it
+          const milestoneInUpdated = updatedMilestones.find(
+            m => m.milestoneId === currentMilestone.milestoneId
+          );
+          if (milestoneInUpdated && milestoneInUpdated.tasks.length > 0) {
+            const taskToUpdate = milestoneInUpdated.tasks[0];
+            
+            // Don't add auto-dependency if this task had its dependencies explicitly removed
+            const wasExplicitlyCleared = tasksWithExplicitlyRemovedDeps?.has(taskToUpdate.taskId);
+            
+            if (!taskToUpdate.dependsOn.includes(lastTaskOfPrevious.taskId) && !wasExplicitlyCleared) {
+              taskToUpdate.dependsOn.push(lastTaskOfPrevious.taskId);
+            }
           }
         }
       }

@@ -92,12 +92,6 @@ const TaskRow = memo(function TaskRow({
     const taskDurationDays = task.durationDays;
     const teamColor = teamColors[task.team] || teamColors.Default;
 
-    // Debug logging for task width calculation - check task data vs calculation
-    const calculatedFromDates = differenceInDays(taskEnd, taskStart) + 1;
-    const calculatedWidth = taskDurationDays * zoomLevel - 4;
-    console.log(
-      `📏 Task "${task.name}": task.durationDays=${taskDurationDays}, calculatedFromDates=${calculatedFromDates}, dates=${task.startDate} to ${task.endDate}, zoomLevel=${zoomLevel}, calculatedWidth=${calculatedWidth}px`
-    );
 
     return {
       taskStart,

@@ -252,7 +252,6 @@ export function JsonImportExport({
         }
 
         if (showImportOptions) {
-          // Show import options dialog
           handleImportWithOptions(parsedData);
         } else {
           onImport(parsedData);
