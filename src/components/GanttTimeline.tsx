@@ -899,6 +899,20 @@ export function GanttTimeline({
     setIsEditModalOpen(true);
   }, []);
 
+  // Keep editingTask in sync with milestones updates
+  useEffect(() => {
+    if (editingTask) {
+      // Find the updated task in the current milestones
+      for (const milestone of milestones) {
+        const updatedTask = milestone.tasks.find(t => t.taskId === editingTask.taskId);
+        if (updatedTask) {
+          setEditingTask(updatedTask);
+          break;
+        }
+      }
+    }
+  }, [milestones, editingTask]);
+
   // Early return if no timeline data
   if (!timelineData) {
     return (

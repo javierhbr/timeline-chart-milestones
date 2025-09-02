@@ -175,8 +175,8 @@ const TaskRow = memo(function TaskRow({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="p-2 pr-8 cursor-help">
-                <div className="flex items-center gap-1">
+              <div className="p-2 pr-8 cursor-help min-w-0">
+                <div className="flex items-center gap-1 min-w-0">
                   {/* Drag Handle */}
                   {onTaskDragStart && (
                     <div
@@ -191,8 +191,8 @@ const TaskRow = memo(function TaskRow({
                     </div>
                   )}
                   
-                  <div className="flex items-center gap-2 flex-1">
-                    <div className="font-medium text-sm truncate flex-1">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <div className="font-medium text-sm truncate flex-1 min-w-0">
                       {task.name}
                     </div>
                     <Badge

@@ -492,8 +492,6 @@ export function updateTaskWithTracking(
   }
   
   const updatedTask = { ...originalTask, ...updates };
-  console.log('⚙️ Original task:', originalTask.name);
-  console.log('⚙️ Updated task:', updatedTask.name);
   
   // Update milestones
   const newMilestones = milestones.map(milestone => {

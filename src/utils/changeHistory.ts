@@ -505,6 +505,7 @@ export function detectTaskChanges(
   // Check if dependencies changed
   const oldDeps = [...(oldTask.dependsOn || [])].sort();
   const newDeps = [...(newTask.dependsOn || [])].sort();
+  
   if (JSON.stringify(oldDeps) !== JSON.stringify(newDeps)) {
     changes.push(createChangeEntry(
       'task',
