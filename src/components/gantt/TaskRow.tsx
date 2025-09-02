@@ -1,6 +1,6 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import { Badge } from '../ui/badge';
-import { GripVertical } from 'lucide-react';
+import { GripVertical, GripHorizontal } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -43,6 +43,13 @@ interface TaskRowProps {
   onDelete: (task: Task) => void;
   onEdit: (task: Task) => void;
   onResizeStart: (e: React.MouseEvent) => void;
+  onTaskDragStart?: (taskId: string, milestoneId: string, index: number) => void;
+  onTaskDragOver?: (index: number) => void;
+  onTaskDragEnd?: () => void;
+  taskDragIndex?: number;
+  milestoneId: string;
+  isDragging?: boolean;
+  isDragTarget?: boolean;
 }
 
 const TaskRow = memo(function TaskRow({
@@ -60,6 +67,13 @@ const TaskRow = memo(function TaskRow({
   onDelete,
   onEdit,
   onResizeStart,
+  onTaskDragStart,
+  onTaskDragOver,
+  onTaskDragEnd,
+  taskDragIndex,
+  milestoneId,
+  isDragging = false,
+  isDragTarget = false,
 }: TaskRowProps) {
   // Memoize expensive date calculations
   const taskCalculations = useMemo(() => {
@@ -88,6 +102,43 @@ const TaskRow = memo(function TaskRow({
     };
   }, [task.startDate, task.endDate, task.durationDays, task.team, task.name, timelineStart, zoomLevel]);
 
+  const handleDragStart = useCallback(
+    (e: React.DragEvent) => {
+      if (onTaskDragStart && taskDragIndex !== undefined) {
+        onTaskDragStart(task.taskId, milestoneId, taskDragIndex);
+        e.dataTransfer.effectAllowed = 'move';
+        // Add some visual feedback
+        (e.currentTarget as HTMLElement).style.opacity = '0.5';
+      }
+    },
+    [onTaskDragStart, task.taskId, milestoneId, taskDragIndex]
+  );
+
+  const handleDragEnd = useCallback(
+    (e: React.DragEvent) => {
+      (e.currentTarget as HTMLElement).style.opacity = '';
+      if (onTaskDragEnd) {
+        onTaskDragEnd();
+      }
+    },
+    [onTaskDragEnd]
+  );
+
+  const handleDragOver = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (onTaskDragOver && taskDragIndex !== undefined && !isDragging) {
+        onTaskDragOver(taskDragIndex);
+      }
+    },
+    [onTaskDragOver, taskDragIndex, isDragging]
+  );
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
   if (!taskCalculations) {
     return null;
   }
@@ -98,11 +149,17 @@ const TaskRow = memo(function TaskRow({
   return (
     <tr
       key={task.taskId}
-      className="border-b min-h-[32px] relative hover:bg-muted/25 transition-colors"
+      className={`border-b min-h-[32px] relative hover:bg-muted/25 transition-colors ${
+        isDragging ? 'opacity-50 bg-primary/5' : ''
+      } ${isDragTarget ? 'border-primary border-2 bg-primary/10' : ''}`}
       style={{
-        backgroundColor: milestoneColor.gentle,
+        backgroundColor: isDragging
+          ? `${milestoneColor.gentle}80`
+          : milestoneColor.gentle,
       }}
       data-task-id={task.taskId}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
       {/* Task Info Cell */}
       <td
@@ -119,8 +176,22 @@ const TaskRow = memo(function TaskRow({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="p-2 pr-8 cursor-help">
-                <div className="pl-8">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {/* Drag Handle */}
+                  {onTaskDragStart && (
+                    <div
+                      className="cursor-move p-1 rounded hover:bg-muted/50 transition-colors opacity-60 hover:opacity-100 flex-shrink-0"
+                      title="Drag to reorder tasks"
+                      draggable={true}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onMouseDown={e => e.stopPropagation()}
+                    >
+                      <GripHorizontal className="w-3 h-3 text-muted-foreground" />
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-2 flex-1">
                     <div className="font-medium text-sm truncate flex-1">
                       {task.name}
                     </div>

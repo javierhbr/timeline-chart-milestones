@@ -83,6 +83,7 @@ export default function App() {
     new Set()
   );
   const [milestoneOrder, setMilestoneOrder] = useState<string[]>([]);
+  const [taskOrders, setTaskOrders] = useState<Map<string, string[]>>(new Map());
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [showProjectManager, setShowProjectManager] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -153,6 +154,7 @@ export default function App() {
             new Set(project.timelineData.expandedMilestones)
           );
           setMilestoneOrder(project.timelineData.milestoneOrder || []);
+          setTaskOrders(new Map(Object.entries(project.timelineData.taskOrders || {})));
           setHasUnsavedChanges(false);
         } else if (!hasAnyProjects()) {
           // Create default project for new users
@@ -161,6 +163,7 @@ export default function App() {
             projectStartDate: new Date().toISOString(),
             expandedMilestones: [],
             milestoneOrder: [],
+            taskOrders: {},
             changeHistory: [],
           };
           const newProject = createProject(
@@ -178,6 +181,7 @@ export default function App() {
             new Set(newProject.timelineData.expandedMilestones)
           );
           setMilestoneOrder(newProject.timelineData.milestoneOrder || []);
+          setTaskOrders(new Map(Object.entries(newProject.timelineData.taskOrders || {})));
           setHasUnsavedChanges(false);
         } else {
           // Has projects but none selected - show project manager
@@ -196,6 +200,7 @@ export default function App() {
         setProjectStartDate(new Date());
         setExpandedMilestones(new Set());
         setMilestoneOrder([]);
+        setTaskOrders(new Map());
         setCurrentProject(null);
 
         console.log('App: Set empty state - milestones length:', 0);
@@ -222,6 +227,7 @@ export default function App() {
           projectStartDate: projectStartDate.toISOString(),
           expandedMilestones: Array.from(expandedMilestones),
           milestoneOrder,
+          taskOrders: Object.fromEntries(taskOrders),
           changeHistory,
         };
         saveProject(currentProject.id, timelineData);
@@ -240,6 +246,7 @@ export default function App() {
     projectStartDate,
     expandedMilestones,
     milestoneOrder,
+    taskOrders,
     currentProject,
     changeHistory,
   ]);
@@ -255,6 +262,7 @@ export default function App() {
     projectStartDate,
     expandedMilestones,
     milestoneOrder,
+    taskOrders,
     currentProject,
     initialLoad,
   ]);
@@ -286,6 +294,7 @@ export default function App() {
     setProjectStartDate(projectStartDate);
     setExpandedMilestones(new Set(project.timelineData.expandedMilestones));
     setMilestoneOrder(project.timelineData.milestoneOrder || []);
+    setTaskOrders(new Map(Object.entries(project.timelineData.taskOrders || {})));
     setHasUnsavedChanges(false);
   }, []);
 
@@ -567,6 +576,10 @@ export default function App() {
 
   const handleUpdateMilestoneOrder = useCallback((newOrder: string[]) => {
     setMilestoneOrder(newOrder);
+  }, []);
+
+  const handleUpdateTaskOrders = useCallback((milestoneId: string, newTaskOrder: string[]) => {
+    setTaskOrders(prev => new Map(prev.set(milestoneId, newTaskOrder)));
   }, []);
 
   // Memoize expensive project statistics calculations
@@ -857,6 +870,10 @@ export default function App() {
                 milestoneOrder={milestoneOrder}
                 onUpdateMilestoneOrder={
                   isAuthenticated ? handleUpdateMilestoneOrder : () => {}
+                }
+                taskOrders={taskOrders}
+                onUpdateTaskOrders={
+                  isAuthenticated ? handleUpdateTaskOrders : () => {}
                 }
               />
             );

@@ -74,6 +74,8 @@ interface GanttTimelineProps {
   collapseAllMilestones?: () => void;
   milestoneOrder?: string[];
   onUpdateMilestoneOrder?: (order: string[]) => void;
+  taskOrders?: Map<string, string[]>;
+  onUpdateTaskOrders?: (milestoneId: string, taskOrder: string[]) => void;
 }
 
 export function GanttTimeline({
@@ -87,6 +89,8 @@ export function GanttTimeline({
   collapseAllMilestones,
   milestoneOrder,
   onUpdateMilestoneOrder,
+  taskOrders,
+  onUpdateTaskOrders,
 }: GanttTimelineProps) {
   const [localExpandedMilestones, setLocalExpandedMilestones] = useState<
     Set<string>
@@ -133,6 +137,13 @@ export function GanttTimeline({
   } | null>(null);
   const [milestoneDragState, setMilestoneDragState] = useState<{
     draggedMilestoneId: string;
+    draggedIndex: number;
+    targetIndex: number;
+    isDragging: boolean;
+  } | null>(null);
+  const [taskDragState, setTaskDragState] = useState<{
+    draggedTaskId: string;
+    sourceMilestoneId: string;
     draggedIndex: number;
     targetIndex: number;
     isDragging: boolean;
@@ -779,6 +790,66 @@ export function GanttTimeline({
     setMilestoneDragState(null);
   }, [milestoneDragState, sortedMilestones, onUpdateMilestoneOrder]);
 
+  // Task drag and drop handlers
+  const handleTaskDragStart = useCallback(
+    (taskId: string, milestoneId: string, index: number) => {
+      setTaskDragState({
+        draggedTaskId: taskId,
+        sourceMilestoneId: milestoneId,
+        draggedIndex: index,
+        targetIndex: index,
+        isDragging: true,
+      });
+    },
+    []
+  );
+
+  const handleTaskDragOver = useCallback(
+    (targetIndex: number) => {
+      if (!taskDragState) return;
+
+      if (taskDragState.targetIndex !== targetIndex) {
+        setTaskDragState(prev =>
+          prev
+            ? {
+                ...prev,
+                targetIndex,
+              }
+            : null
+        );
+      }
+    },
+    [taskDragState]
+  );
+
+  const handleTaskDragEnd = useCallback(() => {
+    if (!taskDragState || !onUpdateTaskOrders) {
+      setTaskDragState(null);
+      return;
+    }
+
+    // Only reorder if position actually changed
+    if (taskDragState.draggedIndex !== taskDragState.targetIndex) {
+      // Get the current task order for the milestone
+      const milestone = milestones.find(m => m.milestoneId === taskDragState.sourceMilestoneId);
+      if (milestone) {
+        // Get current order (use custom order if available, otherwise task order)
+        const currentOrder = taskOrders?.get(taskDragState.sourceMilestoneId) || 
+                            milestone.tasks.map(t => t.taskId);
+        
+        const newOrder = [...currentOrder];
+        // Remove dragged item
+        const [draggedId] = newOrder.splice(taskDragState.draggedIndex, 1);
+        // Insert at target position
+        newOrder.splice(taskDragState.targetIndex, 0, draggedId);
+
+        onUpdateTaskOrders(taskDragState.sourceMilestoneId, newOrder);
+      }
+    }
+
+    setTaskDragState(null);
+  }, [taskDragState, milestones, taskOrders, onUpdateTaskOrders]);
+
   // Memoized dialog handlers
   const handleEditModalClose = useCallback(() => setIsEditModalOpen(false), []);
 
@@ -972,27 +1043,51 @@ export function GanttTimeline({
                       />
 
                       {expandedMilestones.has(milestone.milestoneId) &&
-                        milestone.tasks
-                          .filter(task => task.startDate && task.endDate)
-                          .map((task: Task) => (
-                            <TaskRow
-                              key={task.taskId}
-                              task={task}
-                              milestones={milestones}
-                              milestoneColor={milestoneColor}
-                              timelineStart={timelineStart}
-                              zoomLevel={zoomLevel}
-                              dayColumnsLength={dayColumns.length}
-                              gridNameColumns={gridNameColumns}
-                              onMouseDown={handleMouseDown}
-                              onClone={handleCloneTask}
-                              onSplit={handleSplitTask}
-                              onMove={handleMoveTask}
-                              onDelete={handleDeleteTask}
-                              onEdit={handleTaskEdit}
-                              onResizeStart={handleResizeStart}
-                            />
-                          ))}
+                        (() => {
+                          // Sort tasks by custom order if available
+                          const tasksWithValidDates = milestone.tasks.filter(task => task.startDate && task.endDate);
+                          const customOrder = taskOrders?.get(milestone.milestoneId);
+                          
+                          const sortedTasks = customOrder && customOrder.length > 0
+                            ? customOrder
+                                .map(taskId => tasksWithValidDates.find(t => t.taskId === taskId))
+                                .filter((task): task is Task => task !== undefined)
+                                .concat(tasksWithValidDates.filter(t => !customOrder.includes(t.taskId)))
+                            : tasksWithValidDates;
+
+                          return sortedTasks.map((task: Task, taskIndex: number) => {
+                            const isDragging = taskDragState?.draggedTaskId === task.taskId;
+                            const isDragTarget = taskDragState?.targetIndex === taskIndex && 
+                                                taskDragState?.sourceMilestoneId === milestone.milestoneId;
+
+                            return (
+                              <TaskRow
+                                key={task.taskId}
+                                task={task}
+                                milestones={milestones}
+                                milestoneColor={milestoneColor}
+                                timelineStart={timelineStart}
+                                zoomLevel={zoomLevel}
+                                dayColumnsLength={dayColumns.length}
+                                gridNameColumns={gridNameColumns}
+                                onMouseDown={handleMouseDown}
+                                onClone={handleCloneTask}
+                                onSplit={handleSplitTask}
+                                onMove={handleMoveTask}
+                                onDelete={handleDeleteTask}
+                                onEdit={handleTaskEdit}
+                                onResizeStart={handleResizeStart}
+                                onTaskDragStart={onUpdateTaskOrders ? handleTaskDragStart : undefined}
+                                onTaskDragOver={onUpdateTaskOrders ? handleTaskDragOver : undefined}
+                                onTaskDragEnd={onUpdateTaskOrders ? handleTaskDragEnd : undefined}
+                                taskDragIndex={taskIndex}
+                                milestoneId={milestone.milestoneId}
+                                isDragging={isDragging}
+                                isDragTarget={isDragTarget}
+                              />
+                            );
+                          });
+                        })()}
                     </React.Fragment>
                   );
                 })}

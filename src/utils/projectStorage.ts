@@ -6,6 +6,7 @@ export interface TimelineData {
   projectStartDate: string;
   expandedMilestones: string[];
   milestoneOrder?: string[];
+  taskOrders?: Record<string, string[]>;
   changeHistory?: ChangeHistoryEntry[];
 }
 
@@ -297,6 +298,7 @@ export function migrateOldData(): void {
       projectStartDate: oldTimelineData.projectStartDate,
       expandedMilestones: oldTimelineData.expandedMilestones,
       milestoneOrder: oldTimelineData.milestoneOrder || [],
+      taskOrders: {},
       changeHistory: [],
     };
 
@@ -343,6 +345,34 @@ export function migrateProjectsToIncludeChangeHistory(): void {
 }
 
 /**
+ * Migrates existing projects to include taskOrders field if missing
+ */
+export function migrateProjectsToIncludeTaskOrders(): void {
+  try {
+    const storage = getProjectsStorage();
+    let migrationNeeded = false;
+
+    // Check if any projects are missing taskOrders
+    for (const projectId in storage.projects) {
+      const project = storage.projects[projectId];
+      if (!project.timelineData.taskOrders) {
+        migrationNeeded = true;
+        project.timelineData.taskOrders = {};
+        console.log(`Migrated project "${project.name}" to include empty task orders`);
+      }
+    }
+
+    // Save updated storage if migration was needed
+    if (migrationNeeded) {
+      saveProjectsStorage(storage);
+      console.log('Successfully migrated existing projects to include task orders support');
+    }
+  } catch (error) {
+    console.warn('Failed to migrate projects for task orders:', error);
+  }
+}
+
+/**
  * Runs all necessary migrations in the correct order
  */
 export function runAllMigrations(): void {
@@ -351,6 +381,9 @@ export function runAllMigrations(): void {
   
   // Then migrate existing projects to include change history
   migrateProjectsToIncludeChangeHistory();
+  
+  // Finally migrate existing projects to include task orders
+  migrateProjectsToIncludeTaskOrders();
 }
 
 export function clearAllProjects(): void {
