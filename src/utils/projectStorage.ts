@@ -1,10 +1,12 @@
 import { Milestone } from './dateUtils';
+import { ChangeHistoryEntry } from './changeHistory';
 
 export interface TimelineData {
   milestones: Milestone[];
   projectStartDate: string;
   expandedMilestones: string[];
   milestoneOrder?: string[];
+  changeHistory?: ChangeHistoryEntry[];
 }
 
 export interface Project {
@@ -294,6 +296,8 @@ export function migrateOldData(): void {
       milestones: oldTimelineData.milestones,
       projectStartDate: oldTimelineData.projectStartDate,
       expandedMilestones: oldTimelineData.expandedMilestones,
+      milestoneOrder: oldTimelineData.milestoneOrder || [],
+      changeHistory: [],
     };
 
     // Create default project from old data
@@ -308,6 +312,45 @@ export function migrateOldData(): void {
   } catch (error) {
     console.warn('Failed to migrate old timeline data:', error);
   }
+}
+
+/**
+ * Migrates existing projects to include changeHistory field if missing
+ */
+export function migrateProjectsToIncludeChangeHistory(): void {
+  try {
+    const storage = getProjectsStorage();
+    let migrationNeeded = false;
+
+    // Check if any projects are missing changeHistory
+    for (const projectId in storage.projects) {
+      const project = storage.projects[projectId];
+      if (!project.timelineData.changeHistory) {
+        migrationNeeded = true;
+        project.timelineData.changeHistory = [];
+        console.log(`Migrated project "${project.name}" to include empty change history`);
+      }
+    }
+
+    // Save updated storage if migration was needed
+    if (migrationNeeded) {
+      saveProjectsStorage(storage);
+      console.log('Successfully migrated existing projects to include change history support');
+    }
+  } catch (error) {
+    console.warn('Failed to migrate projects for change history:', error);
+  }
+}
+
+/**
+ * Runs all necessary migrations in the correct order
+ */
+export function runAllMigrations(): void {
+  // First migrate old data format
+  migrateOldData();
+  
+  // Then migrate existing projects to include change history
+  migrateProjectsToIncludeChangeHistory();
 }
 
 export function clearAllProjects(): void {

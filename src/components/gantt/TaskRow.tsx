@@ -70,8 +70,14 @@ const TaskRow = memo(function TaskRow({
     const taskStart = parseISO(task.startDate);
     const taskEnd = parseISO(task.endDate);
     const taskStartDay = differenceInDays(taskStart, timelineStart);
-    const taskDurationDays = differenceInDays(taskEnd, taskStart) + 1;
+    // Use task.durationDays directly instead of recalculating to avoid timing issues
+    const taskDurationDays = task.durationDays;
     const teamColor = teamColors[task.team] || teamColors.Default;
+    
+    // Debug logging for task width calculation - check task data vs calculation
+    const calculatedFromDates = differenceInDays(taskEnd, taskStart) + 1;
+    const calculatedWidth = taskDurationDays * zoomLevel - 4;
+    console.log(`📏 Task "${task.name}": task.durationDays=${taskDurationDays}, calculatedFromDates=${calculatedFromDates}, dates=${task.startDate} to ${task.endDate}, zoomLevel=${zoomLevel}, calculatedWidth=${calculatedWidth}px`);
 
     return {
       taskStart,
@@ -80,7 +86,7 @@ const TaskRow = memo(function TaskRow({
       taskDurationDays,
       teamColor,
     };
-  }, [task.startDate, task.endDate, task.team, timelineStart]);
+  }, [task.startDate, task.endDate, task.durationDays, task.team, task.name, timelineStart, zoomLevel]);
 
   if (!taskCalculations) {
     return null;

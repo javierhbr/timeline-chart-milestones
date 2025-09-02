@@ -106,6 +106,8 @@ export function ProjectManager({
       milestones: [],
       projectStartDate: new Date().toISOString(),
       expandedMilestones: [],
+      milestoneOrder: [],
+      changeHistory: [],
     };
 
     const newProject = createProject(

@@ -1,4 +1,12 @@
 import { Milestone, Task } from './dateUtils';
+import { 
+  ChangeHistoryEntry, 
+  ChangeHistoryOptions,
+  logTaskAddition,
+  logTaskRemoval,
+  logTaskMove,
+  detectTaskChanges
+} from './changeHistory';
 
 export interface CloneOptions {
   targetMilestoneId: string;
@@ -295,4 +303,311 @@ export function updateDependenciesAfterSplit(
       ),
     })),
   }));
+}
+
+// ============== CHANGE-TRACKING ENHANCED FUNCTIONS ==============
+
+/**
+ * Result type for operations that include change tracking
+ */
+export interface TaskOperationResult {
+  milestones: Milestone[];
+  changes: ChangeHistoryEntry[];
+}
+
+/**
+ * Clones a task with change tracking
+ */
+export function cloneTaskWithTracking(
+  milestones: Milestone[],
+  task: Task,
+  options: CloneOptions,
+  historyOptions: ChangeHistoryOptions = {}
+): TaskOperationResult {
+  const newMilestones = addClonedTaskToMilestone(
+    milestones,
+    cloneTask(task, milestones, options),
+    options.targetMilestoneId
+  );
+  
+  const targetMilestone = milestones.find(m => m.milestoneId === options.targetMilestoneId);
+  const clonedTask = newMilestones
+    .find(m => m.milestoneId === options.targetMilestoneId)
+    ?.tasks.find(t => t.name === (options.newTaskName || `${task.name} (Copy)`));
+  
+  const changes: ChangeHistoryEntry[] = [];
+  if (clonedTask && targetMilestone) {
+    changes.push(logTaskAddition(
+      clonedTask,
+      options.targetMilestoneId,
+      targetMilestone.milestoneName,
+      historyOptions
+    ));
+  }
+  
+  return {
+    milestones: newMilestones,
+    changes,
+  };
+}
+
+/**
+ * Splits a task with change tracking
+ */
+export function splitTaskWithTracking(
+  milestones: Milestone[],
+  task: Task,
+  splitConfig: SplitConfig,
+  historyOptions: ChangeHistoryOptions = {}
+): TaskOperationResult {
+  const splitTasks = splitTask(task, milestones, splitConfig);
+  
+  // Find which milestone the original task belongs to
+  let originalMilestone: Milestone | undefined;
+  for (const milestone of milestones) {
+    if (milestone.tasks.some(t => t.taskId === task.taskId)) {
+      originalMilestone = milestone;
+      break;
+    }
+  }
+  
+  if (!originalMilestone) {
+    return { milestones, changes: [] };
+  }
+  
+  // Remove original task and add split tasks
+  let newMilestones = milestones.map(milestone => {
+    if (milestone.milestoneId === originalMilestone!.milestoneId) {
+      return {
+        ...milestone,
+        tasks: [
+          ...milestone.tasks.filter(t => t.taskId !== task.taskId),
+          ...splitTasks
+        ],
+      };
+    }
+    return milestone;
+  });
+  
+  // Update dependencies
+  newMilestones = updateDependenciesAfterSplit(newMilestones, task.taskId, splitTasks);
+  
+  // Log changes
+  const changes: ChangeHistoryEntry[] = [];
+  
+  // Log removal of original task
+  changes.push(logTaskRemoval(
+    task,
+    originalMilestone.milestoneId,
+    originalMilestone.milestoneName,
+    historyOptions
+  ));
+  
+  // Log addition of split tasks
+  splitTasks.forEach(splitTask => {
+    changes.push(logTaskAddition(
+      splitTask,
+      originalMilestone!.milestoneId,
+      originalMilestone!.milestoneName,
+      historyOptions
+    ));
+  });
+  
+  return {
+    milestones: newMilestones,
+    changes,
+  };
+}
+
+/**
+ * Moves a task between milestones with change tracking
+ */
+export function moveTaskBetweenMilestonesWithTracking(
+  milestones: Milestone[],
+  taskId: string,
+  fromMilestoneId: string,
+  toMilestoneId: string,
+  historyOptions: ChangeHistoryOptions = {}
+): TaskOperationResult {
+  const fromMilestone = milestones.find(m => m.milestoneId === fromMilestoneId);
+  const toMilestone = milestones.find(m => m.milestoneId === toMilestoneId);
+  const taskToMove = fromMilestone?.tasks.find(t => t.taskId === taskId);
+  
+  if (!taskToMove || !fromMilestone || !toMilestone) {
+    return { milestones, changes: [] };
+  }
+  
+  const newMilestones = moveTaskBetweenMilestones(
+    milestones,
+    taskId,
+    fromMilestoneId,
+    toMilestoneId
+  );
+  
+  const changes: ChangeHistoryEntry[] = [];
+  changes.push(logTaskMove(
+    taskToMove,
+    fromMilestoneId,
+    fromMilestone.milestoneName,
+    toMilestoneId,
+    toMilestone.milestoneName,
+    historyOptions
+  ));
+  
+  return {
+    milestones: newMilestones,
+    changes,
+  };
+}
+
+/**
+ * Updates a task with change tracking
+ */
+export function updateTaskWithTracking(
+  milestones: Milestone[],
+  taskId: string,
+  updates: Partial<Task>,
+  historyOptions: ChangeHistoryOptions = {}
+): TaskOperationResult {
+  console.log('⚙️ updateTaskWithTracking called:', { taskId, updates });
+  console.log('⚙️ Milestones received:', milestones.length);
+  
+  let originalTask: Task | undefined;
+  let milestoneId: string | undefined;
+  
+  // Find the original task and its milestone
+  for (const milestone of milestones) {
+    const task = milestone.tasks.find(t => t.taskId === taskId);
+    if (task) {
+      originalTask = task;
+      milestoneId = milestone.milestoneId;
+      console.log('⚙️ Found original task in milestone:', milestone.milestoneName);
+      break;
+    }
+  }
+  
+  if (!originalTask || !milestoneId) {
+    console.log('⚙️ Task not found or no milestone ID');
+    return { milestones, changes: [] };
+  }
+  
+  const updatedTask = { ...originalTask, ...updates };
+  console.log('⚙️ Original task:', originalTask.name);
+  console.log('⚙️ Updated task:', updatedTask.name);
+  
+  // Update milestones
+  const newMilestones = milestones.map(milestone => {
+    if (milestone.milestoneId === milestoneId) {
+      return {
+        ...milestone,
+        tasks: milestone.tasks.map(task =>
+          task.taskId === taskId ? updatedTask : task
+        ),
+      };
+    }
+    return milestone;
+  });
+  console.log('⚙️ Updated milestones length:', newMilestones.length);
+  
+  // Detect changes
+  const changes = detectTaskChanges(
+    originalTask,
+    updatedTask,
+    milestoneId,
+    historyOptions
+  );
+  console.log('⚙️ Detected changes:', changes.length);
+  console.log('⚙️ Change types:', changes.map(c => c.changeType));
+  
+  return {
+    milestones: newMilestones,
+    changes,
+  };
+}
+
+/**
+ * Adds a new task with change tracking
+ */
+export function addTaskWithTracking(
+  milestones: Milestone[],
+  milestoneId: string,
+  task: Task,
+  historyOptions: ChangeHistoryOptions = {}
+): TaskOperationResult {
+  const milestone = milestones.find(m => m.milestoneId === milestoneId);
+  if (!milestone) {
+    return { milestones, changes: [] };
+  }
+  
+  const newMilestones = milestones.map(m => {
+    if (m.milestoneId === milestoneId) {
+      return {
+        ...m,
+        tasks: [...m.tasks, task],
+      };
+    }
+    return m;
+  });
+  
+  const changes: ChangeHistoryEntry[] = [];
+  changes.push(logTaskAddition(
+    task,
+    milestoneId,
+    milestone.milestoneName,
+    historyOptions
+  ));
+  
+  return {
+    milestones: newMilestones,
+    changes,
+  };
+}
+
+/**
+ * Removes a task with change tracking
+ */
+export function removeTaskWithTracking(
+  milestones: Milestone[],
+  taskId: string,
+  historyOptions: ChangeHistoryOptions = {}
+): TaskOperationResult {
+  let taskToRemove: Task | undefined;
+  let sourceMilestone: Milestone | undefined;
+  
+  // Find the task and its milestone
+  for (const milestone of milestones) {
+    const task = milestone.tasks.find(t => t.taskId === taskId);
+    if (task) {
+      taskToRemove = task;
+      sourceMilestone = milestone;
+      break;
+    }
+  }
+  
+  if (!taskToRemove || !sourceMilestone) {
+    return { milestones, changes: [] };
+  }
+  
+  const newMilestones = milestones.map(milestone => {
+    if (milestone.milestoneId === sourceMilestone!.milestoneId) {
+      return {
+        ...milestone,
+        tasks: milestone.tasks.filter(t => t.taskId !== taskId),
+      };
+    }
+    return milestone;
+  });
+  
+  const changes: ChangeHistoryEntry[] = [];
+  changes.push(logTaskRemoval(
+    taskToRemove,
+    sourceMilestone.milestoneId,
+    sourceMilestone.milestoneName,
+    historyOptions
+  ));
+  
+  return {
+    milestones: newMilestones,
+    changes,
+  };
 }

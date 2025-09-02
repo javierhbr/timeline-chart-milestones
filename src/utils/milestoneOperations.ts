@@ -1,4 +1,11 @@
 import { Milestone } from './dateUtils';
+import { 
+  ChangeHistoryEntry, 
+  ChangeHistoryOptions,
+  logMilestoneAddition,
+  logMilestoneRemoval,
+  detectMilestoneChanges
+} from './changeHistory';
 
 /**
  * Generates a unique milestone ID that doesn't exist in the current milestones
@@ -77,5 +84,124 @@ export function validateMilestone(
   return {
     isValid: errors.length === 0,
     errors,
+  };
+}
+
+// ============== CHANGE-TRACKING ENHANCED FUNCTIONS ==============
+
+/**
+ * Result type for milestone operations that include change tracking
+ */
+export interface MilestoneOperationResult {
+  milestones: Milestone[];
+  changes: ChangeHistoryEntry[];
+}
+
+/**
+ * Creates a new milestone with change tracking
+ */
+export function createMilestoneWithTracking(
+  milestones: Milestone[],
+  milestoneName: string,
+  description?: string,
+  historyOptions: ChangeHistoryOptions = {}
+): MilestoneOperationResult {
+  const newMilestone = createNewMilestone(milestoneName, milestones, description);
+  
+  const newMilestones = [...milestones, newMilestone];
+  
+  const changes: ChangeHistoryEntry[] = [];
+  changes.push(logMilestoneAddition(newMilestone, historyOptions));
+  
+  return {
+    milestones: newMilestones,
+    changes,
+  };
+}
+
+/**
+ * Removes a milestone with change tracking
+ */
+export function removeMilestoneWithTracking(
+  milestones: Milestone[],
+  milestoneId: string,
+  historyOptions: ChangeHistoryOptions = {}
+): MilestoneOperationResult {
+  const milestoneToRemove = milestones.find(m => m.milestoneId === milestoneId);
+  
+  if (!milestoneToRemove) {
+    return { milestones, changes: [] };
+  }
+  
+  const newMilestones = milestones.filter(m => m.milestoneId !== milestoneId);
+  
+  const changes: ChangeHistoryEntry[] = [];
+  changes.push(logMilestoneRemoval(milestoneToRemove, historyOptions));
+  
+  return {
+    milestones: newMilestones,
+    changes,
+  };
+}
+
+/**
+ * Updates a milestone with change tracking
+ */
+export function updateMilestoneWithTracking(
+  milestones: Milestone[],
+  milestoneId: string,
+  updates: Partial<Pick<Milestone, 'milestoneName'>>,
+  historyOptions: ChangeHistoryOptions = {}
+): MilestoneOperationResult {
+  const originalMilestone = milestones.find(m => m.milestoneId === milestoneId);
+  
+  if (!originalMilestone) {
+    return { milestones, changes: [] };
+  }
+  
+  const updatedMilestone = { ...originalMilestone, ...updates };
+  
+  const newMilestones = milestones.map(m =>
+    m.milestoneId === milestoneId ? updatedMilestone : m
+  );
+  
+  const changes = detectMilestoneChanges(
+    originalMilestone,
+    updatedMilestone,
+    historyOptions
+  );
+  
+  return {
+    milestones: newMilestones,
+    changes,
+  };
+}
+
+/**
+ * Reorders milestones with change tracking (if needed in the future)
+ * For now, milestone reordering doesn't generate history entries as it's just a display change
+ */
+export function reorderMilestonesWithTracking(
+  milestones: Milestone[],
+  newOrder: string[],
+  historyOptions: ChangeHistoryOptions = {}
+): MilestoneOperationResult {
+  // Reorder milestones based on the new order array
+  const reorderedMilestones = newOrder
+    .map(id => milestones.find(m => m.milestoneId === id))
+    .filter((m): m is Milestone => m !== undefined);
+  
+  // Add any milestones that weren't in the new order (safety check)
+  const includedIds = new Set(newOrder);
+  const remainingMilestones = milestones.filter(m => !includedIds.has(m.milestoneId));
+  
+  const finalMilestones = [...reorderedMilestones, ...remainingMilestones];
+  
+  // For now, we don't track reordering in history as it's just a display preference
+  // If you want to track this in the future, you can add change logging here
+  
+  return {
+    milestones: finalMilestones,
+    changes: [], // No changes logged for reordering
   };
 }

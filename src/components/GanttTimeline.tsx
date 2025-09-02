@@ -620,6 +620,7 @@ export function GanttTimeline({
       taskStart: Date,
       taskEnd: Date
     ) => {
+      console.log('🎯 handleMouseDown called:', { taskId, mode, taskStart, taskEnd });
       e.preventDefault();
       setDragState({
         taskId,
@@ -628,6 +629,7 @@ export function GanttTimeline({
         originalStart: taskStart,
         originalEnd: taskEnd,
       });
+      console.log('🎯 Drag state set');
     },
     []
   );
@@ -648,12 +650,17 @@ export function GanttTimeline({
 
   const handleMouseUp = useCallback(
     (e: MouseEvent) => {
-      if (!dragState || !timelineRef.current || !timelineData) return;
+      console.log('🎯 handleMouseUp called, dragState:', dragState);
+      if (!dragState || !timelineRef.current || !timelineData) {
+        console.log('🎯 Early return - missing dependencies');
+        return;
+      }
 
       // Use current zoom level for pixel calculations
       const pixelsPerDay = zoomLevel;
       const deltaX = e.clientX - dragState.startX;
       const daysDelta = Math.round(deltaX / pixelsPerDay);
+      console.log('🎯 Drag calculations:', { pixelsPerDay, deltaX, daysDelta });
 
       let newStart = dragState.originalStart;
       let newEnd = dragState.originalEnd;
@@ -661,24 +668,35 @@ export function GanttTimeline({
       if (dragState.mode === 'move') {
         newStart = addDays(dragState.originalStart, daysDelta);
         newEnd = addDays(dragState.originalEnd, daysDelta);
+        console.log('🎯 Move mode - new dates:', { newStart, newEnd });
       } else if (dragState.mode === 'resize-start') {
         newStart = addDays(dragState.originalStart, daysDelta);
         if (newStart >= dragState.originalEnd)
           newStart = addDays(dragState.originalEnd, -1);
+        console.log('🎯 Resize start mode - new start:', newStart);
       } else if (dragState.mode === 'resize-end') {
         newEnd = addDays(dragState.originalEnd, daysDelta);
         if (newEnd <= dragState.originalStart)
           newEnd = addDays(dragState.originalStart, 1);
+        console.log('🎯 Resize end mode - new end:', newEnd);
       }
 
       const newDuration = differenceInDays(newEnd, newStart) + 1;
+      console.log('🎯 Final values:', { 
+        taskId: dragState.taskId,
+        newStart: format(newStart, 'yyyy-MM-dd'),
+        newEnd: format(newEnd, 'yyyy-MM-dd'),
+        newDuration 
+      });
 
+      console.log('🎯 Calling onUpdateTask...');
       onUpdateTask(dragState.taskId, {
         startDate: format(newStart, 'yyyy-MM-dd'),
         endDate: format(newEnd, 'yyyy-MM-dd'),
         durationDays: newDuration,
       });
 
+      console.log('🎯 Clearing drag state');
       setDragState(null);
     },
     [dragState, timelineData, onUpdateTask, zoomLevel]
