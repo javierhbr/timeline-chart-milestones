@@ -14,6 +14,7 @@ import { Card } from './components/ui/card';
 import { Badge } from './components/ui/badge';
 import { Button } from './components/ui/button';
 import { LoginDialog } from './components/LoginDialog';
+import { TeamManagementDialog } from './components/TeamManagementDialog';
 import { useAuth } from './contexts/AuthContext';
 import {
   Milestone,
@@ -94,6 +95,7 @@ export default function App() {
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [teams, setTeams] = useState<string[]>([]);
+  const [showTeamManagement, setShowTeamManagement] = useState(false);
 
   const handleLogin = useCallback(
     (username: string, password: string) => {
@@ -894,6 +896,15 @@ export default function App() {
               <Card className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3>Project Teams</h3>
+                  {isAuthenticated && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowTeamManagement(true)}
+                    >
+                      Manage Teams
+                    </Button>
+                  )}
                 </div>
 
                 <div className="flex flex-wrap gap-2">
@@ -995,6 +1006,16 @@ export default function App() {
             onRollback={handleRollback}
             isOpen={showHistoryPanel}
             onClose={() => setShowHistoryPanel(false)}
+          />
+
+          <TeamManagementDialog
+            isOpen={showTeamManagement}
+            onClose={() => setShowTeamManagement(false)}
+            teams={teams}
+            milestones={milestones}
+            onAddTeam={handleAddTeam}
+            onEditTeam={handleEditTeam}
+            onDeleteTeam={handleDeleteTeam}
           />
         </Suspense>
 
