@@ -9,7 +9,7 @@ import {
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { Milestone } from '../utils/dateUtils';
+import { Milestone, teamColors } from '../utils/dateUtils';
 import { Trash2, Edit2, Plus } from 'lucide-react';
 import {
   AlertDialog,
@@ -186,13 +186,23 @@ export function TeamManagementDialog({
                           className="h-8"
                         />
                       ) : (
-                        <div className="flex-1">
-                          <p className="text-sm font-medium">{team}</p>
-                          {teamTaskCounts[team] > 0 && (
-                            <p className="text-xs text-muted-foreground">
-                              {teamTaskCounts[team]} task{teamTaskCounts[team] !== 1 ? 's' : ''}
-                            </p>
-                          )}
+                        <div className="flex-1 flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full flex-shrink-0"
+                            style={{
+                              backgroundColor:
+                                teamColors[team as keyof typeof teamColors] ||
+                                teamColors.Default,
+                            }}
+                          />
+                          <div>
+                            <p className="text-sm font-medium">{team}</p>
+                            {teamTaskCounts[team] > 0 && (
+                              <p className="text-xs text-muted-foreground">
+                                {teamTaskCounts[team]} task{teamTaskCounts[team] !== 1 ? 's' : ''}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       )}
 
