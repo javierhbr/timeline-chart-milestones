@@ -8,6 +8,7 @@ export interface TimelineData {
   milestoneOrder?: string[];
   taskOrders?: Record<string, string[]>;
   changeHistory?: ChangeHistoryEntry[];
+  teams?: string[];
 }
 
 export interface Project {
@@ -381,6 +382,50 @@ export function migrateProjectsToIncludeTaskOrders(): void {
 }
 
 /**
+ * Migrates existing projects to include teams field
+ * Extracts teams from existing tasks if not already present
+ */
+export function migrateProjectsToIncludeTeams(): void {
+  try {
+    const storage = getProjectsStorage();
+    let migrationNeeded = false;
+
+    // Check if any projects are missing teams
+    for (const projectId in storage.projects) {
+      const project = storage.projects[projectId];
+      if (!project.timelineData.teams) {
+        migrationNeeded = true;
+
+        // Extract unique teams from existing tasks
+        const uniqueTeams = new Set<string>();
+        project.timelineData.milestones.forEach(milestone => {
+          milestone.tasks.forEach(task => {
+            if (task.team && task.team.trim()) {
+              uniqueTeams.add(task.team);
+            }
+          });
+        });
+
+        // Initialize teams array, sorted alphabetically
+        project.timelineData.teams = Array.from(uniqueTeams).sort();
+
+        console.log(
+          `Migrated project "${project.name}" to include teams: ${project.timelineData.teams.join(', ')}`
+        );
+      }
+    }
+
+    // Save updated storage if migration was needed
+    if (migrationNeeded) {
+      saveProjectsStorage(storage);
+      console.log('Successfully migrated existing projects to include teams support');
+    }
+  } catch (error) {
+    console.warn('Failed to migrate projects for teams:', error);
+  }
+}
+
+/**
  * Runs all necessary migrations in the correct order
  */
 export function runAllMigrations(): void {
@@ -390,8 +435,11 @@ export function runAllMigrations(): void {
   // Then migrate existing projects to include change history
   migrateProjectsToIncludeChangeHistory();
 
-  // Finally migrate existing projects to include task orders
+  // Then migrate existing projects to include task orders
   migrateProjectsToIncludeTaskOrders();
+
+  // Finally migrate existing projects to include teams
+  migrateProjectsToIncludeTeams();
 }
 
 export function clearAllProjects(): void {
