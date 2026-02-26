@@ -65,6 +65,7 @@ const MilestoneCreateDialog = lazy(() =>
 
 interface GanttTimelineProps {
   milestones: Milestone[];
+  teams?: string[];
   onUpdateTask: (taskId: string, updates: Partial<Task>) => void;
   onUpdateMilestones?: (milestones: Milestone[]) => void;
   onRecalculateTimeline?: () => void;
@@ -80,6 +81,7 @@ interface GanttTimelineProps {
 
 export function GanttTimeline({
   milestones,
+  teams,
   onUpdateTask,
   onUpdateMilestones,
   onRecalculateTimeline,
@@ -1145,6 +1147,7 @@ export function GanttTimeline({
           onClose={handleEditModalClose}
           onSave={handleEditModalSave}
           milestones={milestones}
+          teams={teams}
         />
 
         <CloneTaskDialog
@@ -1188,6 +1191,7 @@ export function GanttTimeline({
           onClose={handleTaskCreateDialogClose}
           onSave={handleConfirmTaskCreate}
           milestones={milestones}
+          teams={teams}
         />
 
         <MilestoneCreateDialog

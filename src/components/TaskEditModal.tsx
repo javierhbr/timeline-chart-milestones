@@ -42,6 +42,7 @@ interface TaskEditModalProps {
   onClose: () => void;
   onSave: (taskId: string, updates: Partial<Task>) => void;
   milestones: Milestone[];
+  teams?: string[];
 }
 
 // Extract unique teams and sprints from project data
@@ -109,6 +110,7 @@ export function TaskEditModal({
   onClose,
   onSave,
   milestones,
+  teams,
 }: TaskEditModalProps) {
   const [formData, setFormData] = useState({
     name: '',
@@ -124,8 +126,14 @@ export function TaskEditModal({
 
   // Get dynamic teams and sprints from project data - memoize to prevent infinite re-renders
   const availableTeams = React.useMemo(
-    () => getAvailableTeams(milestones),
-    [milestones]
+    () => {
+      // Use project teams if provided, otherwise fall back to extracting from milestones
+      if (teams && teams.length > 0) {
+        return teams;
+      }
+      return getAvailableTeams(milestones);
+    },
+    [teams, milestones]
   );
   const availableSprints = React.useMemo(
     () => getAvailableSprints(milestones),

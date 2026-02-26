@@ -943,6 +943,7 @@ export default function App() {
               return (
                 <GanttTimeline
                   milestones={milestones}
+                  teams={teams}
                   onUpdateTask={
                     isAuthenticated
                       ? handleUpdateTask
