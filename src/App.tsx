@@ -896,15 +896,13 @@ export default function App() {
               <Card className="p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h3>Project Teams</h3>
-                  {isAuthenticated && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowTeamManagement(true)}
-                    >
-                      Manage Teams
-                    </Button>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowTeamManagement(true)}
+                  >
+                    Manage Teams
+                  </Button>
                 </div>
 
                 <div className="flex flex-wrap gap-2">
