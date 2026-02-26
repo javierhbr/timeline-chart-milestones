@@ -366,6 +366,16 @@ export default function App() {
       );
       setMilestones(calculatedMilestones);
 
+      // Extract teams from imported milestones
+      const extractedTeams = Array.from(
+        new Set(
+          calculatedMilestones.flatMap(m =>
+            m.tasks.map(t => t.team).filter(Boolean)
+          )
+        )
+      ).sort();
+      setTeams(extractedTeams);
+
       // Reset expanded milestones when importing new data
       setExpandedMilestones(new Set());
       setHasUnsavedChanges(true);
