@@ -93,6 +93,7 @@ export default function App() {
     useState(false);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [teams, setTeams] = useState<string[]>([]);
 
   const handleLogin = useCallback(
     (username: string, password: string) => {
@@ -153,6 +154,7 @@ export default function App() {
           setTaskOrders(
             new Map(Object.entries(project.timelineData.taskOrders || {}))
           );
+          setTeams(project.timelineData.teams || []);
           setHasUnsavedChanges(false);
         } else if (!hasAnyProjects()) {
           // Create default project for new users
@@ -220,6 +222,7 @@ export default function App() {
           expandedMilestones: Array.from(expandedMilestones),
           milestoneOrder,
           taskOrders: Object.fromEntries(taskOrders),
+          teams,
           changeHistory,
         };
         saveProject(currentProject.id, timelineData);
@@ -239,6 +242,7 @@ export default function App() {
     expandedMilestones,
     milestoneOrder,
     taskOrders,
+    teams,
     currentProject,
     changeHistory,
   ]);
@@ -255,6 +259,7 @@ export default function App() {
     expandedMilestones,
     milestoneOrder,
     taskOrders,
+    teams,
     currentProject,
     initialLoad,
   ]);
@@ -289,6 +294,7 @@ export default function App() {
     setTaskOrders(
       new Map(Object.entries(project.timelineData.taskOrders || {}))
     );
+    setTeams(project.timelineData.teams || []);
     setHasUnsavedChanges(false);
   }, []);
 
@@ -643,6 +649,58 @@ export default function App() {
       setExpandedMilestones(newExpanded);
     },
     [expandedMilestones]
+  );
+
+  const handleAddTeam = useCallback(
+    (teamName: string) => {
+      setTeams(prevTeams => {
+        if (!prevTeams.includes(teamName)) {
+          return [...prevTeams, teamName].sort();
+        }
+        return prevTeams;
+      });
+      setHasUnsavedChanges(true);
+    },
+    []
+  );
+
+  const handleEditTeam = useCallback(
+    (oldName: string, newName: string) => {
+      setMilestones(prevMilestones => {
+        const updated = prevMilestones.map(milestone => ({
+          ...milestone,
+          tasks: milestone.tasks.map(task =>
+            task.team === oldName ? { ...task, team: newName } : task
+          ),
+        }));
+        return updated;
+      });
+
+      setTeams(prevTeams =>
+        prevTeams.map(team => (team === oldName ? newName : team)).sort()
+      );
+
+      setHasUnsavedChanges(true);
+    },
+    []
+  );
+
+  const handleDeleteTeam = useCallback(
+    (teamName: string) => {
+      setMilestones(prevMilestones => {
+        const updated = prevMilestones.map(milestone => ({
+          ...milestone,
+          tasks: milestone.tasks.map(task =>
+            task.team === teamName ? { ...task, team: '' } : task
+          ),
+        }));
+        return updated;
+      });
+
+      setTeams(prevTeams => prevTeams.filter(team => team !== teamName));
+      setHasUnsavedChanges(true);
+    },
+    []
   );
 
   const handleOpenProjectManager = useCallback(
