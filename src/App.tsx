@@ -156,7 +156,22 @@ export default function App() {
           setTaskOrders(
             new Map(Object.entries(project.timelineData.taskOrders || {}))
           );
-          setTeams(project.timelineData.teams || []);
+
+          // Initialize teams: use stored teams or extract from tasks if empty
+          const storedTeams = project.timelineData.teams || [];
+          if (storedTeams.length === 0 && milestonesWithDates.length > 0) {
+            const extractedTeams = Array.from(
+              new Set(
+                milestonesWithDates.flatMap(m =>
+                  m.tasks.map(t => t.team).filter(Boolean)
+                )
+              )
+            ).sort();
+            setTeams(extractedTeams);
+          } else {
+            setTeams(storedTeams);
+          }
+
           setHasUnsavedChanges(false);
         } else if (!hasAnyProjects()) {
           // Create default project for new users
@@ -296,7 +311,22 @@ export default function App() {
     setTaskOrders(
       new Map(Object.entries(project.timelineData.taskOrders || {}))
     );
-    setTeams(project.timelineData.teams || []);
+
+    // Initialize teams: use stored teams or extract from tasks if empty
+    const storedTeams = project.timelineData.teams || [];
+    if (storedTeams.length === 0 && milestonesWithDates.length > 0) {
+      const extractedTeams = Array.from(
+        new Set(
+          milestonesWithDates.flatMap(m =>
+            m.tasks.map(t => t.team).filter(Boolean)
+          )
+        )
+      ).sort();
+      setTeams(extractedTeams);
+    } else {
+      setTeams(storedTeams);
+    }
+
     setHasUnsavedChanges(false);
   }, []);
 
